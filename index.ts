@@ -39,6 +39,26 @@ import {
   partitionTable,
   triggerNativePwaInstall,
 } from './osDualInstall';
+import {
+  initArcadeApp,
+  initCalcApp,
+  initCalendarApp,
+  initClipViewerApp,
+  initMegaShellFeatures,
+  initRecycleBinApp,
+  initSolitaireApp,
+  initSoundRecorderApp,
+  initTaskManagerApp,
+  initTrophiesApp,
+  openHotkeysModal,
+  openRunDialog,
+  openWinverModal,
+  pushBalloonToast,
+  registerMegaBridge,
+  spawnCustomStickyNote,
+  triggerBsodPrank,
+  unlockAchievement,
+} from './osMegaFeatures';
 
 // --- Web Audio API Retro Windows 95 Sound Blaster 16 DSP Engine ---
 class RetroSoundEngine {
@@ -813,6 +833,33 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
         iconSrc = 'https://win98icons.alexmeub.com/icons/png/settings_gear-4.png';
         title = 'Settings & Control';
         break;
+      case 'calcApp':
+        title = 'Calculator 95';
+        break;
+      case 'solitaireApp':
+        title = 'Solitaire 95';
+        break;
+      case 'arcadeApp':
+        title = 'Arcade 95';
+        break;
+      case 'soundRecorder':
+        title = 'Sound Studio';
+        break;
+      case 'calendarApp':
+        title = 'Calendar 95';
+        break;
+      case 'taskManager':
+        title = 'Task Manager';
+        break;
+      case 'recycleBin':
+        title = 'Recycle Bin';
+        break;
+      case 'clipViewer':
+        title = 'Clipboard 95';
+        break;
+      case 'trophiesApp':
+        title = 'Trophy Vault';
+        break;
     }
   }
 
@@ -898,6 +945,33 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     initMediaPlayer(windowElement);
   } else if (appName === 'dosPrompt') {
     initDosPrompt(windowElement);
+  } else if (appName === 'calcApp' && !initializedApps.has('calcApp')) {
+    initializedApps.add('calcApp');
+    initCalcApp(windowElement);
+  } else if (appName === 'solitaireApp' && !initializedApps.has('solitaireApp')) {
+    initializedApps.add('solitaireApp');
+    initSolitaireApp(windowElement);
+  } else if (appName === 'arcadeApp' && !initializedApps.has('arcadeApp')) {
+    initializedApps.add('arcadeApp');
+    initArcadeApp(windowElement);
+  } else if (appName === 'soundRecorder' && !initializedApps.has('soundRecorder')) {
+    initializedApps.add('soundRecorder');
+    initSoundRecorderApp(windowElement);
+  } else if (appName === 'calendarApp' && !initializedApps.has('calendarApp')) {
+    initializedApps.add('calendarApp');
+    initCalendarApp(windowElement);
+  } else if (appName === 'taskManager' && !initializedApps.has('taskManager')) {
+    initializedApps.add('taskManager');
+    initTaskManagerApp(windowElement);
+  } else if (appName === 'recycleBin' && !initializedApps.has('recycleBin')) {
+    initializedApps.add('recycleBin');
+    initRecycleBinApp(windowElement);
+  } else if (appName === 'clipViewer' && !initializedApps.has('clipViewer')) {
+    initializedApps.add('clipViewer');
+    initClipViewerApp(windowElement);
+  } else if (appName === 'trophiesApp' && !initializedApps.has('trophiesApp')) {
+    initializedApps.add('trophiesApp');
+    initTrophiesApp(windowElement);
   }
 }
 
@@ -2387,6 +2461,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine(
         'Available Built-In Commands:\n' +
           '  DIR       List files in C:\\ & D:\\ Virtual File System\n' +
+          '  TREE      Render ASCII directory tree of C:\\ & D:\\\n' +
           '  FDISK     Launch MS-DOS Fixed Disk Partitioner (FDISK.EXE)\n' +
           '  ISO       Build & download bootable x86 CD-ROM (GEMINI95_BOOTCD.ISO)\n' +
           '  INSTALL   Launch Ability to Install (Dual-Mode .EXE + Physical OS)\n' +
@@ -2395,6 +2470,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
           '  SYSINFO   Show live CPU, RAM, Disk Partitions & Audio specs\n' +
           '  SETTINGS  Open 8-Tab Master Settings & Control Panel\n' +
           '  REGEDIT   Open Live Registry Editor (REGEDIT.EXE)\n' +
+          '  CALC / SOL / ARCADE / SNDREC32 / CALENDAR / TASKMGR / CLIPBRD / TROPHIES / RECYCLE\n' +
+          '  BSOD / WINVER / HOTKEYS / FORTUNE / WEATHER / PING <host> / ECHO <txt>\n' +
           '  BIOS      Enter Award CMOS BIOS Setup Utility\n' +
           '  MATRIX    Toggle falling Matrix phosphor code rain\n' +
           '  COLOR     Cycle Green / Amber / White CRT phosphor\n' +
@@ -2521,6 +2598,72 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine('Playing synthesized 1995 startup chime...');
       return;
     }
+    if (upper === 'TREE') {
+      appendLine('C:\\\n├── Downloads\\\n├── Documents\\\n├── Pictures\\\n└── System95\\\nD:\\\n└── Installers\\');
+      return;
+    }
+    if (upper === 'FORTUNE') {
+      const fortunes = [
+        'A 1.44MB floppy disk saved today prevents 100 tears tomorrow.',
+        'Beware of Abominable Snowmen past 400 meters.',
+        'Angel Pilot knows less than a 486DX without math co-processor.',
+        'Your next Solitaire game ends in cascading bouncing cards.',
+      ];
+      appendLine(fortunes[Math.floor(Math.random() * fortunes.length)]);
+      return;
+    }
+    if (upper === 'WEATHER') {
+      appendLine('DOPPLER 95 FORECAST: 72°F · Clear skies · Ideal 56k dial-up modem conditions.');
+      return;
+    }
+    if (upper.startsWith('ECHO ')) {
+      appendLine(trimmed.slice(5));
+      return;
+    }
+    if (upper.startsWith('PING')) {
+      const host = trimmed.slice(4).trim() || 'geocities.com';
+      appendLine(`Pinging ${host} [198.105.232.4] with 32 bytes of data:\nReply from ${host}: bytes=32 time=142ms TTL=56\nReply from ${host}: bytes=32 time=138ms TTL=56\nPackets: Sent = 2, Received = 2, Lost = 0 (0% loss)`);
+      return;
+    }
+    const dosDirectMap: Record<string, string> = {
+      CALC: 'calcApp',
+      'CALC.EXE': 'calcApp',
+      SOL: 'solitaireApp',
+      'SOL.EXE': 'solitaireApp',
+      SOLITAIRE: 'solitaireApp',
+      ARCADE: 'arcadeApp',
+      'ARCADE95.EXE': 'arcadeApp',
+      SNAKE: 'arcadeApp',
+      TETRIS: 'arcadeApp',
+      SKIFREE: 'arcadeApp',
+      SNDREC32: 'soundRecorder',
+      'SNDREC32.EXE': 'soundRecorder',
+      CALENDAR: 'calendarApp',
+      'CALENDAR.EXE': 'calendarApp',
+      TASKMGR: 'taskManager',
+      'TASKMGR.EXE': 'taskManager',
+      RECYCLE: 'recycleBin',
+      CLIPBRD: 'clipViewer',
+      TROPHIES: 'trophiesApp',
+    };
+    if (dosDirectMap[upper]) {
+      openApp(dosDirectMap[upper]);
+      appendLine(`Launching ${upper}...`);
+      return;
+    }
+    if (upper === 'BSOD') {
+      triggerBsodPrank('DOS Command BSOD executed from COMMAND.COM');
+      return;
+    }
+    if (upper === 'WINVER') {
+      openWinverModal();
+      appendLine('Angel-OS 95 (Version 4.00.950 B · Five Trillion Features Pack)');
+      return;
+    }
+    if (upper === 'HOTKEYS') {
+      openHotkeysModal();
+      return;
+    }
     if (upper.startsWith('OPEN ')) {
       const target = upper.replace('OPEN ', '').trim();
       const map: Record<string, string> = {
@@ -2538,6 +2681,15 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         SWEEPER: 'minesweeper',
         PLAYER: 'mediaPlayer',
         DOOM: 'doom',
+        CALC: 'calcApp',
+        SOL: 'solitaireApp',
+        ARCADE: 'arcadeApp',
+        SOUND: 'soundRecorder',
+        CALENDAR: 'calendarApp',
+        TASKMGR: 'taskManager',
+        RECYCLE: 'recycleBin',
+        CLIPBOARD: 'clipViewer',
+        TROPHIES: 'trophiesApp',
       };
       if (map[target]) {
         openApp(map[target]);
@@ -2641,6 +2793,42 @@ document.getElementById('start-os-reinstall')?.addEventListener('click', () => {
   openOsReinstallScreen();
 });
 
+document.getElementById('start-run-dialog')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openRunDialog();
+});
+
+document.getElementById('start-new-sticky')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  spawnCustomStickyNote();
+});
+
+document.getElementById('start-bsod-prank')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  triggerBsodPrank('Manually triggered BSOD 95 Simulator from Start Menu!');
+});
+
+document.getElementById('start-hotkeys-btn')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openHotkeysModal();
+});
+
+document.getElementById('start-winver-btn')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openWinverModal();
+});
+
+document.querySelectorAll('.start-menu-folder').forEach((folder) => {
+  folder.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('.start-submenu')) return;
+    e.stopPropagation();
+    document.querySelectorAll('.start-menu-folder').forEach((f) => {
+      if (f !== folder) f.classList.remove('open');
+    });
+    folder.classList.toggle('open');
+  });
+});
+
 startButton.addEventListener('click', (e) => {
   e.stopPropagation();
   sfx.playClick();
@@ -2712,6 +2900,10 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     contextMenu.style.display = 'none';
     if (action === 'open-installer') openApp('abilityToInstall', true);
     else if (action === 'open-regedit') openApp('regedit');
+    else if (action === 'open-taskmgr') openApp('taskManager');
+    else if (action === 'open-run') openRunDialog();
+    else if (action === 'spawn-sticky') spawnCustomStickyNote();
+    else if (action === 'open-trophies') openApp('trophiesApp');
     else if (action === 'open-dos') openApp('dosPrompt');
     else if (action === 'new-note') openApp('notepad');
     else if (action === 'open-paint') openApp('paint');
@@ -2878,6 +3070,7 @@ function clearBootTimers() {
 function finishBootToDesktop() {
   clearBootTimers();
   bootState = 'complete';
+  unlockAchievement('first_boot');
   if (!bootScreen) return;
   bootScreen.classList.add('fade-out');
   const hideId = window.setTimeout(() => {
@@ -3462,6 +3655,20 @@ const SEARCHABLE_ENTRIES = [
   { label: '⊞ Auto-Tile All Open Windows (Snap Grid)', kind: 'Win11 Feature', action: () => autoTileOpenWindows() },
   { label: '🌙 Toggle Night Light 95 (Warm CRT Filter)', kind: 'Win11 Feature', action: () => toggleNightLight95() },
   { label: '🎵 Play Lo-Fi Eno Startup Chime', kind: 'Audio Synth', action: () => sfx.playStartupChime() },
+  { label: '🧮 Scientific Calculator 95 (CALC.EXE)', kind: 'Accessory', action: () => openApp('calcApp') },
+  { label: '🃏 Klondike Solitaire 95 (Cascading Cards!)', kind: 'Game', action: () => openApp('solitaireApp') },
+  { label: '🕹️ Retro Arcade 95 (Snake / Breakout / Blocks / SkiFree)', kind: 'Game', action: () => openApp('arcadeApp') },
+  { label: '🎚️ Sound Recorder 95 & .WAV Beat Studio', kind: 'Multimedia', action: () => openApp('soundRecorder') },
+  { label: '📅 Calendar 95, Analog Clock & Countdown Alarms', kind: 'Accessory', action: () => openApp('calendarApp') },
+  { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
+  { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
+  { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
+  { label: '🏆 Angel-OS Trophy Vault (16 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
+  { label: '🏃 Run Command... Dialog (Alt+R)', kind: 'Shell Tool', action: () => openRunDialog() },
+  { label: '📌 Spawn New Desktop Sticky Note', kind: 'Desktop Toy', action: () => spawnCustomStickyNote() },
+  { label: '💀 Trigger Blue Screen of Death (BSOD Prank)', kind: 'Easter Egg', action: () => triggerBsodPrank() },
+  { label: '⌨️ Keyboard Shortcuts & Konami Code Guide', kind: 'Help', action: () => openHotkeysModal() },
+  { label: 'ℹ️ About Angel-OS 95 (WINVER.EXE)', kind: 'System Info', action: () => openWinverModal() },
 ];
 
 function renderSearchResults(query: string) {
@@ -3570,6 +3777,9 @@ function appendCopilotMessage(sender: 'user' | 'bot', text: string) {
 function pickAngelPilotNonAiReply(userText: string): string {
   const lower = userText.toLowerCase();
   angelPilotQuestionsIgnored++;
+  if (angelPilotQuestionsIgnored >= 3) {
+    unlockAchievement('angel_pilot_harass');
+  }
 
   if (angelPilotStatusEl) {
     const pct = Math.max(-99, +(0.002 - angelPilotQuestionsIgnored * 0.005).toFixed(3));
@@ -3815,12 +4025,50 @@ registerOsBridge({
   sfx,
 });
 
+registerMegaBridge({
+  openApp,
+  closeApp,
+  minimizeApp,
+  bringToFront,
+  getOpenApps: () => openApps,
+  openAppsFocus: (appName: string) => {
+    const entry = openApps.get(appName);
+    if (entry) {
+      entry.windowEl.style.display = 'flex';
+      bringToFront(entry.windowEl);
+    } else {
+      openApp(appName);
+    }
+  },
+  showOsDialog,
+  autoTileOpenWindows,
+  cascadeOpenWindows,
+  applyTheme,
+  openFdiskScreen,
+  openCmosBiosSetup,
+  openOsReinstallScreen,
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  removeVfsFile: (name, parent) => {
+    const idx = virtualFileSystem.findIndex((f) => f.parent === parent && f.name.toUpperCase() === name.toUpperCase());
+    if (idx !== -1) virtualFileSystem.splice(idx, 1);
+  },
+  getVfsFiles: () => virtualFileSystem,
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  sfx,
+});
+
 initCmosBiosController();
 initOsReinstallerController();
 initFdiskController();
 initPwaAndHostOsController();
+initMegaShellFeatures();
 applySystemRegistryToOS(true);
 resetIdleTimer();
+pushBalloonToast('Angel-OS Mega Suite Ready!', 'Added Solitaire 95, 4-in-1 Arcade, Sound Studio (.WAV), Calculator, Calendar, Task Manager, Clipboard, Sticky Notes & 16 Trophies!', '🎉');
 
 window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
 window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });
