@@ -3,11 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Windows 95 Simulator</title>
+    <title>Remix Gemini 95</title>
+    <meta
+      name="description"
+      content="Explore a retro OS that brings back nostalgic memories with an AI twist."
+    />
+    <meta property="og:title" content="Remix Gemini 95" />
+    <meta
+      property="og:description"
+      content="Explore a retro OS that brings back nostalgic memories with an AI twist."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=VT323&display=swap"
       rel="stylesheet"
     />
     <script type="importmap">
@@ -17,114 +26,201 @@
         }
       }
     </script>
-      <link rel="stylesheet" href="/index.css" />
+    <link rel="stylesheet" href="/index.css" />
   </head>
-  <body>
+  <body class="crt-enabled">
+    <!-- Optional CRT Scanline Overlay -->
+    <div id="crt-overlay" class="crt-overlay"></div>
+
+    <!-- Desktop Selection Marquee -->
+    <div id="selection-marquee" class="selection-marquee"></div>
+
+    <!-- In-OS Retro Dialog / Toast Notification -->
+    <div id="os-toast" class="os-toast" style="display: none">
+      <div class="window-titlebar">
+        <span class="window-title" id="os-toast-title">System Message</span>
+        <div class="window-controls">
+          <button class="window-control-button" id="os-toast-close">✕</button>
+        </div>
+      </div>
+      <div class="os-toast-body">
+        <div class="os-toast-icon">ℹ️</div>
+        <div class="os-toast-text" id="os-toast-text">Ready.</div>
+      </div>
+      <div class="os-toast-actions">
+        <button class="win95-btn" id="os-toast-ok">OK</button>
+      </div>
+    </div>
+
     <div class="desktop" id="desktop">
-      <!-- Desktop Icons -->
-      <div class="icon" data-app="myComputer">
-        <img
-          src="https://storage.googleapis.com/gemini-95-icons/mycomputer.png"
-          alt="My Computer"
-          style="width: 70px; height: 50px"
-        />
-        <span>My Gemtop</span>
-      </div>
-      <div class="icon" data-app="chrome">
-        <img src="https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png" alt="Chrome" />
-        <span>Chrome</span>
-      </div>
-      <div class="icon" data-app="notepad">
-        <img src="https://storage.googleapis.com/gemini-95-icons/GemNotes.png" alt="Notepad" />
-        <span>GemNotes</span>
-      </div>
-      <div class="icon" data-app="paint">
-        <img src="https://storage.googleapis.com/gemini-95-icons/gempaint.png" alt="Paint" />
-        <span>GemPaint</span>
-      </div>
-      <div class="icon" data-app="doom">
-        <img
-          src="https://64.media.tumblr.com/1d89dfa76381e5c14210a2149c83790d/7a15f84c681c1cf9-c1/s540x810/86985984be99d5591e0cbc0dea6f05ffa3136dac.png"
-          alt="Doom II"
-        />
-        <span>Doom II</span>
-      </div>
-      <div class="icon" data-app="gemini">
-        <img
-          src="https://storage.googleapis.com/gemini-95-icons/GeminiChatRetro.png"
-          alt="Gemini App"
-        />
-        <span>Gemini App</span>
-      </div>
-      <div class="icon" data-app="minesweeper">
-        <img
-          src="https://storage.googleapis.com/gemini-95-icons/gemsweeper.png"
-          alt="Minesweeper"
-          style="width: 48px; height: 48px"
-        />
-        <span>GemSweeper</span>
-      </div>
-      <div class="icon" data-app="mediaPlayer">
-        <img
-          src="https://storage.googleapis.com/gemini-95-icons/ytmediaplayer.png"
-          alt="Media Player"
-          style="width: 48px; height: 48px"
-        />
-        <span>GemPlayer</span>
+      <!-- Desktop Icons Grid -->
+      <div class="desktop-icons" id="desktop-icons">
+        <div class="icon" data-app="myComputer">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/mycomputer.png"
+            alt="My Gemtop"
+            referrerpolicy="no-referrer"
+            style="width: 58px; height: 48px; object-fit: contain"
+          />
+          <span>My Gemtop</span>
+        </div>
+        <div class="icon" data-app="chrome">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png"
+            alt="Netscape 95"
+            referrerpolicy="no-referrer"
+          />
+          <span>Netscape 95</span>
+        </div>
+        <div class="icon" data-app="gemini">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/GeminiChatRetro.png"
+            alt="Gemini AIM"
+            referrerpolicy="no-referrer"
+          />
+          <span>Gemini AIM</span>
+        </div>
+        <div class="icon" data-app="notepad">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/GemNotes.png"
+            alt="GemNotes"
+            referrerpolicy="no-referrer"
+          />
+          <span>GemNotes</span>
+        </div>
+        <div class="icon" data-app="paint">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/gempaint.png"
+            alt="GemPaint"
+            referrerpolicy="no-referrer"
+          />
+          <span>GemPaint</span>
+        </div>
+        <div class="icon" data-app="minesweeper">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/gemsweeper.png"
+            alt="GemSweeper"
+            referrerpolicy="no-referrer"
+          />
+          <span>GemSweeper</span>
+        </div>
+        <div class="icon" data-app="mediaPlayer">
+          <img
+            src="https://storage.googleapis.com/gemini-95-icons/ytmediaplayer.png"
+            alt="GemPlayer"
+            referrerpolicy="no-referrer"
+          />
+          <span>GemPlayer</span>
+        </div>
+        <div class="icon" data-app="dosPrompt">
+          <div class="dos-icon-graphic">C:\_</div>
+          <span>MS-DOS Prompt</span>
+        </div>
+        <div class="icon" data-app="controlPanel">
+          <img
+            src="https://win98icons.alexmeub.com/icons/png/display_properties-4.png"
+            alt="Display & Themes"
+            referrerpolicy="no-referrer"
+          />
+          <span>Display &amp; Themes</span>
+        </div>
+        <div class="icon" data-app="doom">
+          <img
+            src="https://64.media.tumblr.com/1d89dfa76381e5c14210a2149c83790d/7a15f84c681c1cf9-c1/s540x810/86985984be99d5591e0cbc0dea6f05ffa3136dac.png"
+            alt="Doom II"
+            referrerpolicy="no-referrer"
+          />
+          <span>Doom II</span>
+        </div>
       </div>
 
+      <!-- Desktop Welcome Sticky Widget -->
+      <div class="desktop-sticky-note" id="desktop-welcome">
+        <div class="sticky-header">
+          <span>📌 GEMINI 95 — QUICK TIPS</span>
+          <button id="sticky-close" title="Dismiss">✕</button>
+        </div>
+        <div class="sticky-body">
+          <p>• Click any icon to launch retro AI apps.</p>
+          <p>• <b>Netscape 95</b>: Browse <i>any</i> URL &amp; click links to generate live 1996 web pages!</p>
+          <p>• <b>GemPaint</b>: Use Airbrush, Fill, Shapes &amp; ask Clippy to critique your art.</p>
+          <p>• <b>GemPlayer</b>: Jam to built-in 16-bit synthwave or YouTube CRT TV.</p>
+          <p>• <b>Right-click desktop</b> for Themes, CRT scanlines &amp; MS-DOS.</p>
+        </div>
+      </div>
 
-      <!-- Windows -->
-      <div class="window resizable" id="myComputer">
+      <!-- ==================== WINDOWS ==================== -->
+
+      <!-- 1. MY GEMTOP (Virtual File System Explorer) -->
+      <div class="window resizable" id="myComputer" style="width: 520px; height: 380px">
         <div class="window-titlebar">
-          <span class="window-title">My Gemtop</span>
+          <span class="window-title">My Gemtop — Explorer</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
-        <div class="window-content" style="background-color: white">
-          <div id="c-drive-icon" class="window-icon">
-            <img src="https://storage.googleapis.com/gemini-95-icons/cdrive.png" alt="C Drive" />
-            <span>C:</span>
+        <div class="explorer-toolbar">
+          <button class="win95-btn" id="explorer-up-btn">⬆ Up</button>
+          <button class="win95-btn" id="explorer-root-btn">💻 C:\</button>
+          <button class="win95-btn" id="explorer-new-note-btn">📄 New Note</button>
+          <div class="explorer-address">
+            <span>Address:</span>
+            <input type="text" id="explorer-path-input" value="C:\" readonly />
           </div>
-          <div id="c-drive-content" style="display: none">
-            <div id="secret-image-icon" class="window-icon">
-              <img
-                src="https://win98icons.alexmeub.com/icons/png/paint_file-0.png"
-                alt="Secret File"
-              />
-              <span>dontshowthis<br />toanyone.jpg</span>
-            </div>
-          </div>
+        </div>
+        <div class="window-content" id="explorer-view" style="background-color: white; flex-direction: row; flex-wrap: wrap; align-content: flex-start; padding: 8px; gap: 6px;">
+          <!-- Populated dynamically by Virtual File System -->
+        </div>
+        <div class="window-statusbar">
+          <span id="explorer-status-count">5 object(s)</span>
+          <span id="explorer-status-space">Free Space: 1,995 MB (FAT16)</span>
         </div>
       </div>
 
-      <div class="window resizable" id="chrome">
+      <!-- 2. NETSCAPE / CHROME 95 (AI Time-Machine Web Browser) -->
+      <div class="window resizable" id="chrome" style="width: 680px; height: 490px">
         <div class="window-titlebar">
-          <span class="window-title">Chrome</span>
+          <span class="window-title">Netscape Gemini 95 — The 1996 Time-Machine Web</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div class="window-content">
           <div class="browser-toolbar">
+            <div class="browser-nav-buttons">
+              <button class="win95-btn" id="browser-back" title="Back" disabled>◀</button>
+              <button class="win95-btn" id="browser-forward" title="Forward" disabled>▶</button>
+              <button class="win95-btn" id="browser-reload" title="Regenerate 90s Page">↻</button>
+              <button class="win95-btn" id="browser-home" title="GeoCities Portal">🏠</button>
+            </div>
             <div class="address-bar-container">
               <input
                 type="text"
                 class="browser-address-bar"
-                placeholder="Enter a website URL..."
-                value="https://www.google.com"
+                placeholder="Type any domain or topic (e.g. cyberpizza.com, mars1996.org)..."
+                value="https://www.geocities.com/siliconvalley/1995"
               />
               <button class="browser-go-button">Go!</button>
             </div>
+          </div>
+          <div class="browser-bookmarks-bar">
+            <span class="bookmarks-label">Bookmarks:</span>
+            <button class="bookmark-chip" data-url="https://www.geocities.com/cybermall1996">🛍️ CyberMall 96</button>
+            <button class="bookmark-chip" data-url="https://www.area51-truth-1995.org">👽 Area 51 Truth</button>
+            <button class="bookmark-chip" data-url="https://www.pizzanet-delivery.com">🍕 PizzaNet 95</button>
+            <button class="bookmark-chip" data-url="https://www.y2k-bunker-prep.net">⚠️ Y2K Bug Guide</button>
+            <button class="bookmark-chip" data-url="https://www.virtual-tamagotchi-club.jp">🐣 Virtual Pet Club</button>
+            <button class="bookmark-chip" data-url="https://www.90s-anime-shrine.com">⚡ Anime Webring</button>
           </div>
           <div class="browser-viewport">
             <iframe
               id="browser-frame"
               sandbox="allow-scripts allow-forms allow-modals allow-popups"
-              src="https://web.archive.org/web/19990428171538/http://google.com/"
+              src="about:blank"
               width="100%"
               height="100%"
             ></iframe>
@@ -132,91 +228,101 @@
               Generating website...
             </div>
           </div>
+          <div class="window-statusbar">
+            <span id="browser-status-text">Ready — Click any bookmark or enter any URL to generate a 1996 site!</span>
+            <span>🔒 40-Bit SSL</span>
+          </div>
         </div>
       </div>
 
-      <div class="window resizable" id="notepad">
+      <!-- 3. GEMNOTES (AI Retro Word Processor) -->
+      <div class="window resizable" id="notepad" style="width: 520px; height: 400px">
         <div class="window-titlebar">
-          <span class="window-title">GemNotes</span>
+          <span class="window-title" id="notepad-window-title">GemNotes — Untitled.txt</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div class="window-content">
           <div class="notepad-menu">
-            <button class="notepad-story-button">Generate Story</button>
+            <button class="win95-btn" id="notepad-new-btn" title="Clear document">📄 New</button>
+            <button class="win95-btn" id="notepad-save-btn" title="Save to C:\Documents">💾 Save to C:\</button>
+            <div class="toolbar-divider"></div>
+            <button class="notepad-story-button win95-btn">✨ Twist Story</button>
+            <button class="win95-btn" id="notepad-continue-btn">✍️ Continue</button>
+            <button class="win95-btn" id="notepad-90s-btn">🕶️ 90s Zine</button>
+            <button class="win95-btn" id="notepad-ascii-btn">🎨 ASCII Art</button>
           </div>
           <textarea
             class="notepad-textarea"
-            style="
-              width: 100%;
-              height: calc(100% - 30px);
-              border: none;
-              outline: none;
-              resize: none;
-              background-color: white;
-              border: 1px solid #808080;
-            "
+            placeholder="Welcome to GemNotes 95! Type your notes here, or click an AI button above to generate stories, 90s cyber-zine articles, or retro ASCII art..."
           ></textarea>
+          <div class="window-statusbar">
+            <span id="notepad-status">Ln 1, Col 1</span>
+            <span id="notepad-word-count">0 words · 0 chars</span>
+          </div>
         </div>
       </div>
 
-      <div class="window resizable" id="paint">
+      <!-- 4. GEMPAINT (MS Paint 95 + AI Art Studio) -->
+      <div class="window resizable" id="paint" style="width: 580px; height: 440px">
         <div class="window-titlebar">
-          <span class="window-title">GemPaint</span>
+          <span class="window-title">GemPaint 95 — AI Art Critic Studio</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div
           class="window-content"
-          style="
-            display: flex;
-            flex-direction: column;
-            padding: 0;
-            margin: 0;
-            background-color: #c0c0c0;
-          "
+          style="display: flex; flex-direction: column; padding: 0; margin: 0; background-color: #c0c0c0"
         >
           <div class="paint-toolbar">
+            <div class="paint-tools-group" title="Drawing Tools">
+              <button class="paint-tool-btn active" data-tool="brush" title="Brush">🖌️</button>
+              <button class="paint-tool-btn" data-tool="spray" title="Airbrush Spray">💨</button>
+              <button class="paint-tool-btn" data-tool="fill" title="Flood Fill Bucket">🪣</button>
+              <button class="paint-tool-btn" data-tool="line" title="Line">📏</button>
+              <button class="paint-tool-btn" data-tool="rect" title="Rectangle">▭</button>
+              <button class="paint-tool-btn" data-tool="circle" title="Circle">◯</button>
+              <button class="paint-tool-btn" data-tool="eraser" title="Eraser">🧽</button>
+            </div>
+            <div class="paint-brush-sizes" title="Brush Size">
+              <button class="paint-size-button active" data-size="2">S</button>
+              <button class="paint-size-button" data-size="6">M</button>
+              <button class="paint-size-button" data-size="14">L</button>
+            </div>
+            <div class="paint-actions-group">
+              <button class="win95-btn" id="paint-undo-btn" title="Undo last stroke">↩ Undo</button>
+              <button class="paint-clear-button win95-btn">🗑️ Clear</button>
+              <button class="win95-btn" id="paint-save-btn" title="Save to C:\Pictures">💾 Save</button>
+              <button class="win95-btn" id="paint-critique-now-btn" title="Ask Clippy to Judge Now!">🧐 Judge Art</button>
+              <button class="win95-btn" id="paint-prompt-btn" title="Get Drawing Prompt">🎲 Prompt</button>
+            </div>
+          </div>
+          <div class="paint-Colors-bar">
             <div class="paint-colors">
-              <button
-                class="paint-color-swatch"
-                data-color="black"
-                style="background-color: black"
-              ></button>
-              <button
-                class="paint-color-swatch"
-                data-color="red"
-                style="background-color: red"
-              ></button>
-              <button
-                class="paint-color-swatch"
-                data-color="blue"
-                style="background-color: blue"
-              ></button>
-              <button
-                class="paint-color-swatch"
-                data-color="green"
-                style="background-color: green"
-              ></button>
-              <button
-                class="paint-color-swatch"
-                data-color="yellow"
-                style="background-color: yellow"
-              ></button>
-              <button class="paint-color-swatch" data-color="white" style="background-color: white">
-                E
-              </button>
+              <button class="paint-color-swatch active" data-color="#000000" style="background-color: #000000" title="Black"></button>
+              <button class="paint-color-swatch" data-color="#808080" style="background-color: #808080" title="Gray"></button>
+              <button class="paint-color-swatch" data-color="#800000" style="background-color: #800000" title="Maroon"></button>
+              <button class="paint-color-swatch" data-color="#FF0000" style="background-color: #FF0000" title="Red"></button>
+              <button class="paint-color-swatch" data-color="#FF8000" style="background-color: #FF8000" title="Orange"></button>
+              <button class="paint-color-swatch" data-color="#FFFF00" style="background-color: #FFFF00" title="Yellow"></button>
+              <button class="paint-color-swatch" data-color="#008000" style="background-color: #008000" title="Green"></button>
+              <button class="paint-color-swatch" data-color="#00FF00" style="background-color: #00FF00" title="Lime"></button>
+              <button class="paint-color-swatch" data-color="#008080" style="background-color: #008080" title="Teal"></button>
+              <button class="paint-color-swatch" data-color="#00FFFF" style="background-color: #00FFFF" title="Cyan"></button>
+              <button class="paint-color-swatch" data-color="#000080" style="background-color: #000080" title="Navy"></button>
+              <button class="paint-color-swatch" data-color="#0000FF" style="background-color: #0000FF" title="Blue"></button>
+              <button class="paint-color-swatch" data-color="#800080" style="background-color: #800080" title="Purple"></button>
+              <button class="paint-color-swatch" data-color="#FF00FF" style="background-color: #FF00FF" title="Magenta"></button>
+              <button class="paint-color-swatch" data-color="#8B4513" style="background-color: #8B4513" title="Brown"></button>
+              <button class="paint-color-swatch" data-color="#FFFFFF" style="background-color: #FFFFFF" title="White">E</button>
             </div>
-            <div class="paint-brush-sizes">
-              <button class="paint-size-button" data-size="2">S</button>
-              <button class="paint-size-button" data-size="5">M</button>
-              <button class="paint-size-button" data-size="10">L</button>
-            </div>
-            <button class="paint-clear-button">Clear</button>
+            <span id="paint-challenge-banner" class="paint-challenge-banner">Draw anything! Clippy critiques every 15s or click "Judge Art".</span>
           </div>
           <canvas
             id="paint-canvas"
@@ -225,168 +331,327 @@
         </div>
       </div>
 
-      <div class="window resizable" id="doom">
+      <!-- 5. DOOM II -->
+      <div class="window resizable" id="doom" style="width: 580px; height: 420px">
         <div class="window-titlebar">
-          <span class="window-title">Doom II</span>
+          <span class="window-title">DOOM II — MS-DOS Protected Mode</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
-        <div class="window-content" id="doom-content">
-        </div>
+        <div class="window-content" id="doom-content"></div>
       </div>
 
-      <div class="window resizable" id="gemini">
+      <!-- 6. GEMINI AIM (1995 Instant Messenger Multi-Buddy AI Chat) -->
+      <div class="window resizable" id="gemini" style="width: 480px; height: 430px">
         <div class="window-titlebar">
-          <span class="window-title">Gemini App</span>
+          <span class="window-title">Gemini Instant Messenger 95 (AIM)</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div class="window-content gemini-chat-content">
-          <div class="gemini-chat-history">
+          <div class="aim-buddy-bar">
+            <label for="aim-persona-select">Buddy:</label>
+            <select id="aim-persona-select" class="win95-select">
+              <option value="smarterchild">🤖 SmarterChild_95 (Encyclopedia &amp; Trivia)</option>
+              <option value="zerocool">🕶️ ZeroCool_1337 (90s Cyberpunk Hacker)</option>
+              <option value="clippy">📎 Clippy_Pro (Overly Eager Assistant)</option>
+              <option value="techsupport">💾 Win95_Guru (Hardware &amp; Nostalgia)</option>
+            </select>
+            <button class="win95-btn" id="aim-clear-btn" title="Clear transcript">Clear</button>
+            <button class="win95-btn" id="aim-export-btn" title="Save chat to GemNotes">💾 Save</button>
+          </div>
+          <div class="gemini-chat-history"></div>
+          <div class="aim-quick-prompts">
+            <button class="aim-chip" data-prompt="Tell me a wild 1995 tech prediction!">🔮 1995 Prediction</button>
+            <button class="aim-chip" data-prompt="Quiz me on 90s pop culture & video games!">🕹️ 90s Trivia</button>
+            <button class="aim-chip" data-prompt="Write me a dial-up haiku.">📞 Dial-Up Haiku</button>
           </div>
           <div class="gemini-chat-input-area">
-            <input type="text" class="gemini-chat-input" placeholder="Type your message..." />
+            <input type="text" class="gemini-chat-input" placeholder="Send an Instant Message..." />
             <button class="gemini-chat-send">Send</button>
           </div>
         </div>
       </div>
 
-      <div class="window resizable" id="minesweeper" style="width: 400px; height: 450px">
+      <!-- 7. GEMSWEEPER (Minesweeper Deluxe + AI Tactical Advisor) -->
+      <div class="window resizable" id="minesweeper" style="width: 420px; height: 490px">
         <div class="window-titlebar">
-          <span class="window-title">GemSweeper</span>
+          <span class="window-title">GemSweeper Deluxe 95</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div
           class="window-content minesweeper-content"
-          style="
-            display: flex;
-            flex-direction: column;
-            padding: 0;
-            margin: 0;
-            background-color: #c0c0c0;
-          "
+          style="display: flex; flex-direction: column; padding: 0; margin: 0; background-color: #c0c0c0"
         >
+          <div class="minesweeper-difficulty-bar">
+            <button class="win95-btn ms-diff-btn active" data-rows="9" data-cols="9" data-mines="10">Beginner (9×9)</button>
+            <button class="win95-btn ms-diff-btn" data-rows="12" data-cols="12" data-mines="20">Medium (12×12)</button>
+            <button class="win95-btn ms-diff-btn" data-rows="14" data-cols="16" data-mines="35">Expert (14×16)</button>
+          </div>
           <div class="minesweeper-controls">
             <div class="minesweeper-info minesweeper-flag-count">🚩 10</div>
-            <button class="minesweeper-reset-button">🙂</button>
+            <button class="minesweeper-reset-button" title="New Game">🙂</button>
             <div class="minesweeper-info minesweeper-timer">⏱️ 0</div>
           </div>
           <div class="minesweeper-hint-area">
-            <button class="minesweeper-hint-button">💡 Hint</button>
-            <div class="minesweeper-commentary">Let's play! Click a square to start.</div>
+            <button class="minesweeper-hint-button">💡 AI Tactical Hint</button>
+            <div class="minesweeper-commentary">Left-click to reveal, Right-click to flag!</div>
           </div>
           <div class="minesweeper-grid-container">
-            <div class="minesweeper-grid" id="minesweeper-board">
-            </div>
+            <div class="minesweeper-grid" id="minesweeper-board"></div>
           </div>
         </div>
       </div>
 
-      <div class="window resizable" id="imageViewer" style="width: 350px; height: 300px">
+      <!-- 8. IMAGE VIEWER -->
+      <div class="window resizable" id="imageViewer" style="width: 380px; height: 340px">
         <div class="window-titlebar">
           <span class="window-title" id="image-viewer-title">Image Viewer</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div
           class="window-content image-viewer-content"
-          style="
-            padding: 0;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #808080;
-          "
+          style="padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: #404040"
         >
           <img
             id="image-viewer-img"
-            src=""
+            src="https://storage.googleapis.com/gemini-95-icons/%40ammaar%2B%40olacombe.png"
             alt="Image"
+            referrerpolicy="no-referrer"
             style="max-width: 100%; max-height: 100%; object-fit: contain"
           />
         </div>
       </div>
 
-      <div class="window resizable" id="mediaPlayer" style="width: 520px; height: 500px;">
+      <!-- 9. GEMPLAYER (16-Bit Chiptune Synth + YouTube CRT Player) -->
+      <div class="window resizable" id="mediaPlayer" style="width: 540px; height: 480px">
         <div class="window-titlebar">
-          <span class="window-title">GemPlayer</span>
+          <span class="window-title">GemPlayer 95 — Chiptune Synth &amp; Retro TV</span>
           <div class="window-controls">
-            <div class="window-minimize window-control-button">−</div>
-            <div class="window-close window-control-button">✕</div>
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
         <div class="window-content media-player-content">
-          <div class="media-player-url-bar">
-            <input type="text" class="media-player-input" placeholder="Enter YouTube Video URL or ID" />
-            <button class="media-player-load-button">Load</button>
+          <!-- Mode Tabs: Synth Deck vs YouTube TV -->
+          <div class="media-mode-tabs">
+            <button class="win95-btn active" id="media-tab-synth">🎹 16-Bit Synth Visualizer</button>
+            <button class="win95-btn" id="media-tab-yt">📺 YouTube Retro TV</button>
           </div>
-          <div class="media-player-video-container">
-            <div id="youtube-player-mediaPlayer">
-                 <p class="media-player-status-message">Loading GemPlayer...</p>
+
+          <!-- SYNTHESIZER DECK VIEW -->
+          <div id="media-synth-panel" class="media-synth-panel">
+            <canvas id="synth-visualizer" width="480" height="180"></canvas>
+            <div class="synth-track-info">
+              <span id="synth-now-playing">Track 01: Canyon.mid (FM Synth Remix)</span>
+              <span id="synth-bpm-display">124 BPM · STEREO</span>
+            </div>
+            <div class="synth-track-selector">
+              <button class="win95-btn synth-track-btn active" data-track="0">🎵 Canyon.mid</button>
+              <button class="win95-btn synth-track-btn" data-track="1">🌆 CyberWave 95</button>
+              <button class="win95-btn synth-track-btn" data-track="2">🕹️ Arcade Boss</button>
+              <button class="win95-btn synth-track-btn" data-track="3">🌙 Teal Dreams</button>
+            </div>
+            <div class="synth-controls-row">
+              <button class="win95-btn" id="synth-play-toggle">▶ Play Synth</button>
+              <button class="win95-btn" id="synth-stop-btn">■ Stop</button>
+              <label style="font-size: 0.75rem; margin-left: auto">Tempo:</label>
+              <input type="range" id="synth-tempo" min="70" max="170" value="120" style="width: 90px" />
             </div>
           </div>
-          <div class="media-player-controls-panel">
-            <div class="media-player-buttons-group">
+
+          <!-- YOUTUBE PLAYER VIEW -->
+          <div id="media-yt-panel" style="display: none; flex-direction: column; flex-grow: 1">
+            <div class="media-player-url-bar">
+              <input
+                type="text"
+                class="media-player-input"
+                placeholder="Enter YouTube Video URL or 11-char ID..."
+                value="WXuK6gekU1Y"
+              />
+              <button class="media-player-load-button">Load</button>
+            </div>
+            <div class="yt-preset-channels">
+              <span>Presets:</span>
+              <button class="bookmark-chip yt-preset-btn" data-vid="WXuK6gekU1Y">🕺 Rick Astley</button>
+              <button class="bookmark-chip yt-preset-btn" data-vid="5qap5aO4i9A">🎧 Lofi Beats</button>
+              <button class="bookmark-chip yt-preset-btn" data-vid="4xDzrJKXOOY">🌆 Synthwave</button>
+            </div>
+            <div class="media-player-video-container">
+              <div id="youtube-player-mediaPlayer">
+                <p class="media-player-status-message">Click "YouTube Retro TV" or "Load" to tune in...</p>
+              </div>
+            </div>
+            <div class="media-player-controls-panel">
+              <div class="media-player-buttons-group">
                 <button class="media-player-control-button" id="media-player-play" title="Play">▶</button>
                 <button class="media-player-control-button" id="media-player-pause" title="Pause">❚❚</button>
                 <button class="media-player-control-button" id="media-player-stop" title="Stop">■</button>
-            </div>
-            <div class="media-player-progress-bar-container-placeholder">
+              </div>
+              <div class="media-player-progress-bar-container-placeholder">
                 <div class="media-player-progress-bar-placeholder"></div>
-            </div>
-            <div class="media-player-volume-placeholder">
+              </div>
+              <div class="media-player-volume-placeholder">
                 <span>🔊</span>
                 <div class="media-player-volume-slider-placeholder"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-
-      <!-- Start Menu -->
-      <div class="start-menu" id="start-menu">
-        <div class="start-menu-item" data-app="myComputer">My Gemtop</div>
-        <div class="start-menu-item" data-app="chrome">Chrome</div>
-        <div class="start-menu-item" data-app="notepad">GemNotes</div>
-        <div class="start-menu-item" data-app="paint">GemPaint</div>
-        <div class="start-menu-item" data-app="doom">Doom II</div>
-        <div class="start-menu-item" data-app="gemini">Gemini App</div>
-        <div class="start-menu-item" data-app="minesweeper">GemSweeper</div>
-        <div class="start-menu-item" data-app="mediaPlayer">GemPlayer</div>
+      <!-- 10. MS-DOS PROMPT (AI Command Prompt + Matrix Mode) -->
+      <div class="window resizable" id="dosPrompt" style="width: 560px; height: 370px">
+        <div class="window-titlebar">
+          <span class="window-title">MS-DOS Prompt — COMMAND.COM (Gemini AI Kernel)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content dos-terminal-wrapper">
+          <div class="dos-toolbar">
+            <button class="win95-btn dos-quick-cmd" data-cmd="HELP">HELP</button>
+            <button class="win95-btn dos-quick-cmd" data-cmd="DIR">DIR</button>
+            <button class="win95-btn dos-quick-cmd" data-cmd="SYSINFO">SYSINFO</button>
+            <button class="win95-btn dos-quick-cmd" data-cmd="MATRIX">MATRIX</button>
+            <button class="win95-btn dos-quick-cmd" data-cmd="COLOR">PHOSPHOR</button>
+            <button class="win95-btn dos-quick-cmd" data-cmd="CLS">CLS</button>
+          </div>
+          <div class="dos-output" id="dos-output">
+            <canvas id="dos-matrix-canvas" style="display: none"></canvas>
+            <div id="dos-text-log"></div>
+            <div class="dos-input-line">
+              <span id="dos-prompt-label">C:\GEMINI95&gt;</span>
+              <input type="text" id="dos-input" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Taskbar -->
+      <!-- 11. CONTROL PANEL / DISPLAY & THEMES -->
+      <div class="window resizable" id="controlPanel" style="width: 420px; height: 390px">
+        <div class="window-titlebar">
+          <span class="window-title">Display Properties &amp; System Themes</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content control-panel-content">
+          <div class="cp-monitor-preview" id="cp-monitor-preview">
+            <div class="cp-mini-window">
+              <div class="cp-mini-titlebar">Active Window</div>
+              <div class="cp-mini-body">Gemini 95 OS</div>
+            </div>
+          </div>
+          <div class="cp-section">
+            <label><b>Color Scheme &amp; Wallpaper:</b></label>
+            <div class="cp-theme-grid">
+              <button class="win95-btn theme-select-btn active" data-theme="standard">🟩 Windows Standard (Teal)</button>
+              <button class="win95-btn theme-select-btn" data-theme="hotdog">🌭 Hot Dog Stand (1995 Classic)</button>
+              <button class="win95-btn theme-select-btn" data-theme="cyberpunk">🌌 Cyberpunk 1995 (Neon Grid)</button>
+              <button class="win95-btn theme-select-btn" data-theme="vaporwave">🌅 Vaporwave Sunset</button>
+              <button class="win95-btn theme-select-btn" data-theme="matrix">💻 Phosphor Matrix</button>
+            </div>
+          </div>
+          <div class="cp-section cp-toggles">
+            <label class="cp-checkbox-row">
+              <input type="checkbox" id="cp-crt-toggle" checked />
+              <span>Enable CRT Scanlines &amp; Retro Monitor Vignette</span>
+            </label>
+            <label class="cp-checkbox-row">
+              <input type="checkbox" id="cp-sfx-toggle" checked />
+              <span>Enable Synthesized Windows 95 Sound Effects</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
+      <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
+        <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
+        <div class="ctx-item" data-action="new-note">📝 New Text Document</div>
+        <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
+        <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
+        <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" data-action="open-display">⚙️ Display Properties...</div>
+      </div>
+
+      <!-- ==================== START MENU ==================== -->
+      <div class="start-menu" id="start-menu">
+        <div class="start-menu-sidebar">
+          <span><b>GEMINI</b> 95</span>
+        </div>
+        <div class="start-menu-items">
+          <div class="start-menu-item" data-app="myComputer">💻 My Gemtop Explorer</div>
+          <div class="start-menu-item" data-app="chrome">🌐 Netscape 95 (AI Web)</div>
+          <div class="start-menu-item" data-app="gemini">💬 Gemini AIM Messenger</div>
+          <div class="start-menu-item" data-app="notepad">📝 GemNotes WordPad</div>
+          <div class="start-menu-item" data-app="paint">🎨 GemPaint Studio</div>
+          <div class="start-menu-item" data-app="minesweeper">💣 GemSweeper Deluxe</div>
+          <div class="start-menu-item" data-app="mediaPlayer">🎹 GemPlayer Synth &amp; TV</div>
+          <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt</div>
+          <div class="start-menu-item" data-app="doom">👹 Doom II</div>
+          <div class="start-menu-divider"></div>
+          <div class="start-menu-item" data-app="controlPanel">⚙️ Display &amp; Themes</div>
+          <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
+        </div>
+      </div>
+
+      <!-- ==================== TASKBAR ==================== -->
       <div id="taskbar">
         <button id="start-button">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/start-gemini.png"
             alt="Start"
-            style="width: 80px; height: 70px"
+            referrerpolicy="no-referrer"
           />
+          <span>Start</span>
         </button>
-        <div id="taskbar-apps">
+        <div class="taskbar-divider"></div>
+        <button class="win95-btn taskbar-quick-btn" id="show-desktop-btn" title="Minimize All Windows">🖥️</button>
+        <div class="taskbar-divider"></div>
+        <div id="taskbar-apps"></div>
+        <!-- System Tray -->
+        <div id="system-tray" class="system-tray">
+          <button class="tray-icon-btn" id="tray-crt-btn" title="Toggle CRT Scanlines">📺</button>
+          <button class="tray-icon-btn" id="tray-sound-btn" title="Toggle Retro SFX">🔊</button>
+          <span id="tray-clock" class="tray-clock">12:00 PM</span>
         </div>
       </div>
 
+      <!-- CLIPPY / ROBOT PAINT ASSISTANT -->
       <div id="paint-assistant">
-        <div class="assistant-bubble">Thinking...</div>
+        <div class="assistant-bubble">Warming up my art critic circuits...</div>
         <img
           src="https://storage.googleapis.com/gemini-95-icons/robot-assistant.gif"
           alt="Paint Assistant"
+          referrerpolicy="no-referrer"
           class="assistant-image"
         />
       </div>
     </div>
-      <script type="module" src="/index.ts"></script>
+    <script type="module" src="/index.ts"></script>
   </body>
 </html>

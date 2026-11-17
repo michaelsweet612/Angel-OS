@@ -66,27 +66,50 @@ function getApiKey(): string {
 }
 
 const MODEL_UPGRADES: Record<string, string> = {
-  'gemini-2.5-flash': 'gemini-3-flash-preview',
-  'gemini-2.5-pro': 'gemini-3.1-pro-preview',
-  'gemini-2.5-pro-exp-03-25': 'gemini-3.1-pro-preview',
-  'gemini-3-pro-preview': 'gemini-3.1-pro-preview',
-  'gemini-2.0-flash': 'gemini-3-flash-preview',
-  'gemini-2.0-flash-exp': 'gemini-3-flash-preview',
-  'gemini-2.0-flash-preview-image-generation': 'gemini-2.5-flash-image',
+  'gemini-2.5-flash': 'gemini-4-hydrogen',
+  'gemini-2.5-pro': 'gemini-4-hydrogen',
+  'gemini-2.5-pro-exp-03-25': 'gemini-4-hydrogen',
+  'gemini-3-pro-preview': 'gemini-4-hydrogen',
+  'gemini-3.1-pro-preview': 'gemini-4-hydrogen',
+  'gemini-3-flash-preview': 'gemini-4-hydrogen',
+  'gemini-2.0-flash': 'gemini-4-hydrogen',
+  'gemini-2.0-flash-exp': 'gemini-4-hydrogen',
+  'gemini-2.0-flash-preview-image-generation': 'gemini-4-hydrogen',
+  'gemini-2.5-flash-image': 'gemini-4-hydrogen',
 };
 
 const ALLOWED_MODEL_RE = /^(?!.*\.\.)(?:models\/)?(?:gemini-|imagen-|veo-|lyria-|learnlm-|text-embedding-|gemini-embedding-)[a-zA-Z0-9._-]+$/;
 
 function resolveModel(model?: string): string {
-  const candidate = !model ? "gemini-3-flash-preview" : MODEL_UPGRADES[model] || model;
+  const candidate = !model ? 'gemini-4-hydrogen' : MODEL_UPGRADES[model] || model;
   if (!ALLOWED_MODEL_RE.test(candidate)) {
     throw new Error(`Disallowed model: ${candidate}`);
   }
   return candidate;
 }
 
+function sanitizeConfigForModel(model: string, config: any): any {
+  if (!config || typeof config !== 'object') return config;
+  const copy = {...config};
+  if (model.startsWith('gemini-4-')) {
+    delete copy.temperature;
+    delete copy.topP;
+    delete copy.topK;
+    delete copy.candidateCount;
+    delete copy.thinkingBudget;
+  }
+  return Object.keys(copy).length > 0 ? copy : undefined;
+}
+
 function getAI(): GoogleGenAI {
-  return new GoogleGenAI({apiKey: getApiKey()});
+  return new GoogleGenAI({
+    apiKey: getApiKey(),
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
 }
 
 function serializeResponse(response: any) {
@@ -141,10 +164,11 @@ async function startServer() {
     try {
       const ai = getAI();
       const {model: rawModel, contents, config} = req.body;
+      const model = resolveModel(rawModel);
       const response = await ai.models.generateContent({
-        model: resolveModel(rawModel),
+        model,
         contents,
-        config,
+        config: sanitizeConfigForModel(model, config),
       });
       res.json(serializeResponse(response));
     } catch (error: any) {
@@ -159,10 +183,11 @@ async function startServer() {
     try {
       const ai = getAI();
       const {model: rawModel, contents, config} = req.body;
+      const model = resolveModel(rawModel);
       const responseStream = await ai.models.generateContentStream({
-        model: resolveModel(rawModel),
+        model,
         contents,
-        config,
+        config: sanitizeConfigForModel(model, config),
       });
 
       res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
@@ -218,9 +243,10 @@ async function startServer() {
     try {
       const ai = getAI();
       const {model: rawModel, config, history, message} = req.body;
+      const model = resolveModel(rawModel);
       const chat = ai.chats.create({
-        model: resolveModel(rawModel),
-        config,
+        model,
+        config: sanitizeConfigForModel(model, config),
         history: history || [],
       });
       const rawMsg =
@@ -245,9 +271,10 @@ async function startServer() {
     try {
       const ai = getAI();
       const {model: rawModel, config, history, message} = req.body;
+      const model = resolveModel(rawModel);
       const chat = ai.chats.create({
-        model: resolveModel(rawModel),
-        config,
+        model,
+        config: sanitizeConfigForModel(model, config),
         history: history || [],
       });
       const rawMsg =

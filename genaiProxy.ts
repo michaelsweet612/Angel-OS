@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from '@google/genai';
-
 async function postJson(endpoint: string, body: any) {
   const res = await fetch(endpoint, {
     method: 'POST',
