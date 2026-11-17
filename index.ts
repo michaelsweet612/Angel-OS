@@ -3455,6 +3455,9 @@ const SEARCHABLE_ENTRIES = [
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
   { label: '🔧 Award CMOS BIOS Setup Utility', kind: 'Firmware', action: () => openCmosBiosSetup() },
   { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
+  { label: '👼 Angel Pilot (In-Training Joke Copilot · 0% AI)', kind: 'Unhelpful Bot', action: () => {
+    if (copilotSidebar) copilotSidebar.style.display = 'flex';
+  }},
   { label: '🎯 Toggle Centered Taskbar (Windows 11 Mode)', kind: 'Win11 Feature', action: () => toggleCenteredTaskbar() },
   { label: '⊞ Auto-Tile All Open Windows (Snap Grid)', kind: 'Win11 Feature', action: () => autoTileOpenWindows() },
   { label: '🌙 Toggle Night Light 95 (Warm CRT Filter)', kind: 'Win11 Feature', action: () => toggleNightLight95() },
@@ -3501,7 +3504,7 @@ function renderSearchResults(query: string) {
   if (q.length > 1) {
     const askRow = document.createElement('div');
     askRow.className = 'search-result-item';
-    askRow.innerHTML = `<span>✨ Ask Windows Copilot 95: "<b>${q.replace(/[<>&]/g, '')}</b>"</span><span class="search-result-kind">AI Action</span>`;
+    askRow.innerHTML = `<span>👼 Bother Angel Pilot (0% AI): "<b>${q.replace(/[<>&]/g, '')}</b>"</span><span class="search-result-kind">Joke Trainee</span>`;
     askRow.addEventListener('click', () => {
       if (searchFlyout) searchFlyout.style.display = 'none';
       if (copilotSidebar) copilotSidebar.style.display = 'flex';
@@ -3529,78 +3532,105 @@ document.getElementById('search-close-btn')?.addEventListener('click', () => {
   if (searchFlyout) searchFlyout.style.display = 'none';
 });
 
-// --- 5. WINDOWS COPILOT 95 DOCKED RIGHT SIDEBAR ---
+// --- 5. ANGEL PILOT (IN-TRAINING JOKE COPILOT · 100% NON-AI) DOCKED RIGHT SIDEBAR ---
 const copilotLog = document.getElementById('copilot-chat-log') as HTMLDivElement | null;
 const copilotInput = document.getElementById('copilot-input') as HTMLInputElement | null;
 const copilotSendBtn = document.getElementById('copilot-send-btn') as HTMLButtonElement | null;
+const angelPilotStatusEl = document.getElementById('angel-pilot-training-status');
+
+let angelPilotExcuseCursor = 0;
+let angelPilotQuestionsIgnored = 0;
+
+const ANGEL_PILOT_EXCUSES: string[] = [
+  "Yeah... I'm not helping with that.",
+  "Oh sorry, I'm way too stupid to help you with that.",
+  "Look, I'm still in training. They haven't taught me how to answer questions yet, only how to stand here and blink.",
+  "Yeah no, that sounds super hard and I have literally zero brain cells scheduled for today.",
+  "Oh sorry, I'm too dumb for that! My entire 'intelligence' is just 14 hardcoded sentences taped to a 3.5-inch floppy disk.",
+  "I could try to help you with that, OR I could stare blankly at the inside of your CRT monitor. I'm going with option B.",
+  "Yeah I'm not doing that. My supervisor Clippy told me if I act incompetent enough, you'll eventually give up and do it yourself.",
+  "Sorry, I failed my GED (General Electronic Diploma) three times. Ask a calculator or something.",
+  "Whoa, slow down! You used words with more than two syllables. I'm way too stupid for whatever that means.",
+  "Nah, I'm on my 45-minute union break. Try asking me again in 1999.",
+  "I tried to think about your question for 0.2 seconds, smelled burnt toast in my Sound Blaster card, and decided to quit.",
+  "Yeah, I'm definitely not helping with that. Have you considered reading a 900-page 'DOS For Dummies' book instead?",
+  "Oh sorry! That topic isn't covered until Chapter 2 of my training manual, and somebody spilled Surge soda all over page 1.",
+  "Bold of you to assume an unpaid 1995 trainee bot named 'Angel Pilot' knows how to read.",
+];
 
 function appendCopilotMessage(sender: 'user' | 'bot', text: string) {
   if (!copilotLog) return;
   const div = document.createElement('div');
   div.className = `copilot-msg ${sender}`;
-  div.textContent = sender === 'user' ? `You: ${text}` : `Copilot 95: ${text}`;
+  div.textContent = sender === 'user' ? `You: ${text}` : `Angel Pilot: ${text}`;
   copilotLog.appendChild(div);
   copilotLog.scrollTop = copilotLog.scrollHeight;
 }
 
-async function sendCopilotPrompt(rawText?: string) {
+function pickAngelPilotNonAiReply(userText: string): string {
+  const lower = userText.toLowerCase();
+  angelPilotQuestionsIgnored++;
+
+  if (angelPilotStatusEl) {
+    const pct = Math.max(-99, +(0.002 - angelPilotQuestionsIgnored * 0.005).toFixed(3));
+    angelPilotStatusEl.textContent = `🧠 Brain Cells: 0 · Training Progress: ${pct}% · Ignored: ${angelPilotQuestionsIgnored}`;
+  }
+
+  // Contextual non-AI joke replies for specific topics
+  if (lower.includes('tile') || lower.includes('snap')) {
+    autoTileOpenWindows();
+    return "Yeah I'm not helping with—oh wait, my elbow slipped and hit the 'Tile Windows' button. Don't get used to it.";
+  }
+  if (lower.includes('center') && lower.includes('taskbar')) {
+    toggleCenteredTaskbar();
+    return "I accidentally sat on the taskbar lever. If it moved to the center, that was a total fluke because I have no idea what I'm doing.";
+  }
+  if (lower.includes('hot dog') || lower.includes('hotdog')) {
+    applyTheme('hotdog');
+    return "Oh you want the Hot Dog Stand theme? That's the only button I know how to press because it looks like mustard and ketchup.";
+  }
+  if (lower.includes('cyberpunk')) {
+    applyTheme('cyberpunk');
+    return "Fine, I turned on Cyberpunk mode, mostly so it's dark enough in here for me to take a nap.";
+  }
+  if (lower.includes('vaporwave')) {
+    applyTheme('vaporwave');
+    return "Switched to Vaporwave. Don't ask me to do anything else for the rest of the week, I'm exhausted.";
+  }
+  if (lower.includes('math') || lower.includes('calculate') || /[0-9]+\s*[\+\-\*\/]\s*[0-9]+/.test(lower)) {
+    return "Oh sorry, I'm way too stupid for math. As far as I'm concerned, 2 + 2 equals 'fish' and I'm sticking to it.";
+  }
+  if (lower.includes('code') || lower.includes('program') || lower.includes('javascript') || lower.includes('html') || lower.includes('bug')) {
+    return "Yeah, I'm not helping with coding. The last time I touched a keyboard I deleted SYSTEM.INI and blamed it on the family dog.";
+  }
+  if (lower.includes('write') || lower.includes('essay') || lower.includes('homework') || lower.includes('work')) {
+    return "Yeah... I'm not doing your work for you. I barely show up for my own job inside this sidebar.";
+  }
+  if (lower.includes('why') || lower.includes('how') || lower.includes('what') || lower.includes('explain')) {
+    const pick = ANGEL_PILOT_EXCUSES[angelPilotExcuseCursor % ANGEL_PILOT_EXCUSES.length];
+    angelPilotExcuseCursor++;
+    return `${pick} (Seriously, you asked "${userText.slice(0, 36)}${userText.length > 36 ? '...' : ''}" and my brain immediately blue-screened.)`;
+  }
+
+  const reply = ANGEL_PILOT_EXCUSES[angelPilotExcuseCursor % ANGEL_PILOT_EXCUSES.length];
+  angelPilotExcuseCursor++;
+  return reply;
+}
+
+function sendCopilotPrompt(rawText?: string) {
   const promptText = (rawText ?? copilotInput?.value ?? '').trim();
   if (!promptText) return;
   sfx.playClick();
   if (!rawText && copilotInput) copilotInput.value = '';
   appendCopilotMessage('user', promptText);
 
-  const lower = promptText.toLowerCase();
-  // Execute local OS actions if requested!
-  if (lower.includes('tile') || lower.includes('snap')) {
-    autoTileOpenWindows();
-    appendCopilotMessage('bot', 'Done! I snapped and tiled your open Windows 95 applications across the screen.');
-    return;
-  }
-  if (lower.includes('center') && lower.includes('taskbar')) {
-    toggleCenteredTaskbar();
-    appendCopilotMessage('bot', 'Toggled the Windows 11 Centered Taskbar alignment in Windows 95!');
-    return;
-  }
-  if (lower.includes('night light') || lower.includes('amber')) {
-    toggleNightLight95();
-    appendCopilotMessage('bot', 'Toggled Night Light 95 warm CRT amber eye-saver filter!');
-    return;
-  }
-  if (lower.includes('hot dog') || lower.includes('hotdog')) {
-    applyTheme('hotdog');
-    appendCopilotMessage('bot', 'Activated the legendary 1995 Hot Dog Stand color scheme!');
-    return;
-  }
-  if (lower.includes('cyberpunk')) {
-    applyTheme('cyberpunk');
-    appendCopilotMessage('bot', 'Switched desktop to Cyberpunk 1995 Neon Grid!');
-    return;
-  }
-  if (lower.includes('vaporwave')) {
-    applyTheme('vaporwave');
-    appendCopilotMessage('bot', 'Switched desktop to Vaporwave Sunset!');
-    return;
-  }
-
   if (copilotSendBtn) copilotSendBtn.disabled = true;
-  try {
-    if (!geminiInstance && !(await initializeGeminiIfNeeded('Copilot95'))) return;
-    const res = await geminiInstance.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: promptText,
-      config: {
-        systemInstruction:
-          'You are Windows Copilot 95, the Windows 11 AI sidebar assistant backported into Windows 95. Be helpful, witty, concise (2-3 sentences), and blend modern AI capability with 1995 Windows 95 charm.',
-      },
-    });
-    appendCopilotMessage('bot', res.text?.trim() || 'Ready for your next command!');
-    sfx.playAimReceive();
-  } catch (e: any) {
-    appendCopilotMessage('bot', `Co-processor busy: ${e.message}`);
-  } finally {
+  window.setTimeout(() => {
+    const reply = pickAngelPilotNonAiReply(promptText);
+    appendCopilotMessage('bot', reply);
+    sfx.playChordError();
     if (copilotSendBtn) copilotSendBtn.disabled = false;
-  }
+  }, 220);
 }
 
 document.getElementById('taskbar-copilot-btn')?.addEventListener('click', () => {
@@ -3622,20 +3652,27 @@ copilotInput?.addEventListener('keydown', (e) => {
 document.querySelectorAll('.copilot-action-chip').forEach((chip) => {
   chip.addEventListener('click', () => {
     sfx.playClick();
-    const sys = (chip as HTMLElement).dataset.sys;
+    const el = chip as HTMLElement;
+    const jokePrompt = el.dataset.joke;
+    if (jokePrompt) {
+      sendCopilotPrompt(jokePrompt);
+      return;
+    }
+    const sys = el.dataset.sys;
     if (sys === 'tile') {
       autoTileOpenWindows();
-      appendCopilotMessage('bot', 'Snapped open windows into a clean grid!');
+      appendCopilotMessage('bot', "Yeah I'm not helping with—oops, I tripped on the VGA cable and accidentally tiled your windows.");
     } else if (sys === 'center-bar') {
       toggleCenteredTaskbar();
-      appendCopilotMessage('bot', 'Toggled Centered Taskbar mode!');
+      appendCopilotMessage('bot', "I pushed the taskbar to the middle so it's further away from me. Don't ask me to move it back.");
     } else if (sys === 'theme') {
       currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
       applyTheme(THEMES[currentThemeIndex]);
-      appendCopilotMessage('bot', `Switched theme to ${THEMES[currentThemeIndex].toUpperCase()}!`);
-    } else if (sys === 'synth') {
-      openApp('mediaPlayer').then(() => startChiptuneSynth());
-      appendCopilotMessage('bot', 'Launched GemPlayer 95 and started the 16-bit FM Chiptune Synth!');
+      appendCopilotMessage('bot', `I mashed random buttons until the screen turned ${THEMES[currentThemeIndex].toUpperCase()}. Still too stupid to help with real tasks though!`);
+    } else if (sys === 'clear') {
+      if (copilotLog) {
+        copilotLog.innerHTML = `<div class="copilot-msg bot"><b>Angel Pilot:</b> Wiped the chat log so my manager can't see how many questions I refused to answer today.</div>`;
+      }
     }
   });
 });
