@@ -3,14 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import '@tailwindcss/browser';
+import {
+  applySystemRegistryToOS,
+  getBrowserEngineMeta,
+  initAbilityToInstallApp,
+  initCmosBiosController,
+  initMasterControlPanel,
+  initMultiEngineBrowser,
+  initOsReinstallerController,
+  initRegeditApp,
+  initSysMonitorApp,
+  isAppInstalled,
+  navigateBrowserExternal,
+  openAbilityToInstallCategory,
+  openCmosBiosSetup,
+  openInstallShieldWizard,
+  openOsReinstallScreen,
+  packageCatalog,
+  registerOsBridge,
+  renderMasterSettingsCurrentTab,
+  resetIdleTimer,
+  syncBrowserChromeToEngine,
+  systemRegistry,
+} from './osExtendedApps';
 
-// --- Web Audio API Retro Windows 95 Sound Engine ---
+// --- Web Audio API Retro Windows 95 Sound Blaster 16 DSP Engine ---
 class RetroSoundEngine {
   private ctx: AudioContext | null = null;
   public enabled = true;
+  public masterVolume = 1.0;
+  public pitchMultiplier = 1.0;
+  public dacBitDepth = 16;
+  public tapeSaturation = 28;
+  public floppyMechanical = true;
 
   private getCtx(): AudioContext | null {
-    if (!this.enabled) return null;
+    if (!this.enabled || this.masterVolume <= 0.001) return null;
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) this.ctx = new AudioCtx();
@@ -27,10 +55,10 @@ class RetroSoundEngine {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(900, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.025);
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.025);
+    osc.frequency.setValueAtTime(900 * this.pitchMultiplier, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300 * this.pitchMultiplier, ctx.currentTime + 0.025);
+    gain.gain.setValueAtTime(0.05 * this.masterVolume, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.0008, ctx.currentTime + 0.025);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
@@ -46,9 +74,9 @@ class RetroSoundEngine {
       const gain = ctx.createGain();
       osc.type = 'triangle';
       const t = ctx.currentTime + idx * 0.045;
-      osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(0.06, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.frequency.setValueAtTime(freq * this.pitchMultiplier, t);
+      gain.gain.setValueAtTime(0.06 * this.masterVolume, t);
+      gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.14);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(t);
@@ -63,9 +91,9 @@ class RetroSoundEngine {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      osc.frequency.setValueAtTime(freq * this.pitchMultiplier, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05 * this.masterVolume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0008, ctx.currentTime + 0.28);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
@@ -73,15 +101,15 @@ class RetroSoundEngine {
     });
   }
 
-  private createTapeSaturationCurve(amount = 24): Float32Array {
+  private createTapeSaturationCurve(amount = 24, bitDepth = 16): Float32Array {
     const samples = 8192;
     const curve = new Float32Array(samples);
     const k = amount;
+    const quantSteps = bitDepth <= 8 ? 12 : bitDepth <= 12 ? 32 : 96;
     for (let i = 0; i < samples; i++) {
       const x = (i * 2) / samples - 1;
-      // Soft hyperbolic tangent saturation + subtle 12-bit quantization step for 1995 Sound Blaster DAC crunch
       const saturated = Math.tanh(x * (1 + k / 15));
-      curve[i] = Math.round(saturated * 64) / 64;
+      curve[i] = Math.round(saturated * quantSteps) / quantSteps;
     }
     return curve;
   }
@@ -92,9 +120,9 @@ class RetroSoundEngine {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.06, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.11);
+    osc.frequency.setValueAtTime(880 * this.pitchMultiplier, ctx.currentTime);
+    gain.gain.setValueAtTime(0.06 * this.masterVolume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0008, ctx.currentTime + 0.11);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
@@ -102,6 +130,7 @@ class RetroSoundEngine {
   }
 
   playFloppySeek() {
+    if (!this.floppyMechanical) return;
     const ctx = this.getCtx();
     if (!ctx) return;
     const steps = [0, 0.055, 0.11, 0.19, 0.25];
@@ -110,10 +139,10 @@ class RetroSoundEngine {
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
       const t = ctx.currentTime + offset;
-      osc.frequency.setValueAtTime(idx % 2 === 0 ? 135 : 168, t);
-      osc.frequency.exponentialRampToValueAtTime(55, t + 0.03);
-      gain.gain.setValueAtTime(0.045, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.032);
+      osc.frequency.setValueAtTime((idx % 2 === 0 ? 135 : 168) * this.pitchMultiplier, t);
+      osc.frequency.exponentialRampToValueAtTime(55 * this.pitchMultiplier, t + 0.03);
+      gain.gain.setValueAtTime(0.045 * this.masterVolume, t);
+      gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.032);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(t);
@@ -121,25 +150,74 @@ class RetroSoundEngine {
     });
   }
 
+  playModemHandshake() {
+    const ctx = this.getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    // Dial tone + V.90 56k dual-carrier screech + static handshake burst
+    const tones = [
+      { f: 1209, start: 0.0, dur: 0.07 },
+      { f: 1477, start: 0.09, dur: 0.07 },
+      { f: 2100, start: 0.2, dur: 0.28 },
+      { f: 1650, start: 0.5, dur: 0.22 },
+      { f: 2400, start: 0.72, dur: 0.24 },
+    ];
+    tones.forEach((tn) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(tn.f * this.pitchMultiplier, now + tn.start);
+      g.gain.setValueAtTime(0.045 * this.masterVolume, now + tn.start);
+      g.gain.exponentialRampToValueAtTime(0.0008, now + tn.start + tn.dur);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(now + tn.start);
+      osc.stop(now + tn.start + tn.dur + 0.01);
+    });
+
+    const bufLen = Math.floor(ctx.sampleRate * 0.42);
+    const nBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = nBuf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      data[i] = (Math.random() * 2 - 1) * (i % 7 < 3 ? 0.8 : 0.25);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = nBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(1850 * this.pitchMultiplier, now + 0.95);
+    bp.Q.setValueAtTime(3.2, now + 0.95);
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.04 * this.masterVolume, now + 0.95);
+    ng.gain.exponentialRampToValueAtTime(0.0008, now + 1.36);
+    src.connect(bp);
+    bp.connect(ng);
+    ng.connect(ctx.destination);
+    src.start(now + 0.95);
+    src.stop(now + 1.37);
+  }
+
   playStartupChime() {
     const ctx = this.getCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
+    const pMult = this.pitchMultiplier;
+    const vMult = this.masterVolume;
 
     // Master bus: Low-Pass Filter Swell -> Lo-Fi Tape Saturation WaveShaper -> Stereo Delay Tail -> Destination
     const lowpass = ctx.createBiquadFilter();
     lowpass.type = 'lowpass';
-    lowpass.frequency.setValueAtTime(420, now);
-    lowpass.frequency.exponentialRampToValueAtTime(2450, now + 1.35);
-    lowpass.frequency.exponentialRampToValueAtTime(880, now + 4.4);
+    lowpass.frequency.setValueAtTime(420 * pMult, now);
+    lowpass.frequency.exponentialRampToValueAtTime(2450 * pMult, now + 1.35);
+    lowpass.frequency.exponentialRampToValueAtTime(880 * pMult, now + 4.4);
     lowpass.Q.setValueAtTime(2.2, now);
 
     const shaper = ctx.createWaveShaper();
-    shaper.curve = this.createTapeSaturationCurve(28);
+    shaper.curve = this.createTapeSaturationCurve(this.tapeSaturation, this.dacBitDepth) as any;
     shaper.oversample = '2x';
 
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.75, now);
+    masterGain.gain.setValueAtTime(Math.max(0.001, 0.75 * vMult), now);
     masterGain.gain.exponentialRampToValueAtTime(0.001, now + 4.8);
 
     // Stereo Chorus / Ambient Delay Tail
@@ -152,7 +230,7 @@ class RetroSoundEngine {
     feedback.gain.setValueAtTime(0.34, now);
 
     const wetGain = ctx.createGain();
-    wetGain.gain.setValueAtTime(0.32, now);
+    wetGain.gain.setValueAtTime(0.32 * vMult, now);
 
     lowpass.connect(shaper);
     shaper.connect(masterGain);
@@ -173,12 +251,12 @@ class RetroSoundEngine {
     const output = noiseBuffer.getChannelData(0);
     let b0 = 0;
     let b1 = 0;
+    const qStep = this.dacBitDepth <= 8 ? 8 : this.dacBitDepth <= 12 ? 20 : 32;
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
       b0 = 0.99 * b0 + white * 0.08;
       b1 = 0.96 * b1 + b0 * 0.12;
-      // Quantize for authentic early-90s 16-bit Sound Blaster floor
-      output[i] = Math.round(b1 * 32) / 32;
+      output[i] = Math.round(b1 * qStep) / qStep;
     }
     const noiseNode = ctx.createBufferSource();
     noiseNode.buffer = noiseBuffer;
@@ -193,12 +271,12 @@ class RetroSoundEngine {
 
     // 2. Brian Eno-Inspired Lush Ambient Pad Voices (Eb9 / AbMaj7 / Bb resolve)
     const padVoices = [
-      { freq: 155.56, detune: -6, start: 0.0, peak: 0.09, dur: 4.1, type: 'sawtooth' as OscillatorType }, // Eb3 warm bass
-      { freq: 233.08, detune: 5, start: 0.06, peak: 0.08, dur: 4.0, type: 'triangle' as OscillatorType }, // Bb3 fifth
-      { freq: 349.23, detune: -8, start: 0.14, peak: 0.075, dur: 3.9, type: 'sine' as OscillatorType }, // F4 ninth
-      { freq: 392.0, detune: 7, start: 0.22, peak: 0.075, dur: 3.9, type: 'triangle' as OscillatorType }, // G4 third
-      { freq: 466.16, detune: -4, start: 0.32, peak: 0.07, dur: 3.8, type: 'sawtooth' as OscillatorType }, // Bb4
-      { freq: 622.25, detune: 9, start: 0.45, peak: 0.085, dur: 3.7, type: 'sine' as OscillatorType }, // Eb5 lead swell
+      { freq: 155.56, detune: -6, start: 0.0, peak: 0.09, dur: 4.1, type: 'sawtooth' as OscillatorType },
+      { freq: 233.08, detune: 5, start: 0.06, peak: 0.08, dur: 4.0, type: 'triangle' as OscillatorType },
+      { freq: 349.23, detune: -8, start: 0.14, peak: 0.075, dur: 3.9, type: 'sine' as OscillatorType },
+      { freq: 392.0, detune: 7, start: 0.22, peak: 0.075, dur: 3.9, type: 'triangle' as OscillatorType },
+      { freq: 466.16, detune: -4, start: 0.32, peak: 0.07, dur: 3.8, type: 'sawtooth' as OscillatorType },
+      { freq: 622.25, detune: 9, start: 0.45, peak: 0.085, dur: 3.7, type: 'sine' as OscillatorType },
     ];
 
     padVoices.forEach((v) => {
@@ -206,9 +284,8 @@ class RetroSoundEngine {
       const vGain = ctx.createGain();
       osc.type = v.type;
       const t = now + v.start;
-      // Subtle analog pitch drift on attack (tape wow/flutter)
-      osc.frequency.setValueAtTime(v.freq * 0.994, t);
-      osc.frequency.exponentialRampToValueAtTime(v.freq, t + 0.18);
+      osc.frequency.setValueAtTime(v.freq * pMult * 0.994, t);
+      osc.frequency.exponentialRampToValueAtTime(v.freq * pMult, t + 0.18);
       osc.detune.setValueAtTime(v.detune, t);
 
       vGain.gain.setValueAtTime(0.0008, t);
@@ -223,16 +300,16 @@ class RetroSoundEngine {
 
     // 3. Shimmering Bell Harmonics at the Crest of the Swell
     const bellNotes = [
-      { freq: 932.33, offset: 0.68, gain: 0.055 }, // Bb5
-      { freq: 1174.66, offset: 0.86, gain: 0.042 }, // D6
-      { freq: 1244.51, offset: 1.05, gain: 0.065 }, // Eb6 resolve shimmer
+      { freq: 932.33, offset: 0.68, gain: 0.055 },
+      { freq: 1174.66, offset: 0.86, gain: 0.042 },
+      { freq: 1244.51, offset: 1.05, gain: 0.065 },
     ];
     bellNotes.forEach((b) => {
       const osc = ctx.createOscillator();
       const bGain = ctx.createGain();
       osc.type = 'sine';
       const t = now + b.offset;
-      osc.frequency.setValueAtTime(b.freq, t);
+      osc.frequency.setValueAtTime(b.freq * pMult, t);
       bGain.gain.setValueAtTime(0.001, t);
       bGain.gain.linearRampToValueAtTime(b.gain, t + 0.06);
       bGain.gain.exponentialRampToValueAtTime(0.0005, t + 2.8);
@@ -251,9 +328,9 @@ class RetroSoundEngine {
       const gain = ctx.createGain();
       osc.type = 'sine';
       const t = ctx.currentTime + i * 0.07;
-      osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(0.07, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.frequency.setValueAtTime(freq * this.pitchMultiplier, t);
+      gain.gain.setValueAtTime(0.07 * this.masterVolume, t);
+      gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.12);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(t);
@@ -357,7 +434,26 @@ const virtualFileSystem: VfsItem[] = [
     parent: 'C:\\System95',
     appTarget: 'dosPrompt',
   },
+  {
+    name: 'INSTALL.EXE',
+    type: 'app',
+    parent: 'C:\\System95',
+    appTarget: 'abilityToInstall',
+  },
+  {
+    name: 'REGEDIT.EXE',
+    type: 'app',
+    parent: 'C:\\System95',
+    appTarget: 'regedit',
+  },
 ];
+
+const FACTORY_VFS_SNAPSHOT: VfsItem[] = virtualFileSystem.map((item) => ({ ...item }));
+
+function resetVfsToFactory() {
+  virtualFileSystem.length = 0;
+  FACTORY_VFS_SNAPSHOT.forEach((item) => virtualFileSystem.push({ ...item }));
+}
 
 // --- Sandbox Storage Shim for Browser Iframe ---
 const HOST_LS_PREFIX = '__ais_ls_gemini_95:';
@@ -545,7 +641,23 @@ function findIconElement(appName: string): HTMLDivElement | undefined {
   return Array.from(icons).find((icon) => icon.dataset.app === appName);
 }
 
-export async function openApp(appName: string): Promise<void> {
+export async function openApp(appName: string, bypassPkgCheck = false): Promise<void> {
+  if (!bypassPkgCheck && !isAppInstalled(appName)) {
+    if (appName === 'chrome') {
+      showOsDialog(
+        'No Web Browser is currently installed on C:\\! Launching "Ability to Install" so you can install Netscape 95, Internet Explorer 3.0, or CyberChrome 95.',
+        'Missing Browser Executable',
+      );
+      openAbilityToInstallCategory('browser');
+      return;
+    }
+    const uninstalledPkg = packageCatalog.find((p) => p.appWindowId === appName);
+    if (uninstalledPkg) {
+      openInstallShieldWizard(uninstalledPkg, 'install');
+      return;
+    }
+  }
+
   const windowElement = document.getElementById(appName) as HTMLDivElement | null;
   if (!windowElement) return;
 
@@ -555,6 +667,7 @@ export async function openApp(appName: string): Promise<void> {
     windowElement.style.display = 'flex';
     bringToFront(windowElement);
     if (appName === 'myComputer') renderExplorerFolder(currentExplorerPath);
+    if (appName === 'chrome') syncBrowserChromeToEngine();
     return;
   }
 
@@ -568,7 +681,7 @@ export async function openApp(appName: string): Promise<void> {
   let iconSrc = '';
   let title = appName;
   const iconElement = findIconElement(appName);
-  if (iconElement) {
+  if (iconElement && appName !== 'chrome') {
     const img = iconElement.querySelector('img');
     const span = iconElement.querySelector('span');
     if (img) iconSrc = img.src;
@@ -579,9 +692,23 @@ export async function openApp(appName: string): Promise<void> {
         iconSrc = 'https://storage.googleapis.com/gemini-95-icons/mycomputer.png';
         title = 'My Gemtop';
         break;
-      case 'chrome':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png';
-        title = 'Netscape 95';
+      case 'chrome': {
+        const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
+        iconSrc = meta.iconUrl;
+        title = meta.shortTitle;
+        break;
+      }
+      case 'abilityToInstall':
+        iconSrc = 'https://win98icons.alexmeub.com/icons/png/appwizard-4.png';
+        title = 'Ability to Install';
+        break;
+      case 'regedit':
+        iconSrc = 'https://win98icons.alexmeub.com/icons/png/regedit-0.png';
+        title = 'REGEDIT.EXE';
+        break;
+      case 'sysMonitor':
+        iconSrc = 'https://win98icons.alexmeub.com/icons/png/sysmon-0.png';
+        title = 'System Monitor';
         break;
       case 'notepad':
         iconSrc = 'https://storage.googleapis.com/gemini-95-icons/GemNotes.png';
@@ -615,8 +742,8 @@ export async function openApp(appName: string): Promise<void> {
         title = 'MS-DOS Prompt';
         break;
       case 'controlPanel':
-        iconSrc = 'https://win98icons.alexmeub.com/icons/png/display_properties-4.png';
-        title = 'Display & Themes';
+        iconSrc = 'https://win98icons.alexmeub.com/icons/png/settings_gear-4.png';
+        title = 'Settings & Control';
         break;
     }
   }
@@ -648,15 +775,44 @@ export async function openApp(appName: string): Promise<void> {
   if (appName === 'myComputer') {
     initMyComputer(windowElement);
   } else if (appName === 'chrome') {
-    initAiBrowser(windowElement);
+    if (!initializedApps.has('chrome')) {
+      initializedApps.add('chrome');
+      initMultiEngineBrowser(windowElement);
+    } else {
+      syncBrowserChromeToEngine();
+    }
+  } else if (appName === 'abilityToInstall') {
+    if (!initializedApps.has('abilityToInstall')) {
+      initializedApps.add('abilityToInstall');
+      initAbilityToInstallApp(windowElement);
+    }
+  } else if (appName === 'controlPanel') {
+    if (!initializedApps.has('controlPanel')) {
+      initializedApps.add('controlPanel');
+      initMasterControlPanel(windowElement);
+    } else {
+      renderMasterSettingsCurrentTab();
+    }
+  } else if (appName === 'regedit') {
+    if (!initializedApps.has('regedit')) {
+      initializedApps.add('regedit');
+      initRegeditApp(windowElement);
+    }
+  } else if (appName === 'sysMonitor') {
+    if (!initializedApps.has('sysMonitor')) {
+      initializedApps.add('sysMonitor');
+      initSysMonitorApp(windowElement);
+    }
   } else if (appName === 'notepad') {
     initNotepadStory(windowElement);
   } else if (appName === 'paint') {
     initSimplePaintApp(windowElement);
-    if (paintAssistant) paintAssistant.classList.add('visible');
+    if (paintAssistant && systemRegistry.showClippyAssistant) paintAssistant.classList.add('visible');
     if (assistantBubble) assistantBubble.textContent = 'Draw something! Click "Judge Art" anytime.';
     if (paintCritiqueIntervalId) clearInterval(paintCritiqueIntervalId);
-    paintCritiqueIntervalId = window.setInterval(critiquePaintDrawing, 20000);
+    if (systemRegistry.showClippyAssistant) {
+      paintCritiqueIntervalId = window.setInterval(critiquePaintDrawing, 20000);
+    }
   } else if (appName === 'doom' && !dosInstances['doom']) {
     const doomContainer = document.getElementById('doom-content') as HTMLDivElement;
     if (doomContainer) {
@@ -672,8 +828,6 @@ export async function openApp(appName: string): Promise<void> {
     initMediaPlayer(windowElement);
   } else if (appName === 'dosPrompt') {
     initDosPrompt(windowElement);
-  } else if (appName === 'controlPanel') {
-    initControlPanel(windowElement);
   }
 }
 
@@ -854,11 +1008,7 @@ function initMyComputer(windowElement: HTMLDivElement): void {
   });
 }
 
-// --- 2. NETSCAPE 95 (AI Time-Machine Web Browser) ---
-const browserHistory: string[] = [];
-let browserHistoryIndex = -1;
-let navigateBrowserGlobal: ((url: string, pushHistory?: boolean) => Promise<void>) | null = null;
-
+// --- 2. MULTI-ENGINE REINSTALLABLE WEB BROWSER BRIDGE ---
 window.addEventListener('message', (event: MessageEvent) => {
   const browserFrame = document.getElementById('browser-frame') as HTMLIFrameElement | null;
   if (!browserFrame || event.source !== browserFrame.contentWindow) return;
@@ -873,187 +1023,12 @@ window.addEventListener('message', (event: MessageEvent) => {
 
   if (data && data.__gemini95Navigate === true && typeof data.url === 'string') {
     let targetUrl = data.url;
-    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    if (!targetUrl.startsWith('live://') && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
       targetUrl = 'https://www.geocities.com/' + targetUrl.replace(/^\/+/, '');
     }
-    if (navigateBrowserGlobal) navigateBrowserGlobal(targetUrl, true);
+    navigateBrowserExternal(targetUrl);
   }
 });
-
-function initAiBrowser(windowElement: HTMLDivElement): void {
-  if (initializedApps.has('chrome')) return;
-  initializedApps.add('chrome');
-
-  const addressBar = windowElement.querySelector('.browser-address-bar') as HTMLInputElement;
-  const goButton = windowElement.querySelector('.browser-go-button') as HTMLButtonElement;
-  const backBtn = windowElement.querySelector('#browser-back') as HTMLButtonElement;
-  const forwardBtn = windowElement.querySelector('#browser-forward') as HTMLButtonElement;
-  const reloadBtn = windowElement.querySelector('#browser-reload') as HTMLButtonElement;
-  const homeBtn = windowElement.querySelector('#browser-home') as HTMLButtonElement;
-  const statusText = windowElement.querySelector('#browser-status-text') as HTMLSpanElement;
-  const iframe = windowElement.querySelector('#browser-frame') as HTMLIFrameElement;
-  const loadingEl = windowElement.querySelector('.browser-loading') as HTMLDivElement;
-
-  function updateNavButtons() {
-    if (backBtn) backBtn.disabled = browserHistoryIndex <= 0;
-    if (forwardBtn) forwardBtn.disabled = browserHistoryIndex >= browserHistory.length - 1;
-  }
-
-  function renderDefaultPortal() {
-    const portalHtml = `<!DOCTYPE html>
-<html>
-<head>
-<style>
-  body { background: #000044; color: #ffff00; font-family: "Courier New", monospace; text-align: center; margin: 0; padding: 16px; }
-  marquee { background: #ff00ff; color: #ffffff; font-weight: bold; padding: 4px; font-size: 14px; border: 2px ridge #00ffff; }
-  h1 { color: #00ffff; text-shadow: 2px 2px #ff00ff; margin: 12px 0 4px 0; font-size: 24px; }
-  .sub { color: #00ff00; font-size: 12px; margin-bottom: 14px; }
-  table { width: 94%; margin: 0 auto; border: 3px ridge #c0c0c0; background: #001a33; border-collapse: collapse; }
-  td { border: 2px inset #808080; padding: 10px; text-align: left; vertical-align: top; font-size: 13px; color: #ffffff; }
-  a { color: #00ffff; font-weight: bold; text-decoration: underline; cursor: pointer; }
-  a:hover { color: #ff00ff; background: #ffff00; }
-  .counter { display: inline-block; margin-top: 14px; background: #000; color: #00ff00; border: 2px inset #808080; padding: 4px 10px; font-weight: bold; letter-spacing: 3px; }
-</style>
-</head>
-<body>
-  <marquee>★ WELCOME TO THE 1996 GEOCITIES AI CYBER-PORTAL ★ CLICK ANY LINK OR TYPE ANY URL ABOVE TO GENERATE A LIVE 90s WEBSITE! ★</marquee>
-  <h1>🌐 NETSCAPE GEMINI 95 DIRECTORY</h1>
-  <div class="sub">Surfing at 28,800 bps · Yahoo! / Magellan 1996 Hotlist</div>
-  <table>
-    <tr>
-      <td width="50%">
-        <b>🚀 COOL 1996 SITES OF THE DAY</b><br><br>
-        • <a href="https://www.cybermall1996.com">CyberMall 1996 Virtual Shopping</a><br>
-        • <a href="https://www.area51-ufos-1995.org">Area 51 Declassified UFO Photos</a><br>
-        • <a href="https://www.pizzanet-95.com">PizzaNet: Order Pepperoni Over TCP/IP</a><br>
-        • <a href="https://www.nintendo-ultra64-rumors.net">Project Reality / Ultra 64 Secrets</a>
-      </td>
-      <td width="50%">
-        <b>🕹️ WEBRINGS &amp; PERSONAL HOMEPAGES</b><br><br>
-        • <a href="https://www.xfiles-mulder-truth.org">The X-Files Trust No One Shrine</a><br>
-        • <a href="https://www.90s-tamagotchi-hospital.jp">Tamagotchi Care &amp; Secret Evolutions</a><br>
-        • <a href="https://www.y2k-millennium-bug.com">Y2K Millennium Bug Survival Bunker</a><br>
-        • <a href="https://www.rad-skateboards-1995.com">X-Games 1995 Skate &amp; Rollerblade Zine</a>
-      </td>
-    </tr>
-  </table>
-  <div class="counter">VISITOR #0095421</div>
-</body>
-</html>`;
-    iframe.srcdoc = injectShimIntoHtml(portalHtml, buildHostStorageAndNavigationShimScript());
-  }
-
-  async function navigateToUrl(rawUrl: string, pushHistory = true): Promise<void> {
-    let url = rawUrl.trim();
-    if (!url) return;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url.replace(/\s+/g, '-');
-    }
-
-    let domain = url;
-    try {
-      const urlObj = new URL(url);
-      domain = urlObj.hostname + (urlObj.pathname !== '/' ? urlObj.pathname : '');
-    } catch {
-      domain = url.replace(/^https?:\/\//, '');
-    }
-
-    if (pushHistory) {
-      browserHistory.splice(browserHistoryIndex + 1);
-      browserHistory.push(url);
-      browserHistoryIndex = browserHistory.length - 1;
-      updateNavButtons();
-    }
-
-    addressBar.value = url;
-    if (statusText) statusText.textContent = `Dialing ${domain} via 28.8k modem...`;
-
-    loadingEl.innerHTML = `
-      <div style="border:2px outset #fff; background:#c0c0c0; padding:16px; max-width:340px; box-shadow:3px 3px 0 #000;">
-        <div style="background:#000080; color:#fff; font-weight:bold; padding:3px 6px; margin-bottom:10px; font-size:12px;">
-          📞 Dial-Up Networking — 28,800 bps
-        </div>
-        <p style="margin:6px 0; font-size:12px; color:#000;">Connecting to host: <b>${domain.replace(/[<>&"]/g, '')}</b></p>
-        <p style="margin:4px 0; font-size:11px; color:#333;">Synthesizing 1996 HTML3.2 tables, marquees &amp; retro SVG art...</p>
-      </div>
-    `;
-    loadingEl.style.display = 'flex';
-    sfx.playWindowOpen();
-
-    try {
-      if (!geminiInstance) {
-        const ok = await initializeGeminiIfNeeded('initAiBrowser');
-        if (!ok) {
-          loadingEl.style.display = 'none';
-          return;
-        }
-      }
-
-      const websitePrompt = `Create a complete, self-contained, gloriously authentic 1996 GeoCities / Web 1.0 HTML webpage for the URL "${url}" (topic/domain: "${domain}").
-Requirements:
-- Return ONLY raw valid HTML starting with <!DOCTYPE html> (no markdown code fences).
-- Include vivid 1990s web design: high-contrast patterned or starry/neon styling, HTML tables with ridge/outset borders, <marquee>, retro badges, a visitor hit counter, a fake 1996 guestbook or interactive poll with working inline JS buttons, and 4-6 clickable <a href="https://..."> links to fun related 90s pages.
-- Include at least 2 rich custom inline <svg> retro pixel-art / vector illustrations directly in the page that match "${domain}".
-- Make the writing funny, nostalgic, and packed with 1995-1996 internet culture.`;
-
-      const result = await geminiInstance.models.generateContent({
-        model: 'gemini-4-hydrogen',
-        contents: websitePrompt,
-      });
-
-      let htmlContent = (result.text || '').replace(/```html|```/gi, '').trim();
-      if (!htmlContent.toLowerCase().includes('<html')) {
-        htmlContent = `<!DOCTYPE html><html><head><title>${domain}</title></head><body style="background:#000033;color:#00ff00;font-family:monospace;padding:16px;"><marquee>Welcome to ${domain}</marquee><h1>${domain}</h1><div>${htmlContent}</div></body></html>`;
-      }
-
-      htmlContent = injectShimIntoHtml(htmlContent, buildHostStorageAndNavigationShimScript());
-      iframe.srcdoc = htmlContent;
-      if (statusText) statusText.textContent = `Document: Done (${domain})`;
-    } catch (e: any) {
-      const safeMsg = String(e?.message || e || 'Unknown error').replace(/[<>&]/g, '');
-      iframe.srcdoc = `<html><body style="font-family:monospace;background:#c0c0c0;padding:20px;"><h2>Netscape 95 Error</h2><p>${safeMsg}</p></body></html>`;
-      if (statusText) statusText.textContent = 'Error loading page.';
-    } finally {
-      loadingEl.style.display = 'none';
-    }
-  }
-
-  navigateBrowserGlobal = navigateToUrl;
-
-  goButton.addEventListener('click', () => navigateToUrl(addressBar.value, true));
-  addressBar.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') navigateToUrl(addressBar.value, true);
-  });
-  backBtn?.addEventListener('click', () => {
-    if (browserHistoryIndex > 0) {
-      browserHistoryIndex--;
-      updateNavButtons();
-      navigateToUrl(browserHistory[browserHistoryIndex], false);
-    }
-  });
-  forwardBtn?.addEventListener('click', () => {
-    if (browserHistoryIndex < browserHistory.length - 1) {
-      browserHistoryIndex++;
-      updateNavButtons();
-      navigateToUrl(browserHistory[browserHistoryIndex], false);
-    }
-  });
-  reloadBtn?.addEventListener('click', () => navigateToUrl(addressBar.value, false));
-  homeBtn?.addEventListener('click', () => {
-    sfx.playClick();
-    renderDefaultPortal();
-    if (statusText) statusText.textContent = 'Loaded GeoCities 1996 Home Portal.';
-  });
-
-  windowElement.querySelectorAll('.bookmark-chip').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const targetUrl = (btn as HTMLElement).dataset.url;
-      if (targetUrl) navigateToUrl(targetUrl, true);
-    });
-  });
-
-  renderDefaultPortal();
-}
 
 // --- 3. GEMNOTES (AI Retro Word Processor) ---
 function initNotepadStory(windowElement: HTMLDivElement): void {
@@ -2302,12 +2277,17 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine(
         'Available Built-In Commands:\n' +
           '  DIR       List files in C:\\ Virtual File System\n' +
-          '  SYSINFO   Show 1995 Pentium & AI Co-Processor specs\n' +
+          '  SYSINFO   Show live CPU, RAM, Audio & Modem hardware specs\n' +
+          '  INSTALL   Launch Ability to Install (INSTALL.EXE Wizard)\n' +
+          '  SETUP     Launch Full Blue-Screen OS Reinstaller (SETUP.EXE)\n' +
+          '  SETTINGS  Open 8-Tab Master Settings & Control Panel\n' +
+          '  REGEDIT   Open Live Registry Editor (REGEDIT.EXE)\n' +
+          '  BIOS      Enter Award CMOS BIOS Setup Utility\n' +
           '  MATRIX    Toggle falling Matrix phosphor code rain\n' +
           '  COLOR     Cycle Green / Amber / White CRT phosphor\n' +
           '  CLS       Clear terminal screen\n' +
           '  CHIME     Play Windows 95 Startup Synth Chime\n' +
-          '  OPEN <app> Launch app (NETSCAPE, PAINT, NOTES, AIM, SWEEPER)\n' +
+          '  OPEN <app> Launch app (BROWSER, INSTALL, SETTINGS, REGEDIT, PAINT, NOTES, AIM)\n' +
           '  * Or type ANY question/prompt to query the Gemini 95 AI DOS Kernel!',
       );
       return;
@@ -2317,7 +2297,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       return;
     }
     if (upper === 'DIR') {
-      appendLine(' Volume in drive C is GEMINI_95\n Directory of C:\\\n');
+      appendLine(` Volume in drive C is GEMINI_95 (${systemRegistry.fileSystemFormat})\n Directory of C:\\\n`);
       virtualFileSystem.forEach((f) => {
         const tag = f.type === 'folder' ? '<DIR>     ' : '     4,096';
         appendLine(`  ${f.name.padEnd(20)} ${tag}  ${f.parent}`);
@@ -2327,12 +2307,37 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'SYSINFO' || upper === 'VER') {
       appendLine(
-        'OS:         Remix Gemini 95 (4.00.950 B)\n' +
-          'CPU:        Intel Pentium 133MHz + Gemini-4-Hydrogen Neural Overdrive\n' +
-          'Memory:     64,000K Extended RAM (HIMEM.SYS loaded)\n' +
-          'Audio:      Sound Blaster 16 WebAudio Synth (IRQ 5, DMA 1)\n' +
-          'Modem:      U.S. Robotics 56k Sportster Voice/Fax',
+        `OS:         Remix Gemini 95 (4.00.950 B · ${systemRegistry.fileSystemFormat})\n` +
+          `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} + Gemini-4-Hydrogen\n` +
+          `Memory:     ${(systemRegistry.installedRamMB * 1024).toLocaleString()}K Extended RAM (${systemRegistry.virtualSwapMB}MB Swap)\n` +
+          `Audio:      Sound Blaster 16 DSP (${systemRegistry.dacBitDepth}-bit DAC, Vol ${systemRegistry.masterVolume}%)\n` +
+          `Modem:      U.S. Robotics ${systemRegistry.modemBaudRate.toLocaleString()} bps · Browser: ${systemRegistry.defaultBrowserEngine.toUpperCase()}`,
       );
+      return;
+    }
+    if (upper === 'INSTALL' || upper === 'INSTALL.EXE') {
+      openApp('abilityToInstall', true);
+      appendLine('Launching C:\\System95\\INSTALL.EXE (Ability to Install)...');
+      return;
+    }
+    if (upper === 'SETUP' || upper === 'SETUP.EXE' || upper === 'FORMAT C:') {
+      openOsReinstallScreen();
+      appendLine('Launching Gemini 95 OS Setup & Reinstallation Utility...');
+      return;
+    }
+    if (upper === 'SETTINGS' || upper === 'CONTROL' || upper === 'CONTROL.EXE') {
+      openApp('controlPanel', true);
+      appendLine('Opening Master Settings & Control Panel...');
+      return;
+    }
+    if (upper === 'REGEDIT' || upper === 'REGEDIT.EXE') {
+      openApp('regedit');
+      appendLine('Launching Registry Editor (REGEDIT.EXE)...');
+      return;
+    }
+    if (upper === 'BIOS' || upper === 'CMOS') {
+      openCmosBiosSetup();
+      appendLine('Entering Award CMOS BIOS Setup Utility...');
       return;
     }
     if (upper === 'MATRIX') {
@@ -2362,7 +2367,13 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const target = upper.replace('OPEN ', '').trim();
       const map: Record<string, string> = {
         NETSCAPE: 'chrome',
+        BROWSER: 'chrome',
         CHROME: 'chrome',
+        IE: 'chrome',
+        INSTALL: 'abilityToInstall',
+        SETTINGS: 'controlPanel',
+        REGEDIT: 'regedit',
+        SYSMON: 'sysMonitor',
         PAINT: 'paint',
         NOTES: 'notepad',
         AIM: 'gemini',
@@ -2414,46 +2425,15 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
   });
 }
 
-// --- 11. CONTROL PANEL / DISPLAY & THEMES ---
-const THEMES = ['standard', 'hotdog', 'cyberpunk', 'vaporwave', 'matrix'];
+// --- 11. THEME HELPERS (Backed by Master SystemRegistry) ---
+const THEMES = ['standard', 'hotdog', 'cyberpunk', 'vaporwave', 'matrix', 'win31', 'highcontrast'] as const;
 let currentThemeIndex = 0;
 
 function applyTheme(themeName: string) {
-  document.body.classList.remove('theme-hotdog', 'theme-cyberpunk', 'theme-vaporwave', 'theme-matrix');
-  if (themeName !== 'standard') {
-    document.body.classList.add(`theme-${themeName}`);
-  }
-  document.querySelectorAll('.theme-select-btn').forEach((btn) => {
-    btn.classList.toggle('active', (btn as HTMLElement).dataset.theme === themeName);
-  });
-}
-
-function initControlPanel(windowElement: HTMLDivElement): void {
-  if (initializedApps.has('controlPanel')) return;
-  initializedApps.add('controlPanel');
-
-  windowElement.querySelectorAll('.theme-select-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      sfx.playClick();
-      const t = (btn as HTMLElement).dataset.theme || 'standard';
-      currentThemeIndex = Math.max(0, THEMES.indexOf(t));
-      applyTheme(t);
-    });
-  });
-
-  const crtCheck = windowElement.querySelector('#cp-crt-toggle') as HTMLInputElement;
-  const sfxCheck = windowElement.querySelector('#cp-sfx-toggle') as HTMLInputElement;
-
-  crtCheck?.addEventListener('change', () => {
-    document.body.classList.toggle('crt-enabled', crtCheck.checked);
-  });
-
-  sfxCheck?.addEventListener('change', () => {
-    sfx.enabled = sfxCheck.checked;
-    const traySound = document.getElementById('tray-sound-btn');
-    if (traySound) traySound.textContent = sfx.enabled ? '🔊' : '🔇';
-    if (sfx.enabled) sfx.playClick();
-  });
+  systemRegistry.useCustomColors = false;
+  systemRegistry.themePreset = themeName as any;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 }
 
 // --- Desktop Interactions, Selection Marquee, Context Menu & Taskbar ---
@@ -2462,10 +2442,25 @@ icons.forEach((icon) => {
     e.stopPropagation();
     icons.forEach((i) => i.classList.remove('selected'));
     icon.classList.add('selected');
-    const appName = icon.getAttribute('data-app');
-    if (appName) {
-      openApp(appName);
-      startMenu.classList.remove('active');
+    if (!systemRegistry.doubleClickIcons) {
+      const appName = icon.getAttribute('data-app');
+      if (appName) {
+        openApp(appName);
+        startMenu.classList.remove('active');
+      }
+    } else {
+      sfx.playClick();
+    }
+  });
+
+  icon.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    if (systemRegistry.doubleClickIcons) {
+      const appName = icon.getAttribute('data-app');
+      if (appName) {
+        openApp(appName);
+        startMenu.classList.remove('active');
+      }
     }
   });
 });
@@ -2481,6 +2476,11 @@ document.querySelectorAll('.start-menu-item').forEach((item) => {
 document.getElementById('start-sound-chime')?.addEventListener('click', () => {
   sfx.playStartupChime();
   startMenu.classList.remove('active');
+});
+
+document.getElementById('start-os-reinstall')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openOsReinstallScreen();
 });
 
 startButton.addEventListener('click', (e) => {
@@ -2502,34 +2502,38 @@ document.getElementById('show-desktop-btn')?.addEventListener('click', () => {
 // Tray buttons & Live Clock
 document.getElementById('tray-crt-btn')?.addEventListener('click', () => {
   sfx.playClick();
-  const enabled = document.body.classList.toggle('crt-enabled');
-  const crtCheck = document.getElementById('cp-crt-toggle') as HTMLInputElement | null;
-  if (crtCheck) crtCheck.checked = enabled;
+  systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 });
 
 document.getElementById('tray-sound-btn')?.addEventListener('click', () => {
-  sfx.enabled = !sfx.enabled;
-  const btn = document.getElementById('tray-sound-btn');
-  if (btn) btn.textContent = sfx.enabled ? '🔊' : '🔇';
-  const sfxCheck = document.getElementById('cp-sfx-toggle') as HTMLInputElement | null;
-  if (sfxCheck) sfxCheck.checked = sfx.enabled;
+  systemRegistry.audioEnabled = !systemRegistry.audioEnabled;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
   if (sfx.enabled) sfx.playClick();
 });
 
 function updateClock() {
   const clockEl = document.getElementById('tray-clock');
   if (clockEl) {
-    clockEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    clockEl.textContent = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: systemRegistry.clockShowSeconds ? '2-digit' : undefined,
+      hour12: !systemRegistry.clock24Hour,
+    });
   }
 }
 updateClock();
-setInterval(updateClock, 10000);
+setInterval(updateClock, 1000);
 
 // Sticky note dismiss
 document.getElementById('sticky-close')?.addEventListener('click', () => {
   sfx.playClick();
-  const sticky = document.getElementById('desktop-welcome');
-  if (sticky) sticky.style.display = 'none';
+  systemRegistry.showWelcomeSticky = false;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 });
 
 // Right-Click Desktop Context Menu
@@ -2539,8 +2543,8 @@ desktop.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   if (!contextMenu) return;
   contextMenu.style.display = 'block';
-  contextMenu.style.left = `${Math.min(e.clientX, window.innerWidth - 210)}px`;
-  contextMenu.style.top = `${Math.min(e.clientY, window.innerHeight - 220)}px`;
+  contextMenu.style.left = `${Math.min(e.clientX, window.innerWidth - 220)}px`;
+  contextMenu.style.top = `${Math.min(e.clientY, window.innerHeight - 250)}px`;
 });
 
 contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
@@ -2548,15 +2552,19 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     sfx.playClick();
     const action = (item as HTMLElement).dataset.action;
     contextMenu.style.display = 'none';
-    if (action === 'open-dos') openApp('dosPrompt');
+    if (action === 'open-installer') openApp('abilityToInstall', true);
+    else if (action === 'open-regedit') openApp('regedit');
+    else if (action === 'open-dos') openApp('dosPrompt');
     else if (action === 'new-note') openApp('notepad');
     else if (action === 'open-paint') openApp('paint');
-    else if (action === 'open-display') openApp('controlPanel');
+    else if (action === 'open-display') openApp('controlPanel', true);
     else if (action === 'cycle-theme') {
       currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
       applyTheme(THEMES[currentThemeIndex]);
     } else if (action === 'toggle-crt') {
-      document.body.classList.toggle('crt-enabled');
+      systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
+      applySystemRegistryToOS();
+      renderMasterSettingsCurrentTab();
     } else if (action === 'toggle-sfx') {
       document.getElementById('tray-sound-btn')?.click();
     }
@@ -2724,45 +2732,55 @@ function finishBootToDesktop() {
 
 function startBootWithAudio() {
   if (bootState !== 'bios') return;
+  if (systemRegistry.biosBootOrder === 'CDROM_C_A') {
+    openOsReinstallScreen();
+    return;
+  }
   bootState = 'post_running';
   clearBootTimers();
 
-  // Ensure sound is enabled and play hardware POST beep + floppy seek
-  sfx.enabled = true;
-  const traySound = document.getElementById('tray-sound-btn');
-  if (traySound) traySound.textContent = '🔊';
-  sfx.playPostBeep();
+  if (systemRegistry.audioEnabled) {
+    sfx.enabled = true;
+    sfx.playPostBeep();
+  }
 
   if (biosStatusLine) {
     biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOTING GEMINI 95...';
   }
 
-  // Rapid RAM check counter animation
-  let ram = 16384;
-  const ramStep = () => {
-    ram = Math.min(65536, ram + 16384);
-    if (biosRamCounter) biosRamCounter.textContent = `${ram}K OK`;
-    if (ram < 65536) {
-      bootTimeouts.push(window.setTimeout(ramStep, 90));
-    }
-  };
-  if (biosRamCounter) biosRamCounter.textContent = '16384K';
-  bootTimeouts.push(window.setTimeout(ramStep, 90));
-  bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
+  const maxRamKb = systemRegistry.installedRamMB * 1024;
+  if (systemRegistry.biosQuickPost) {
+    if (biosRamCounter) biosRamCounter.textContent = `${maxRamKb}K OK (QUICK POST)`;
+  } else {
+    let ram = Math.min(16384, maxRamKb);
+    const stepInc = Math.max(8192, Math.floor(maxRamKb / 4));
+    const ramStep = () => {
+      ram = Math.min(maxRamKb, ram + stepInc);
+      if (biosRamCounter) biosRamCounter.textContent = `${ram}K OK`;
+      if (ram < maxRamKb) {
+        bootTimeouts.push(window.setTimeout(ramStep, 90));
+      }
+    };
+    if (biosRamCounter) biosRamCounter.textContent = `${ram}K`;
+    bootTimeouts.push(window.setTimeout(ramStep, 90));
+    bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
+  }
 
   // Transition to Stage 2: Windows 95 Cloud Splash + Lo-Fi Eno Synth Chime
+  const postDelay = systemRegistry.biosQuickPost ? 220 : 650;
   const splashTimer = window.setTimeout(() => {
     bootState = 'splash';
     if (bootBiosStage) bootBiosStage.style.display = 'none';
     if (bootSplashStage) bootSplashStage.style.display = 'flex';
-    sfx.playStartupChime();
+    if (systemRegistry.biosBootAudio) {
+      sfx.playStartupChime();
+    }
 
-    // Reveal desktop as the warm Eno chime tail settles
     const completeTimer = window.setTimeout(() => {
       finishBootToDesktop();
-    }, 3400);
+    }, systemRegistry.biosQuickPost ? 1800 : 3400);
     bootTimeouts.push(completeTimer);
-  }, 650);
+  }, postDelay);
   bootTimeouts.push(splashTimer);
 }
 
@@ -2770,9 +2788,9 @@ function rebootGemini95() {
   clearBootTimers();
   startMenu.classList.remove('active');
   bootState = 'bios';
-  if (biosRamCounter) biosRamCounter.textContent = '65536K OK';
+  applySystemRegistryToOS(true);
   if (biosStatusLine) {
-    biosStatusLine.textContent = 'SYSTEM READY — CLICK BELOW OR PRESS [ENTER] TO POWER ON & PLAY STARTUP AUDIO';
+    biosStatusLine.textContent = 'SYSTEM READY — CLICK BELOW OR PRESS [ENTER] TO POWER ON, OR [DEL] FOR CMOS SETUP';
   }
   if (bootBiosStage) bootBiosStage.style.display = 'flex';
   if (bootSplashStage) bootSplashStage.style.display = 'none';
@@ -2802,8 +2820,15 @@ document.getElementById('start-reboot-os')?.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
+  const cmosOpen = document.getElementById('cmos-bios-screen')?.style.display === 'flex';
+  const setupOpen = document.getElementById('os-reinstall-screen')?.style.display === 'flex';
+  if (cmosOpen || setupOpen) return;
+
   if (bootState === 'bios') {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Delete' || e.key === 'F2') {
+      e.preventDefault();
+      openCmosBiosSetup();
+    } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       startBootWithAudio();
     } else if (e.key === 'Escape') {
@@ -2952,18 +2977,25 @@ windows.forEach((winEl) => {
   const maxBtn = winEl.querySelector('.window-maximize') as HTMLElement | null;
   if (!maxBtn || !snapFlyout) return;
 
+  let snapShowTimer: number | null = null;
+
   maxBtn.addEventListener('mouseenter', () => {
+    if (!systemRegistry.snapLayoutsEnabled) return;
     if (snapHideTimer) clearTimeout(snapHideTimer);
-    snapTargetWindow = winEl;
-    const rect = maxBtn.getBoundingClientRect();
-    const leftPos = Math.min(window.innerWidth - 260, Math.max(8, rect.right - 220));
-    const topPos = Math.min(window.innerHeight - 160, rect.bottom + 4);
-    snapFlyout.style.left = `${leftPos}px`;
-    snapFlyout.style.top = `${topPos}px`;
-    snapFlyout.style.display = 'block';
+    if (snapShowTimer) clearTimeout(snapShowTimer);
+    snapShowTimer = window.setTimeout(() => {
+      snapTargetWindow = winEl;
+      const rect = maxBtn.getBoundingClientRect();
+      const leftPos = Math.min(window.innerWidth - 260, Math.max(8, rect.right - 220));
+      const topPos = Math.min(window.innerHeight - 160, rect.bottom + 4);
+      snapFlyout.style.left = `${leftPos}px`;
+      snapFlyout.style.top = `${topPos}px`;
+      snapFlyout.style.display = 'block';
+    }, systemRegistry.snapHoverDelayMs);
   });
 
   maxBtn.addEventListener('mouseleave', () => {
+    if (snapShowTimer) clearTimeout(snapShowTimer);
     snapHideTimer = window.setTimeout(() => {
       if (snapFlyout) snapFlyout.style.display = 'none';
     }, 280);
@@ -3215,16 +3247,21 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '💿 Ability to Install (InstallShield 95 & OS Reinstaller)', kind: 'System Installer', action: () => openApp('abilityToInstall', true) },
+  { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
+  { label: '🗂️ REGEDIT.EXE (Live Windows 95 Registry Editor)', kind: 'System Utility', action: () => openApp('regedit') },
+  { label: '📊 System Resource Monitor (SYSMON.EXE)', kind: 'System Utility', action: () => openApp('sysMonitor') },
+  { label: '🌐 Multi-Engine Web Browser (Netscape / IE 3.0 / CyberChrome)', kind: 'Application', action: () => openApp('chrome') },
   { label: '💻 My Gemtop (C:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
-  { label: '🌐 Netscape 95 (1996 Time-Machine Web Browser)', kind: 'Application', action: () => openApp('chrome') },
   { label: '💬 Gemini AIM (1995 Instant Messenger)', kind: 'Application', action: () => openApp('gemini') },
   { label: '📝 GemNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
   { label: '🎨 GemPaint 95 (Pixel Studio & AI Critic)', kind: 'Application', action: () => openApp('paint') },
   { label: '💣 GemSweeper Deluxe (Minesweeper + AI Advisor)', kind: 'Application', action: () => openApp('minesweeper') },
   { label: '🎹 GemPlayer 95 (16-Bit Chiptune Synth & Retro TV)', kind: 'Application', action: () => openApp('mediaPlayer') },
   { label: '📟 MS-DOS Prompt (COMMAND.COM + AI Kernel)', kind: 'Application', action: () => openApp('dosPrompt') },
-  { label: '⚙️ Display & Themes Control Panel', kind: 'System Setting', action: () => openApp('controlPanel') },
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
+  { label: '🔧 Award CMOS BIOS Setup Utility', kind: 'Firmware', action: () => openCmosBiosSetup() },
+  { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
   { label: '🎯 Toggle Centered Taskbar (Windows 11 Mode)', kind: 'Win11 Feature', action: () => toggleCenteredTaskbar() },
   { label: '⊞ Auto-Tile All Open Windows (Snap Grid)', kind: 'Win11 Feature', action: () => autoTileOpenWindows() },
   { label: '🌙 Toggle Night Light 95 (Warm CRT Filter)', kind: 'Win11 Feature', action: () => toggleNightLight95() },
@@ -3409,14 +3446,16 @@ document.querySelectorAll('.copilot-action-chip').forEach((chip) => {
 // --- 6. QUICK SETTINGS & ACTION CENTER 95 ---
 function toggleCenteredTaskbar() {
   sfx.playClick();
-  const isCentered = taskbarEl?.classList.toggle('centered-taskbar');
-  document.getElementById('qs-tile-center-taskbar')?.classList.toggle('active', Boolean(isCentered));
+  systemRegistry.taskbarCentered = !systemRegistry.taskbarCentered;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 }
 
 function toggleNightLight95() {
   sfx.playClick();
-  const isNight = document.body.classList.toggle('night-light-active');
-  document.getElementById('qs-tile-nightlight')?.classList.toggle('active', isNight);
+  systemRegistry.nightLightEnabled = !systemRegistry.nightLightEnabled;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 }
 
 document.getElementById('tray-qs-btn')?.addEventListener('click', (e) => {
@@ -3438,19 +3477,18 @@ document.getElementById('qs-close-btn')?.addEventListener('click', () => {
 });
 
 document.getElementById('qs-tile-dialup')?.addEventListener('click', (e) => {
-  sfx.playClick();
+  sfx.playModemHandshake();
   (e.currentTarget as HTMLElement).classList.toggle('active');
 });
 
 document.getElementById('qs-tile-center-taskbar')?.addEventListener('click', toggleCenteredTaskbar);
 document.getElementById('qs-tile-nightlight')?.addEventListener('click', toggleNightLight95);
 
-document.getElementById('qs-tile-crt')?.addEventListener('click', (e) => {
+document.getElementById('qs-tile-crt')?.addEventListener('click', () => {
   sfx.playClick();
-  const enabled = document.body.classList.toggle('crt-enabled');
-  (e.currentTarget as HTMLElement).classList.toggle('active', enabled);
-  const crtCheck = document.getElementById('cp-crt-toggle') as HTMLInputElement | null;
-  if (crtCheck) crtCheck.checked = enabled;
+  systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 });
 
 document.getElementById('qs-tile-audio')?.addEventListener('click', (e) => {
@@ -3465,12 +3503,13 @@ document.getElementById('qs-tile-tilewin')?.addEventListener('click', () => {
 
 const brightnessSlider = document.getElementById('qs-brightness-slider') as HTMLInputElement | null;
 brightnessSlider?.addEventListener('input', () => {
-  desktop.style.filter = `brightness(${brightnessSlider.value}%)`;
+  systemRegistry.brightness = Number(brightnessSlider.value) || 100;
+  applySystemRegistryToOS();
 });
 
 document.getElementById('qs-open-themes-btn')?.addEventListener('click', () => {
   if (quickSettings) quickSettings.style.display = 'none';
-  openApp('controlPanel');
+  openApp('controlPanel', true);
 });
 
 document.addEventListener('click', (e) => {
@@ -3509,4 +3548,33 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ==================== BOOTSTRAP OS BRIDGE, BIOS, REINSTALLER & LIVE REGISTRY ====================
+registerOsBridge({
+  openApp,
+  closeApp,
+  showOsDialog,
+  rebootGemini95,
+  updateClock,
+  getGeminiInstance: async (context: string) => {
+    const ok = await initializeGeminiIfNeeded(context);
+    return ok ? geminiInstance : null;
+  },
+  injectShimIntoHtml: (rawHtml: string) => injectShimIntoHtml(rawHtml, buildHostStorageAndNavigationShimScript()),
+  addVfsFile: (name, type, parent, content, appTarget) => {
+    virtualFileSystem.push({ name, type, parent, content, appTarget });
+  },
+  getVfsFiles: () => virtualFileSystem,
+  resetVfsToFactory,
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  sfx,
+});
 
+initCmosBiosController();
+initOsReinstallerController();
+applySystemRegistryToOS(true);
+resetIdleTimer();
+
+window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
+window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });

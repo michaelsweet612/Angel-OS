@@ -54,12 +54,12 @@
         </div>
 
         <div class="bios-diagnostics">
-          <div>Main Processor : <span style="color: #fff">Intel Pentium(R) 133MHz + Gemini Neural Co-Processor</span></div>
+          <div>Main Processor : <span id="bios-cpu-label" style="color: #fff">Intel Pentium(R) 133MHz + Gemini Neural Co-Processor</span></div>
           <div>Memory Test : <span id="bios-ram-counter" class="tabular-nums" style="color: #ffff55">65536K OK</span></div>
           <div id="bios-drives-list" class="bios-drives-list">
             <div>Award Plug and Play BIOS Extension v1.0A</div>
-            <div>Detecting Primary Master ... <span style="color: #fff">QUANTUM FIREBALL 1995MB</span></div>
-            <div>Detecting Primary Slave  ... <span style="color: #fff">CREATIVE CD-ROM 8X</span></div>
+            <div>Detecting Primary Master ... <span style="color: #fff">QUANTUM FIREBALL 1995MB (<span id="bios-fs-label">FAT16</span>)</span></div>
+            <div>Detecting Primary Slave  ... <span style="color: #fff">CREATIVE CD-ROM 8X [GEMINI95_SETUP_DISC]</span></div>
             <div>Sound Blaster 16 ASP DSP v4.13 Initialized (Port 220h, IRQ 5, DMA 1)</div>
           </div>
         </div>
@@ -72,6 +72,12 @@
             <button id="boot-power-btn" class="boot-power-btn">
               ▶ Power On &amp; Boot Gemini 95 (Lo-Fi Synth Audio)
             </button>
+            <button id="boot-cmos-btn" class="boot-skip-btn" style="color: #ffff55; border-color: #ffff55">
+              ⚙️ CMOS BIOS Setup [DEL]
+            </button>
+            <button id="boot-os-setup-btn" class="boot-skip-btn" style="color: #00ffff; border-color: #00ffff">
+              💿 Boot CD-ROM (OS Setup)
+            </button>
             <button id="boot-skip-btn" class="boot-skip-btn">
               Skip Boot (Silent)
             </button>
@@ -79,7 +85,7 @@
         </div>
 
         <div class="bios-footer">
-          <span>Press <b>ENTER</b> to Boot with Audio · <b>ESC</b> to Skip</span>
+          <span>Press <b>ENTER</b> to Boot · <b>DEL</b> for CMOS BIOS Setup · <b>ESC</b> to Skip</span>
           <span>11/17/95-i430FX-2A59CG09C-00</span>
         </div>
       </div>
@@ -108,6 +114,169 @@
       </div>
     </div>
 
+    <!-- AWARD CMOS BIOS SETUP UTILITY OVERLAY -->
+    <div id="cmos-bios-screen" class="cmos-bios-screen" style="display: none">
+      <div class="cmos-header">
+        <div>ROM PCI/ISA BIOS (2A59CG09)</div>
+        <div>CMOS SETUP UTILITY — AWARD SOFTWARE, INC. (1995)</div>
+      </div>
+      <div class="cmos-grid-frame">
+        <div class="cmos-col">
+          <div class="cmos-section-title">STANDARD &amp; ADVANCED BIOS FEATURES</div>
+          <div class="cmos-row">
+            <span>CPU Clock / Architecture</span>
+            <select id="cmos-cpu-select" class="cmos-select">
+              <option value="Intel 486DX2 66MHz">Intel 486DX2 66MHz</option>
+              <option value="Intel Pentium 133MHz">Intel Pentium 133MHz</option>
+              <option value="Intel Pentium MMX 233MHz">Intel Pentium MMX 233MHz</option>
+              <option value="Intel Pentium II 400MHz">Intel Pentium II 400MHz</option>
+            </select>
+          </div>
+          <div class="cmos-row">
+            <span>Front-Panel Hardware Turbo</span>
+            <button id="cmos-turbo-btn" class="cmos-toggle-btn">ENABLED</button>
+          </div>
+          <div class="cmos-row">
+            <span>Installed EDO DRAM Bank</span>
+            <select id="cmos-ram-select" class="cmos-select">
+              <option value="16">16 MB SIMM (16384K)</option>
+              <option value="32">32 MB SIMM (32768K)</option>
+              <option value="64">64 MB EDO (65536K)</option>
+              <option value="128">128 MB SDRAM (131072K)</option>
+              <option value="256">256 MB Workstation</option>
+            </select>
+          </div>
+          <div class="cmos-row">
+            <span>Quick Power On Self Test</span>
+            <button id="cmos-quickpost-btn" class="cmos-toggle-btn">ENABLED</button>
+          </div>
+          <div class="cmos-row">
+            <span>Boot Device Sequence</span>
+            <select id="cmos-bootorder-select" class="cmos-select">
+              <option value="C_A_CDROM">C, A, CDROM (Normal HDD)</option>
+              <option value="A_C_CDROM">A, C, CDROM (Floppy Seek)</option>
+              <option value="CDROM_C_A">CDROM, C, A (Launch OS Setup!)</option>
+            </select>
+          </div>
+        </div>
+        <div class="cmos-col">
+          <div class="cmos-section-title">INTEGRATED PERIPHERALS &amp; DSP</div>
+          <div class="cmos-row">
+            <span>Onboard Sound Blaster 16 DSP</span>
+            <button id="cmos-audio-btn" class="cmos-toggle-btn">ENABLED</button>
+          </div>
+          <div class="cmos-row">
+            <span>Boot Lo-Fi Eno Startup Chime</span>
+            <button id="cmos-bootchime-btn" class="cmos-toggle-btn">ENABLED</button>
+          </div>
+          <div class="cmos-row">
+            <span>CRT Hardware Scanline Generator</span>
+            <button id="cmos-crt-btn" class="cmos-toggle-btn">ENABLED</button>
+          </div>
+          <div class="cmos-row">
+            <span>Primary IDE File System</span>
+            <select id="cmos-fs-select" class="cmos-select">
+              <option value="FAT16">FAT16 (1995 Classic)</option>
+              <option value="FAT32">FAT32 (OSR2 Extended)</option>
+            </select>
+          </div>
+          <div class="cmos-help-box">
+            <b>ITEM HELP:</b><br />
+            Changes made in CMOS Setup write directly to <code>HKEY_LOCAL_MACHINE\Hardware\BIOS</code> and synchronize immediately with the Windows 95 Master Settings Control Panel. Set Boot Sequence to <b>CDROM, C, A</b> or click <b>Launch OS Reinstaller</b> to reinstall Gemini 95!
+          </div>
+        </div>
+      </div>
+      <div class="cmos-footer-actions">
+        <button id="cmos-save-exit-btn" class="cmos-action-btn primary">F10: Save to CMOS &amp; Reboot</button>
+        <button id="cmos-os-setup-btn" class="cmos-action-btn">💿 Boot CD-ROM (OS Reinstall)</button>
+        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Load BIOS Defaults</button>
+        <button id="cmos-cancel-btn" class="cmos-action-btn">ESC: Exit Without Reboot</button>
+      </div>
+    </div>
+
+    <!-- FULL BLUE-SCREEN OS REINSTALLER (GEMINI 95 SETUP.EXE) -->
+    <div id="os-reinstall-screen" class="os-reinstall-screen" style="display: none">
+      <div class="os-setup-top-banner">Gemini 95 Operating System Setup (SETUP.EXE)</div>
+      <div class="os-setup-center-dialog" id="os-setup-step-select">
+        <div class="os-setup-dialog-title">Welcome to Gemini 95 Setup &amp; Recovery</div>
+        <p class="os-setup-lead">
+          Setup will reinstall or repair the Gemini 95 Operating System on drive <b>C:\ (QUANTUM FIREBALL 1995MB)</b>. Choose your installation mode and bundled Web Browser below:
+        </p>
+        <div class="os-setup-options">
+          <label class="os-setup-radio-card">
+            <input type="radio" name="os-setup-mode" value="repair" checked />
+            <div>
+              <b>1. Express In-Place Repair Install (Recommended)</b>
+              <span>Verifies system `.CAB` files, reinstalls missing core applications &amp; browser engines, and preserves your saved notes/art in <code>C:\Documents</code> &amp; <code>C:\Pictures</code>.</span>
+            </div>
+          </label>
+          <label class="os-setup-radio-card">
+            <input type="radio" name="os-setup-mode" value="clean" />
+            <div>
+              <b>2. Clean Format C:\ &amp; Factory OS Reinstall</b>
+              <span>Formats partition <code>C:\</code>, resets all Master Settings &amp; Registry keys (`HKEY_*`) to 1995 factory defaults, and performs a fresh OS installation from CD-ROM.</span>
+            </div>
+          </label>
+        </div>
+        <div class="os-setup-browser-pick">
+          <label for="os-setup-browser-select"><b>Bundle Default Web Browser Engine During OS Setup:</b></label>
+          <select id="os-setup-browser-select" class="win95-select">
+            <option value="netscape">🌐 Netscape Navigator 95 Gold (v3.04)</option>
+            <option value="ie3">📘 Microsoft Internet Explorer 3.0 (Plus! 95)</option>
+            <option value="cyberchrome">⚡ CyberChrome 95 Turbo (v1.0)</option>
+            <option value="all">💿 Install All 3 Browser Engines Together</option>
+          </select>
+        </div>
+        <div class="os-setup-btn-row">
+          <button id="os-setup-begin-btn" class="win95-btn"><b>▶ Begin OS Installation ➔</b></button>
+          <button id="os-setup-cancel-btn" class="win95-btn">Cancel &amp; Return to Desktop</button>
+        </div>
+      </div>
+
+      <div class="os-setup-center-dialog" id="os-setup-step-progress" style="display: none">
+        <div class="os-setup-dialog-title" id="os-setup-progress-title">Copying Gemini 95 System Files...</div>
+        <p class="os-setup-lead" id="os-setup-stage-desc">Preparing Scandisk &amp; verifying FAT allocation tables on C:\...</p>
+        <div class="os-setup-file-ticker tabular-nums" id="os-setup-file-ticker">Extracting: WIN95_01.CAB -&gt; C:\System95\KERNEL32.DLL</div>
+        <div class="installshield-bar-outer">
+          <div class="installshield-bar-fill" id="os-setup-bar-fill" style="width: 0%"></div>
+        </div>
+        <div class="os-setup-pct-row tabular-nums">
+          <span id="os-setup-pct-label">0% Complete</span>
+          <span>CD-ROM 8X · IRQ 15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTIONAL CRT STARFIELD / MATRIX SCREENSAVER -->
+    <canvas id="os-screensaver" class="os-screensaver" style="display: none"></canvas>
+
+    <!-- INSTALLSHIELD 95 WIZARD MODAL (Triggered by Ability to Install) -->
+    <div id="installshield-modal" class="installshield-backdrop" style="display: none">
+      <div class="installshield-window">
+        <div class="window-titlebar">
+          <span class="window-title" id="ishield-window-title">InstallShield® 95 Setup Wizard</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="ishield-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="ishield-body">
+          <div class="ishield-left-graphic">
+            <div class="ishield-badge-top">InstallShield®</div>
+            <div class="ishield-big-icon" id="ishield-pkg-icon">💿</div>
+            <div class="ishield-badge-bottom">GEMINI 95<br />SETUP ENGINE</div>
+          </div>
+          <div class="ishield-right-stage" id="ishield-stage-content">
+            <!-- Dynamically rendered steps 1..4 -->
+          </div>
+        </div>
+        <div class="ishield-footer">
+          <button class="win95-btn" id="ishield-back-btn">&lt; Back</button>
+          <button class="win95-btn" id="ishield-next-btn"><b>Next &gt;</b></button>
+          <button class="win95-btn" id="ishield-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Desktop Selection Marquee -->
     <div id="selection-marquee" class="selection-marquee"></div>
 
@@ -131,24 +300,49 @@
     <div class="desktop" id="desktop">
       <!-- Desktop Icons Grid -->
       <div class="desktop-icons" id="desktop-icons">
+        <div class="icon" data-app="abilityToInstall">
+          <img
+            src="https://win98icons.alexmeub.com/icons/png/appwizard-4.png"
+            alt="Ability to Install"
+            referrerpolicy="no-referrer"
+          />
+          <span>Ability to Install</span>
+        </div>
+        <div class="icon" data-app="chrome" data-pkg-app="chrome">
+          <img
+            id="desktop-browser-icon-img"
+            src="https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png"
+            alt="Web Browser"
+            referrerpolicy="no-referrer"
+          />
+          <span id="desktop-browser-icon-label">Netscape 95</span>
+        </div>
+        <div class="icon" data-app="controlPanel">
+          <img
+            src="https://win98icons.alexmeub.com/icons/png/settings_gear-4.png"
+            alt="Settings & Control"
+            referrerpolicy="no-referrer"
+          />
+          <span>Settings &amp; Control</span>
+        </div>
+        <div class="icon" data-app="regedit" data-pkg-id="sys_regedit">
+          <img
+            src="https://win98icons.alexmeub.com/icons/png/regedit-0.png"
+            alt="Registry Editor"
+            referrerpolicy="no-referrer"
+          />
+          <span>REGEDIT.EXE</span>
+        </div>
         <div class="icon" data-app="myComputer">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/mycomputer.png"
             alt="My Gemtop"
             referrerpolicy="no-referrer"
-            style="width: 58px; height: 48px; object-fit: contain"
+            style="width: 54px; height: 44px; object-fit: contain"
           />
           <span>My Gemtop</span>
         </div>
-        <div class="icon" data-app="chrome">
-          <img
-            src="https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png"
-            alt="Netscape 95"
-            referrerpolicy="no-referrer"
-          />
-          <span>Netscape 95</span>
-        </div>
-        <div class="icon" data-app="gemini">
+        <div class="icon" data-app="gemini" data-pkg-id="app_aim">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/GeminiChatRetro.png"
             alt="Gemini AIM"
@@ -156,7 +350,7 @@
           />
           <span>Gemini AIM</span>
         </div>
-        <div class="icon" data-app="notepad">
+        <div class="icon" data-app="notepad" data-pkg-id="app_notepad">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/GemNotes.png"
             alt="GemNotes"
@@ -164,7 +358,7 @@
           />
           <span>GemNotes</span>
         </div>
-        <div class="icon" data-app="paint">
+        <div class="icon" data-app="paint" data-pkg-id="app_paint">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/gempaint.png"
             alt="GemPaint"
@@ -172,7 +366,7 @@
           />
           <span>GemPaint</span>
         </div>
-        <div class="icon" data-app="minesweeper">
+        <div class="icon" data-app="minesweeper" data-pkg-id="app_minesweeper">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/gemsweeper.png"
             alt="GemSweeper"
@@ -180,7 +374,7 @@
           />
           <span>GemSweeper</span>
         </div>
-        <div class="icon" data-app="mediaPlayer">
+        <div class="icon" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">
           <img
             src="https://storage.googleapis.com/gemini-95-icons/ytmediaplayer.png"
             alt="GemPlayer"
@@ -192,15 +386,7 @@
           <div class="dos-icon-graphic">C:\_</div>
           <span>MS-DOS Prompt</span>
         </div>
-        <div class="icon" data-app="controlPanel">
-          <img
-            src="https://win98icons.alexmeub.com/icons/png/display_properties-4.png"
-            alt="Display & Themes"
-            referrerpolicy="no-referrer"
-          />
-          <span>Display &amp; Themes</span>
-        </div>
-        <div class="icon" data-app="doom">
+        <div class="icon" data-app="doom" data-pkg-id="app_doom">
           <img
             src="https://64.media.tumblr.com/1d89dfa76381e5c14210a2149c83790d/7a15f84c681c1cf9-c1/s540x810/86985984be99d5591e0cbc0dea6f05ffa3136dac.png"
             alt="Doom II"
@@ -208,18 +394,26 @@
           />
           <span>Doom II</span>
         </div>
+        <div class="icon" data-app="sysMonitor" data-pkg-id="sys_monitor" style="display: none">
+          <img
+            src="https://win98icons.alexmeub.com/icons/png/sysmon-0.png"
+            alt="System Monitor"
+            referrerpolicy="no-referrer"
+          />
+          <span>System Monitor</span>
+        </div>
       </div>
 
       <!-- Desktop Welcome Sticky Widget -->
       <div class="desktop-sticky-note" id="desktop-welcome">
         <div class="sticky-header">
-          <span>📌 GEMINI 95 × WIN 11 EDITION</span>
+          <span>📌 GEMINI 95 SYSTEM GUIDE</span>
           <button id="sticky-close" title="Dismiss">✕</button>
         </div>
         <div class="sticky-body">
-          <p>• <b>Snap Layouts 95</b>: Hover any window's <b>□</b> Maximize button to snap into grids!</p>
-          <p>• <b>Taskbar 11-in-95</b>: Try <b>🔍 Search</b>, <b>🪟 Task View</b> (Virtual Desktops), <b>🌤️ Widgets</b> &amp; <b>✨ Copilot 95</b>.</p>
-          <p>• <b>Quick Settings</b>: Click the System Tray clock/icons to toggle <b>Centered Taskbar</b> &amp; <b>Night Light</b>!</p>
+          <p>• <b>Ability to Install</b>: Install, uninstall &amp; reinstall apps (including <b>Netscape / IE 3.0 / CyberChrome</b>) or run a full <b>OS Reinstall</b>!</p>
+          <p>• <b>Settings &amp; Control</b>: 8 ultra-detailed tabs + live <b>REGEDIT.EXE</b> &amp; <b>CMOS BIOS</b> controlling every pixel, bevel, sound &amp; CPU flag.</p>
+          <p>• <b>Multi-Engine Browser</b>: Multi-tab surfing with both <b>AI Web</b> &amp; <b>Live Web Iframe</b> modes!</p>
         </div>
       </div>
 
@@ -253,10 +447,10 @@
         </div>
       </div>
 
-      <!-- 2. NETSCAPE / CHROME 95 (AI Time-Machine Web Browser) -->
-      <div class="window resizable" id="chrome" style="width: 680px; height: 490px">
+      <!-- 2. MULTI-ENGINE REINSTALLABLE WEB BROWSER (Netscape 95 / IE 3.0 / CyberChrome) -->
+      <div class="window resizable browser-engine-netscape" id="chrome" style="width: 740px; height: 530px">
         <div class="window-titlebar">
-          <span class="window-title">Netscape Gemini 95 — The 1996 Time-Machine Web</span>
+          <span class="window-title" id="browser-window-title">Netscape Navigator 95 Gold — [Home Portal]</span>
           <div class="window-controls">
             <div class="window-minimize window-control-button" title="Minimize">−</div>
             <div class="window-maximize window-control-button" title="Maximize">□</div>
@@ -264,36 +458,58 @@
           </div>
         </div>
         <div class="window-content">
+          <!-- Multi-Tab Strip -->
+          <div class="browser-tabs-strip">
+            <div class="browser-tabs-list" id="browser-tabs-list"></div>
+            <button class="win95-btn" id="browser-new-tab-btn" title="Open New Tab">+ Tab</button>
+            <div class="browser-engine-switcher">
+              <label for="browser-engine-select">Engine:</label>
+              <select id="browser-engine-select" class="win95-select" title="Switch Installed Browser Engine"></select>
+              <button class="win95-btn" id="browser-manage-install-btn" title="Install / Reinstall / Uninstall Browsers in Ability to Install">💿 Install/Reinstall</button>
+            </div>
+          </div>
+
+          <!-- Navigation & Mode Toolbar -->
           <div class="browser-toolbar">
             <div class="browser-nav-buttons">
               <button class="win95-btn" id="browser-back" title="Back" disabled>◀</button>
               <button class="win95-btn" id="browser-forward" title="Forward" disabled>▶</button>
-              <button class="win95-btn" id="browser-reload" title="Regenerate 90s Page">↻</button>
-              <button class="win95-btn" id="browser-home" title="GeoCities Portal">🏠</button>
+              <button class="win95-btn" id="browser-reload" title="Reload / Regenerate">↻</button>
+              <button class="win95-btn" id="browser-home" title="Engine Start Portal">🏠</button>
+            </div>
+            <div class="browser-mode-toggle" title="Switch between AI Web Synthesis and Real Live Iframe / Local C:\ Mode">
+              <button class="win95-btn active" id="browser-mode-ai">✨ AI Web</button>
+              <button class="win95-btn" id="browser-mode-live">🌐 Live URL</button>
             </div>
             <div class="address-bar-container">
               <input
                 type="text"
                 class="browser-address-bar"
-                placeholder="Type any domain or topic (e.g. cyberpizza.com, mars1996.org)..."
-                value="https://www.geocities.com/siliconvalley/1995"
+                placeholder="Type any domain, URL, Wikipedia topic, or file:///C:/..."
+                value="about:portal"
               />
               <button class="browser-go-button">Go!</button>
             </div>
+            <div class="browser-throbber" id="browser-throbber" title="Active Browser Engine">N</div>
           </div>
+
+          <!-- Bookmarks & Power Tools Bar -->
           <div class="browser-bookmarks-bar">
             <span class="bookmarks-label">Bookmarks:</span>
-            <button class="bookmark-chip" data-url="https://www.geocities.com/cybermall1996">🛍️ CyberMall 96</button>
-            <button class="bookmark-chip" data-url="https://www.area51-truth-1995.org">👽 Area 51 Truth</button>
-            <button class="bookmark-chip" data-url="https://www.pizzanet-delivery.com">🍕 PizzaNet 95</button>
-            <button class="bookmark-chip" data-url="https://www.y2k-bunker-prep.net">⚠️ Y2K Bug Guide</button>
-            <button class="bookmark-chip" data-url="https://www.virtual-tamagotchi-club.jp">🐣 Virtual Pet Club</button>
-            <button class="bookmark-chip" data-url="https://www.90s-anime-shrine.com">⚡ Anime Webring</button>
+            <div class="browser-bookmarks-items" id="browser-bookmarks-items"></div>
+            <div class="browser-tools-right">
+              <button class="bookmark-chip" id="browser-add-bookmark-btn" title="Bookmark Current Page">⭐ +Save</button>
+              <button class="bookmark-chip" id="browser-source-btn" title="Inspect / Live-Edit HTML Source & Save to C:\">📄 Source</button>
+              <button class="bookmark-chip" id="browser-settings-btn" title="Open Browser & Modem Settings">⚙️ Opts</button>
+            </div>
           </div>
+
+          <!-- Main Viewport + Optional Source Inspector Drawer -->
           <div class="browser-viewport">
             <iframe
               id="browser-frame"
-              sandbox="allow-scripts allow-forms allow-modals allow-popups"
+              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
+              referrerpolicy="no-referrer"
               src="about:blank"
               width="100%"
               height="100%"
@@ -301,10 +517,22 @@
             <div class="browser-loading">
               Generating website...
             </div>
+            <!-- Live HTML Source Editor & Save to C:\ Drawer -->
+            <div id="browser-source-drawer" class="browser-source-drawer" style="display: none">
+              <div class="browser-source-header">
+                <span>📄 Document HTML Source Inspector &amp; Live Editor</span>
+                <div style="display: flex; gap: 4px">
+                  <button class="win95-btn" id="browser-apply-source-btn">▶ Apply HTML</button>
+                  <button class="win95-btn" id="browser-save-vfs-btn">💾 Save .HTML to C:\</button>
+                  <button class="win95-btn" id="browser-close-source-btn">✕ Close</button>
+                </div>
+              </div>
+              <textarea id="browser-source-textarea" spellcheck="false"></textarea>
+            </div>
           </div>
           <div class="window-statusbar">
-            <span id="browser-status-text">Ready — Click any bookmark or enter any URL to generate a 1996 site!</span>
-            <span>🔒 40-Bit SSL</span>
+            <span id="browser-status-text">Ready — Surf with AI Web Synthesis or Live Real-World URLs!</span>
+            <span id="browser-conn-badge" class="tabular-nums">📞 56,000 bps · Netscape 3.04</span>
           </div>
         </div>
       </div>
@@ -619,48 +847,179 @@
         </div>
       </div>
 
-      <!-- 11. CONTROL PANEL / DISPLAY & THEMES -->
-      <div class="window resizable" id="controlPanel" style="width: 420px; height: 390px">
+      <!-- 11. MASTER SETTINGS & ULTRA-DETAILED CONTROL PANEL (8 TABS) -->
+      <div class="window resizable" id="controlPanel" style="width: 700px; height: 520px">
         <div class="window-titlebar">
-          <span class="window-title">Display Properties &amp; System Themes</span>
+          <span class="window-title">⚙️ Master System Settings &amp; Control Panel (CONTROL.EXE)</span>
           <div class="window-controls">
             <div class="window-minimize window-control-button" title="Minimize">−</div>
             <div class="window-maximize window-control-button" title="Maximize">□</div>
             <div class="window-close window-control-button" title="Close">✕</div>
           </div>
         </div>
-        <div class="window-content control-panel-content">
-          <div class="cp-monitor-preview" id="cp-monitor-preview">
-            <div class="cp-mini-window">
-              <div class="cp-mini-titlebar">Active Window</div>
-              <div class="cp-mini-body">Gemini 95 OS</div>
+        <div class="window-content master-settings-wrapper">
+          <!-- 8 Engineering Property Tabs -->
+          <div class="settings-tabs-bar" id="settings-tabs-bar">
+            <button class="settings-tab-btn active" data-stab="display">1. Display &amp; CRT</button>
+            <button class="settings-tab-btn" data-stab="shell">2. Windows &amp; Fonts</button>
+            <button class="settings-tab-btn" data-stab="taskbar">3. Taskbar &amp; Snap</button>
+            <button class="settings-tab-btn" data-stab="audio">4. Sound DSP</button>
+            <button class="settings-tab-btn" data-stab="browser">5. Browser &amp; Modem</button>
+            <button class="settings-tab-btn" data-stab="hardware">6. CPU, RAM &amp; Power</button>
+            <button class="settings-tab-btn" data-stab="software">7. Install &amp; OS Setup</button>
+            <button class="settings-tab-btn" data-stab="registry">8. Registry &amp; BIOS</button>
+          </div>
+
+          <div class="settings-panes-container" id="settings-panes-container">
+            <!-- Populated and synchronized dynamically by Master Settings Controller -->
+          </div>
+
+          <div class="settings-bottom-bar">
+            <span class="settings-live-status" id="settings-live-status">● All changes sync live to HKEY_LOCAL_MACHINE &amp; HKEY_CURRENT_USER</span>
+            <div class="settings-bottom-btns">
+              <button class="win95-btn" id="settings-open-regedit-btn">🗂️ REGEDIT.EXE</button>
+              <button class="win95-btn" id="settings-open-bios-btn">⚙️ CMOS BIOS</button>
+              <button class="win95-btn" id="settings-factory-reset-btn">↺ Factory Defaults</button>
             </div>
           </div>
-          <div class="cp-section">
-            <label><b>Color Scheme &amp; Wallpaper:</b></label>
-            <div class="cp-theme-grid">
-              <button class="win95-btn theme-select-btn active" data-theme="standard">🟩 Windows Standard (Teal)</button>
-              <button class="win95-btn theme-select-btn" data-theme="hotdog">🌭 Hot Dog Stand (1995 Classic)</button>
-              <button class="win95-btn theme-select-btn" data-theme="cyberpunk">🌌 Cyberpunk 1995 (Neon Grid)</button>
-              <button class="win95-btn theme-select-btn" data-theme="vaporwave">🌅 Vaporwave Sunset</button>
-              <button class="win95-btn theme-select-btn" data-theme="matrix">💻 Phosphor Matrix</button>
+        </div>
+      </div>
+
+      <!-- 12. ABILITY TO INSTALL (Software Package Manager, Browser Reinstaller & OS Setup) -->
+      <div class="window resizable" id="abilityToInstall" style="width: 680px; height: 490px">
+        <div class="window-titlebar">
+          <span class="window-title">💿 Ability to Install — Software Setup &amp; OS Reinstaller (INSTALL.EXE)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content ability-install-wrapper">
+          <div class="ability-top-banner">
+            <div>
+              <div class="ability-banner-title">InstallShield® Package Manager &amp; OS Recovery Center</div>
+              <div class="ability-banner-sub">Install new software, swap or reinstall Web Browsers, uninstall apps, or reinstall the entire OS.</div>
+            </div>
+            <button class="win95-btn ability-os-reinstall-btn" id="ability-launch-os-setup-btn">
+              💿 Reinstall Entire OS (SETUP.EXE)
+            </button>
+          </div>
+
+          <div class="ability-filter-bar">
+            <button class="win95-btn ability-cat-btn active" data-cat="all">All Packages</button>
+            <button class="win95-btn ability-cat-btn" data-cat="browser">🌐 Web Browsers (3)</button>
+            <button class="win95-btn ability-cat-btn" data-cat="core">📝 Core Apps</button>
+            <button class="win95-btn ability-cat-btn" data-cat="multimedia">🎮 Multimedia &amp; Games</button>
+            <button class="win95-btn ability-cat-btn" data-cat="system">🛠️ System Tools</button>
+            <span class="ability-disk-meter tabular-nums" id="ability-disk-meter">C:\ Used: 92.3 MB / 1,995 MB</span>
+          </div>
+
+          <div class="ability-split-pane">
+            <div class="ability-pkg-list" id="ability-pkg-list">
+              <!-- Populated dynamically from Package Catalog -->
+            </div>
+            <div class="ability-pkg-inspector" id="ability-pkg-inspector">
+              <!-- Populated dynamically for selected package -->
             </div>
           </div>
-          <div class="cp-section cp-toggles">
-            <label class="cp-checkbox-row">
-              <input type="checkbox" id="cp-crt-toggle" checked />
-              <span>Enable CRT Scanlines &amp; Retro Monitor Vignette</span>
-            </label>
-            <label class="cp-checkbox-row">
-              <input type="checkbox" id="cp-sfx-toggle" checked />
-              <span>Enable Synthesized Windows 95 Sound Effects</span>
-            </label>
+
+          <div class="window-statusbar">
+            <span id="ability-status-line">Select any package to Install, Reinstall via InstallShield 95, Repair, or Uninstall.</span>
+            <span>CD-ROM: D:\SETUP95</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. REGEDIT.EXE (Live System Registry Editor) -->
+      <div class="window resizable" id="regedit" style="width: 670px; height: 450px">
+        <div class="window-titlebar">
+          <span class="window-title">🗂️ Registry Editor — REGEDIT.EXE (Live OS Configuration)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content regedit-wrapper">
+          <div class="regedit-toolbar">
+            <span>Filter Keys:</span>
+            <input type="text" id="regedit-search-input" class="win95-text-input" placeholder="Search registry value name or path (e.g. BorderWidth, BaudRate, Browser)..." />
+            <button class="win95-btn" id="regedit-open-settings-btn">⚙️ Master Settings</button>
+            <button class="win95-btn" id="regedit-export-btn">💾 Export .REG to C:\</button>
+          </div>
+          <div class="regedit-split">
+            <div class="regedit-tree" id="regedit-tree"></div>
+            <div class="regedit-values-pane">
+              <div class="regedit-table-wrap">
+                <table class="regedit-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Data</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody id="regedit-tbody"></tbody>
+                </table>
+              </div>
+              <div class="regedit-editor-bar" id="regedit-editor-bar">
+                <span id="regedit-selected-label">Click any Registry row above to edit its live value:</span>
+                <input type="text" id="regedit-value-input" class="win95-text-input" disabled />
+                <button class="win95-btn" id="regedit-apply-btn" disabled>Modify Key</button>
+              </div>
+            </div>
+          </div>
+          <div class="window-statusbar">
+            <span id="regedit-path-status">My Computer\HKEY_CURRENT_USER</span>
+            <span>Live Kernel Sync Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 14. SYSTEM RESOURCE MONITOR (Installable Utility via Ability to Install) -->
+      <div class="window resizable" id="sysMonitor" style="width: 460px; height: 350px">
+        <div class="window-titlebar">
+          <span class="window-title">📊 System Resource Monitor — SYSMON.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content sysmon-wrapper">
+          <div class="sysmon-charts-grid">
+            <div class="sysmon-card">
+              <div class="sysmon-card-hdr"><span>Kernel Processor Usage</span><span id="sysmon-cpu-val" class="tabular-nums">18%</span></div>
+              <canvas id="sysmon-canvas-cpu" width="195" height="90"></canvas>
+            </div>
+            <div class="sysmon-card">
+              <div class="sysmon-card-hdr"><span>Memory Allocated</span><span id="sysmon-ram-val" class="tabular-nums">24 / 64 MB</span></div>
+              <canvas id="sysmon-canvas-ram" width="195" height="90"></canvas>
+            </div>
+            <div class="sysmon-card">
+              <div class="sysmon-card-hdr"><span>WIN386.SWP Disk Cache</span><span id="sysmon-swap-val" class="tabular-nums">12 MB</span></div>
+              <canvas id="sysmon-canvas-swap" width="195" height="90"></canvas>
+            </div>
+            <div class="sysmon-card">
+              <div class="sysmon-card-hdr"><span>Modem Throughput</span><span id="sysmon-net-val" class="tabular-nums">56.0 kbps</span></div>
+              <canvas id="sysmon-canvas-net" width="195" height="90"></canvas>
+            </div>
+          </div>
+          <div class="window-statusbar">
+            <span id="sysmon-hw-summary">Intel Pentium 133MHz · 64 MB RAM</span>
+            <button class="win95-btn" id="sysmon-tune-hw-btn" style="height: 17px; font-size: 0.66rem">Tune Hardware</button>
           </div>
         </div>
       </div>
 
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
+        <div class="ctx-item" data-action="open-installer">💿 Ability to Install (Software &amp; OS)</div>
+        <div class="ctx-item" data-action="open-display">⚙️ Master Settings &amp; Control Panel...</div>
+        <div class="ctx-item" data-action="open-regedit">🗂️ Open REGEDIT.EXE</div>
+        <div class="ctx-divider"></div>
         <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
         <div class="ctx-item" data-action="new-note">📝 New Text Document</div>
         <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
@@ -668,8 +1027,6 @@
         <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
         <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
-        <div class="ctx-divider"></div>
-        <div class="ctx-item" data-action="open-display">⚙️ Display Properties...</div>
       </div>
 
       <!-- ==================== START MENU ==================== -->
@@ -678,19 +1035,24 @@
           <span><b>GEMINI</b> 95</span>
         </div>
         <div class="start-menu-items">
-          <div class="start-menu-item" data-app="myComputer">💻 My Gemtop Explorer</div>
-          <div class="start-menu-item" data-app="chrome">🌐 Netscape 95 (AI Web)</div>
-          <div class="start-menu-item" data-app="gemini">💬 Gemini AIM Messenger</div>
-          <div class="start-menu-item" data-app="notepad">📝 GemNotes WordPad</div>
-          <div class="start-menu-item" data-app="paint">🎨 GemPaint Studio</div>
-          <div class="start-menu-item" data-app="minesweeper">💣 GemSweeper Deluxe</div>
-          <div class="start-menu-item" data-app="mediaPlayer">🎹 GemPlayer Synth &amp; TV</div>
-          <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt</div>
-          <div class="start-menu-item" data-app="doom">👹 Doom II</div>
+          <div class="start-menu-item" data-app="abilityToInstall">💿 <b>Ability to Install</b></div>
+          <div class="start-menu-item" data-app="controlPanel">⚙️ <b>Settings &amp; Control Panel</b></div>
+          <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT)</div>
           <div class="start-menu-divider"></div>
-          <div class="start-menu-item" data-app="controlPanel">⚙️ Display &amp; Themes</div>
+          <div class="start-menu-item" data-app="chrome" data-pkg-app="chrome" id="start-menu-browser-item">🌐 Netscape 95 (Web Browser)</div>
+          <div class="start-menu-item" data-app="myComputer">💻 My Gemtop Explorer</div>
+          <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
+          <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
+          <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
+          <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
+          <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
+          <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor" style="display: none">📊 System Resource Monitor</div>
+          <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt</div>
+          <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
+          <div class="start-menu-divider"></div>
+          <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
           <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
-          <div class="start-menu-item" id="start-reboot-os">🔄 Reboot Gemini 95...</div>
+          <div class="start-menu-item" id="start-reboot-os">🔄 Reboot / CMOS BIOS...</div>
         </div>
       </div>
 
