@@ -1911,3 +1911,564 @@ body.theme-hotdog .icon span {
   100% { background-position: 200% 0%; }
 }
 
+/* ==================== WINDOWS 11 IN WINDOWS 95 STYLES ==================== */
+
+/* Night Light 95 Amber CRT Overlay */
+.night-light-overlay {
+  display: none;
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background-color: rgba(255, 136, 0, 0.16);
+  mix-blend-mode: multiply;
+}
+
+body.night-light-active .night-light-overlay {
+  display: block;
+}
+
+/* Taskbar Win11-in-95 Cluster & Centered Taskbar Mode */
+.taskbar-left-cluster {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.taskbar-win11-btn,
+.taskbar-copilot-btn {
+  height: 28px;
+  padding: 0 7px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.taskbar-copilot-btn {
+  background: linear-gradient(90deg, #d8d8ec, #c0c0c0);
+  color: #000080;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+#taskbar.centered-taskbar {
+  justify-content: center;
+}
+
+#taskbar.centered-taskbar #taskbar-apps {
+  flex-grow: 0;
+  max-width: 48vw;
+}
+
+#taskbar.centered-taskbar .system-tray {
+  margin-left: auto;
+}
+
+#taskbar.centered-taskbar .taskbar-left-cluster {
+  margin-left: auto;
+}
+
+/* 1. Snap Layouts 95 Flyout */
+.snap-layouts-flyout {
+  position: fixed;
+  z-index: 4500;
+  background-color: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.45);
+  padding: 4px;
+  width: 248px;
+}
+
+.snap-flyout-header {
+  background: #000080;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  margin-bottom: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.snap-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.snap-group {
+  background: #dfdfdf;
+  border: 1px inset #808080;
+  padding: 3px;
+  height: 44px;
+  display: flex;
+  gap: 3px;
+}
+
+.snap-zone {
+  background-color: #a8a8a8;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #404040;
+  border-bottom: 1px solid #404040;
+  cursor: pointer;
+  flex: 1;
+  padding: 0;
+}
+
+.snap-zone:hover {
+  background-color: #000080;
+  border-color: #00ffff;
+}
+
+.snap-main-stack .snap-tall {
+  flex: 1.2;
+}
+
+.snap-sub-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.snap-4quad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+/* 2. Widgets Board 95 (Left Slide-Out Drawer) */
+.win11-widgets-board {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  bottom: 46px;
+  width: 340px;
+  background-color: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  z-index: 3200;
+  display: flex;
+  flex-direction: column;
+  padding: 2px;
+}
+
+.widgets-scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-card95 {
+  background: #dfdfdf;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #808080;
+  border-bottom: 2px solid #808080;
+  padding: 8px;
+}
+
+.widget-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000080;
+  border-bottom: 1px solid #808080;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.widget-weather-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #001a33;
+  color: #00ffff;
+  border: 2px inset #808080;
+  padding: 8px 10px;
+}
+
+.weather-big-temp {
+  font-family: 'VT323', monospace;
+  font-size: 2rem;
+  color: #ffff55;
+  line-height: 1;
+}
+
+.weather-desc {
+  font-size: 0.72rem;
+  color: #ffffff;
+  text-align: right;
+  max-width: 190px;
+}
+
+.widget-stock-list {
+  background: #000000;
+  border: 2px inset #808080;
+  padding: 6px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stock-row95 {
+  display: flex;
+  justify-content: space-between;
+  color: #e0e0e0;
+}
+
+.stock-up { color: #00ff66; }
+.stock-down { color: #ff4444; }
+
+.widget-focus-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.focus-digital-clock {
+  background: #1a0000;
+  color: #00ff66;
+  font-family: 'VT323', monospace;
+  font-size: 1.85rem;
+  padding: 2px 12px;
+  border: 2px inset #808080;
+  letter-spacing: 2px;
+}
+
+.focus-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.widget-news-list {
+  background: #ffffff;
+  border: 1px inset #808080;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #000000;
+}
+
+.widget-news-list p {
+  margin: 4px 0;
+}
+
+/* 3. Universal Search & Command Palette 95 */
+.win11-search-flyout {
+  position: fixed;
+  bottom: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
+  max-width: 94vw;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  z-index: 3500;
+  padding: 2px;
+}
+
+.search-flyout-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.win11-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px inset #808080;
+  background: #ffffff;
+  padding: 6px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.82rem;
+  color: #000000;
+  outline: none;
+}
+
+.search-results-list {
+  max-height: 240px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 2px inset #808080;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-result-item {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: #000000;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dotted #d0d0d0;
+}
+
+.search-result-item:hover {
+  background: #000080;
+  color: #ffffff;
+}
+
+.search-result-kind {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  opacity: 0.75;
+}
+
+/* 4. Task View & Virtual Desktops 95 */
+.win11-taskview-overlay {
+  position: fixed;
+  bottom: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  max-width: 95vw;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  z-index: 3400;
+  padding: 2px;
+}
+
+.taskview-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.virtual-desktops-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.vdesk-card {
+  background: #d8d8d8;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  padding: 10px 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.vdesk-card.active {
+  background: #000080;
+  color: #ffffff;
+  border-top: 2px solid #000000;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+}
+
+.vdesk-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.vdesk-sub {
+  font-size: 0.7rem;
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
+.taskview-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-top: 1px solid #808080;
+  padding-top: 6px;
+}
+
+.taskview-hint {
+  font-size: 0.7rem;
+  color: #333333;
+  margin-left: auto;
+}
+
+/* 5. Windows Copilot 95 Docked Right Sidebar */
+.win11-copilot-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 36px;
+  width: 320px;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: -3px 0 0 rgba(0, 0, 0, 0.35);
+  z-index: 3300;
+  display: flex;
+  flex-direction: column;
+  padding: 2px;
+}
+
+.copilot-subheader {
+  background: #ffffcc;
+  border: 1px solid #808000;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  color: #000;
+  margin: 3px;
+}
+
+.copilot-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  padding: 2px 4px 6px 4px;
+}
+
+.copilot-chat-log {
+  flex: 1;
+  background: #ffffff;
+  border: 2px inset #808080;
+  margin: 0 4px 6px 4px;
+  padding: 8px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  user-select: text;
+}
+
+.copilot-msg.user {
+  color: #000080;
+  font-weight: 600;
+}
+
+.copilot-msg.bot {
+  color: #111111;
+  background: #f0f4ff;
+  border: 1px solid #b0c4de;
+  padding: 5px 7px;
+}
+
+.copilot-input-row {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+
+.copilot-input-row input {
+  flex: 1;
+  border: 2px inset #808080;
+  background: #ffffff;
+  padding: 4px 6px;
+  font-size: 0.78rem;
+  color: #000;
+}
+
+/* 6. Quick Settings 95 Flyout */
+.win11-quick-settings {
+  position: fixed;
+  bottom: 42px;
+  right: 8px;
+  width: 290px;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  z-index: 3600;
+  padding: 2px;
+}
+
+.qs-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 8px;
+}
+
+.qs-tile {
+  background: #d4d0c8;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.qs-tile.active {
+  background: #000080;
+  color: #ffffff;
+  border-top: 2px solid #000000;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+}
+
+.qs-icon {
+  font-size: 1.05rem;
+}
+
+.qs-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.qs-sliders {
+  padding: 4px 10px 8px 10px;
+  border-top: 1px solid #808080;
+}
+
+.qs-slider-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+}
+
+.qs-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  border-top: 1px solid #808080;
+  background: #b8b8b8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+}
+
+

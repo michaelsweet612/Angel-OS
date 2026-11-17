@@ -2816,3 +2816,697 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// ==================== WINDOWS 11 IN WINDOWS 95 CONTROLLERS ====================
+
+const snapFlyout = document.getElementById('snap-layouts-flyout') as HTMLDivElement | null;
+const widgetsBoard = document.getElementById('win11-widgets-board') as HTMLDivElement | null;
+const searchFlyout = document.getElementById('win11-search-flyout') as HTMLDivElement | null;
+const taskviewOverlay = document.getElementById('win11-taskview-overlay') as HTMLDivElement | null;
+const copilotSidebar = document.getElementById('win11-copilot-sidebar') as HTMLDivElement | null;
+const quickSettings = document.getElementById('win11-quick-settings') as HTMLDivElement | null;
+const taskbarEl = document.getElementById('taskbar') as HTMLDivElement | null;
+
+function closeWin11Popups(except?: HTMLElement | null) {
+  [snapFlyout, widgetsBoard, searchFlyout, taskviewOverlay, quickSettings].forEach((el) => {
+    if (el && el !== except) el.style.display = 'none';
+  });
+}
+
+// --- 1. SNAP LAYOUTS 95 (Hover Maximize Button □ or Snap Zones) ---
+let snapTargetWindow: HTMLDivElement | null = null;
+let snapHideTimer: number | null = null;
+
+function snapWindowToZone(winEl: HTMLDivElement, zone: string) {
+  sfx.playWindowOpen();
+  winEl.classList.remove('maximized');
+  winEl.style.display = 'flex';
+  bringToFront(winEl);
+
+  const copilotWidth = copilotSidebar && copilotSidebar.style.display !== 'none' ? 320 : 0;
+  const availW = window.innerWidth - copilotWidth;
+  const availH = window.innerHeight - 36;
+  const halfW = Math.floor(availW / 2);
+  const halfH = Math.floor(availH / 2);
+  const thirdW = Math.floor(availW / 3);
+
+  switch (zone) {
+    case 'left-half':
+      winEl.style.left = '0px';
+      winEl.style.top = '0px';
+      winEl.style.width = `${halfW}px`;
+      winEl.style.height = `${availH}px`;
+      break;
+    case 'right-half':
+      winEl.style.left = `${halfW}px`;
+      winEl.style.top = '0px';
+      winEl.style.width = `${availW - halfW}px`;
+      winEl.style.height = `${availH}px`;
+      break;
+    case 'col-left':
+      winEl.style.left = '0px';
+      winEl.style.top = '0px';
+      winEl.style.width = `${thirdW}px`;
+      winEl.style.height = `${availH}px`;
+      break;
+    case 'col-center':
+      winEl.style.left = `${thirdW}px`;
+      winEl.style.top = '0px';
+      winEl.style.width = `${thirdW}px`;
+      winEl.style.height = `${availH}px`;
+      break;
+    case 'col-right':
+      winEl.style.left = `${thirdW * 2}px`;
+      winEl.style.top = '0px';
+      winEl.style.width = `${availW - thirdW * 2}px`;
+      winEl.style.height = `${availH}px`;
+      break;
+    case 'top-left':
+      winEl.style.left = '0px';
+      winEl.style.top = '0px';
+      winEl.style.width = `${halfW}px`;
+      winEl.style.height = `${halfH}px`;
+      break;
+    case 'top-right':
+      winEl.style.left = `${halfW}px`;
+      winEl.style.top = '0px';
+      winEl.style.width = `${availW - halfW}px`;
+      winEl.style.height = `${halfH}px`;
+      break;
+    case 'bottom-left':
+      winEl.style.left = '0px';
+      winEl.style.top = `${halfH}px`;
+      winEl.style.width = `${halfW}px`;
+      winEl.style.height = `${availH - halfH}px`;
+      break;
+    case 'bottom-right':
+      winEl.style.left = `${halfW}px`;
+      winEl.style.top = `${halfH}px`;
+      winEl.style.width = `${availW - halfW}px`;
+      winEl.style.height = `${availH - halfH}px`;
+      break;
+  }
+}
+
+function autoTileOpenWindows() {
+  sfx.playWindowOpen();
+  const visibleWins: HTMLDivElement[] = [];
+  openApps.forEach((data) => {
+    if (data.windowEl.style.display !== 'none') visibleWins.push(data.windowEl);
+  });
+  if (visibleWins.length === 0) {
+    showOsDialog('Open at least 1 application window to tile across the desktop!', 'Snap & Tile 95');
+    return;
+  }
+  if (visibleWins.length === 1) {
+    snapWindowToZone(visibleWins[0], 'left-half');
+  } else if (visibleWins.length === 2) {
+    snapWindowToZone(visibleWins[0], 'left-half');
+    snapWindowToZone(visibleWins[1], 'right-half');
+  } else if (visibleWins.length === 3) {
+    snapWindowToZone(visibleWins[0], 'left-half');
+    snapWindowToZone(visibleWins[1], 'top-right');
+    snapWindowToZone(visibleWins[2], 'bottom-right');
+  } else {
+    const zones = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+    visibleWins.forEach((w, i) => snapWindowToZone(w, zones[i % zones.length]));
+  }
+}
+
+function cascadeOpenWindows() {
+  sfx.playClick();
+  let i = 0;
+  openApps.forEach((data) => {
+    if (data.windowEl.style.display !== 'none') {
+      data.windowEl.classList.remove('maximized');
+      data.windowEl.style.left = `${180 + i * 32}px`;
+      data.windowEl.style.top = `${32 + i * 28}px`;
+      data.windowEl.style.width = '500px';
+      data.windowEl.style.height = '380px';
+      bringToFront(data.windowEl);
+      i++;
+    }
+  });
+}
+
+windows.forEach((winEl) => {
+  const maxBtn = winEl.querySelector('.window-maximize') as HTMLElement | null;
+  if (!maxBtn || !snapFlyout) return;
+
+  maxBtn.addEventListener('mouseenter', () => {
+    if (snapHideTimer) clearTimeout(snapHideTimer);
+    snapTargetWindow = winEl;
+    const rect = maxBtn.getBoundingClientRect();
+    const leftPos = Math.min(window.innerWidth - 260, Math.max(8, rect.right - 220));
+    const topPos = Math.min(window.innerHeight - 160, rect.bottom + 4);
+    snapFlyout.style.left = `${leftPos}px`;
+    snapFlyout.style.top = `${topPos}px`;
+    snapFlyout.style.display = 'block';
+  });
+
+  maxBtn.addEventListener('mouseleave', () => {
+    snapHideTimer = window.setTimeout(() => {
+      if (snapFlyout) snapFlyout.style.display = 'none';
+    }, 280);
+  });
+});
+
+snapFlyout?.addEventListener('mouseenter', () => {
+  if (snapHideTimer) clearTimeout(snapHideTimer);
+});
+
+snapFlyout?.addEventListener('mouseleave', () => {
+  if (snapFlyout) snapFlyout.style.display = 'none';
+});
+
+snapFlyout?.querySelectorAll('.snap-zone').forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const zone = (btn as HTMLElement).dataset.snap;
+    if (snapTargetWindow && zone) {
+      snapWindowToZone(snapTargetWindow, zone);
+    }
+    if (snapFlyout) snapFlyout.style.display = 'none';
+  });
+});
+
+// --- 2. TASK VIEW & VIRTUAL DESKTOPS 95 ---
+let currentVirtualDesktop = 1;
+const appDesktopMap = new Map<string, number>();
+
+function updateVirtualDesktopCounts() {
+  [1, 2, 3].forEach((d) => {
+    let count = 0;
+    openApps.forEach((_, appName) => {
+      const assigned = appDesktopMap.get(appName) || 1;
+      if (assigned === d) count++;
+    });
+    const label = document.getElementById(`vdesk-count-${d}`);
+    if (label) {
+      label.textContent = `${count} open window(s)${d === currentVirtualDesktop ? ' · Active' : ''}`;
+    }
+  });
+}
+
+function switchVirtualDesktop(deskNum: number) {
+  sfx.playWindowOpen();
+  // Assign any currently unassigned open apps to currentVirtualDesktop before switching
+  openApps.forEach((_, appName) => {
+    if (!appDesktopMap.has(appName)) appDesktopMap.set(appName, currentVirtualDesktop);
+  });
+
+  currentVirtualDesktop = deskNum;
+  const deskLabel = document.getElementById('taskbar-desk-label');
+  if (deskLabel) deskLabel.textContent = `Desk ${deskNum}`;
+
+  document.querySelectorAll('.vdesk-card').forEach((card) => {
+    card.classList.toggle('active', Number((card as HTMLElement).dataset.desk) === deskNum);
+  });
+
+  openApps.forEach((data, appName) => {
+    const appDesk = appDesktopMap.get(appName) || 1;
+    if (appDesk === deskNum) {
+      data.windowEl.style.display = 'flex';
+      data.taskbarButton.style.display = 'flex';
+    } else {
+      data.windowEl.style.display = 'none';
+      data.taskbarButton.style.display = 'none';
+    }
+  });
+
+  updateVirtualDesktopCounts();
+}
+
+document.getElementById('taskbar-taskview-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (!taskviewOverlay) return;
+  const isVis = taskviewOverlay.style.display !== 'none';
+  closeWin11Popups(taskviewOverlay);
+  openApps.forEach((_, appName) => {
+    if (!appDesktopMap.has(appName)) appDesktopMap.set(appName, currentVirtualDesktop);
+  });
+  updateVirtualDesktopCounts();
+  taskviewOverlay.style.display = isVis ? 'none' : 'block';
+});
+
+document.getElementById('taskview-close-btn')?.addEventListener('click', () => {
+  if (taskviewOverlay) taskviewOverlay.style.display = 'none';
+});
+
+document.querySelectorAll('.vdesk-card').forEach((card) => {
+  card.addEventListener('click', () => {
+    const desk = Number((card as HTMLElement).dataset.desk || '1');
+    switchVirtualDesktop(desk);
+  });
+});
+
+document.getElementById('taskview-tile-btn')?.addEventListener('click', () => {
+  if (taskviewOverlay) taskviewOverlay.style.display = 'none';
+  autoTileOpenWindows();
+});
+
+document.getElementById('taskview-cascade-btn')?.addEventListener('click', () => {
+  if (taskviewOverlay) taskviewOverlay.style.display = 'none';
+  cascadeOpenWindows();
+});
+
+// --- 3. WIDGETS BOARD 95 (Weather, NASDAQ '95 Stocks, Focus Pomodoro, AI 1995 News) ---
+const stocks95 = [
+  { sym: 'MSFT', name: 'Microsoft', price: 89.5, change: +4.25 },
+  { sym: 'NSCP', name: 'Netscape', price: 58.25, change: +12.75 },
+  { sym: 'INTC', name: 'Intel Pentium', price: 64.12, change: +2.15 },
+  { sym: 'AAPL', name: 'Apple Computer', price: 38.75, change: -0.62 },
+  { sym: 'SUNW', name: 'Sun Micro (Java)', price: 51.4, change: +5.8 },
+];
+
+function renderStocksWidget() {
+  const listEl = document.getElementById('widget-stock-list');
+  if (!listEl) return;
+  listEl.innerHTML = stocks95
+    .map((s) => {
+      const sign = s.change >= 0 ? '+' : '';
+      const cls = s.change >= 0 ? 'stock-up' : 'stock-down';
+      return `<div class="stock-row95"><span><b>${s.sym}</b> (${s.name})</span><span class="${cls}">$${s.price.toFixed(2)} (${sign}${s.change.toFixed(2)})</span></div>`;
+    })
+    .join('');
+}
+renderStocksWidget();
+
+document.getElementById('widget-stock-boom-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  stocks95.forEach((s) => {
+    const delta = (Math.random() * 8 - 1.5);
+    s.price = Math.max(12, s.price + delta);
+    s.change = delta;
+  });
+  renderStocksWidget();
+});
+
+const weatherCitySelect = document.getElementById('widget-weather-city') as HTMLSelectElement | null;
+weatherCitySelect?.addEventListener('change', () => {
+  sfx.playClick();
+  const [city, temp, desc] = weatherCitySelect.value.split('|');
+  const tempEl = document.getElementById('widget-temp-val');
+  const descEl = document.getElementById('widget-weather-desc');
+  const taskbarWidgetsBtn = document.querySelector('#taskbar-widgets-btn span');
+  if (tempEl) tempEl.textContent = temp;
+  if (descEl) descEl.textContent = `${city} · ${desc}`;
+  if (taskbarWidgetsBtn) taskbarWidgetsBtn.textContent = temp;
+});
+
+// Focus Session 95 Pomodoro Timer
+let focusRemainingSec = 25 * 60;
+let focusIntervalId: number | null = null;
+let focusStreak = 1;
+
+function updateFocusDisplay() {
+  const disp = document.getElementById('focus-timer-display');
+  if (!disp) return;
+  const m = String(Math.floor(focusRemainingSec / 60)).padStart(2, '0');
+  const s = String(focusRemainingSec % 60).padStart(2, '0');
+  disp.textContent = `${m}:${s}`;
+}
+
+document.getElementById('focus-start-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  const startBtn = document.getElementById('focus-start-btn');
+  if (focusIntervalId) {
+    clearInterval(focusIntervalId);
+    focusIntervalId = null;
+    if (startBtn) startBtn.textContent = '▶ Resume Focus';
+    return;
+  }
+  if (startBtn) startBtn.textContent = '⏸ Pause';
+  focusIntervalId = window.setInterval(() => {
+    if (focusRemainingSec > 0) {
+      focusRemainingSec--;
+      updateFocusDisplay();
+    } else {
+      clearInterval(focusIntervalId!);
+      focusIntervalId = null;
+      focusStreak++;
+      focusRemainingSec = 25 * 60;
+      updateFocusDisplay();
+      const streakEl = document.getElementById('focus-streak-label');
+      if (streakEl) streakEl.textContent = `Streak: ${focusStreak} 🔥`;
+      if (startBtn) startBtn.textContent = '▶ Start Focus';
+      sfx.playStartupChime();
+    }
+  }, 1000);
+});
+
+document.getElementById('focus-reset-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  if (focusIntervalId) {
+    clearInterval(focusIntervalId);
+    focusIntervalId = null;
+  }
+  focusRemainingSec = 25 * 60;
+  updateFocusDisplay();
+  const startBtn = document.getElementById('focus-start-btn');
+  if (startBtn) startBtn.textContent = '▶ Start Focus';
+});
+
+document.getElementById('widget-news-refresh-btn')?.addEventListener('click', async () => {
+  sfx.playClick();
+  const btn = document.getElementById('widget-news-refresh-btn') as HTMLButtonElement | null;
+  const newsBox = document.getElementById('widget-news-list');
+  if (!btn || !newsBox) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Dialing...';
+  try {
+    if (!geminiInstance && !(await initializeGeminiIfNeeded('WidgetsNews'))) return;
+    const res = await geminiInstance.models.generateContent({
+      model: 'gemini-4-hydrogen',
+      contents:
+        'Generate 3 witty, nostalgic 1-sentence tech or pop-culture news headlines as if written in late 1995. Format each line starting with "• ". Plain text only.',
+    });
+    const lines = (res.text || '')
+      .split('\n')
+      .map((l: string) => l.trim())
+      .filter((l: string) => l.length > 0)
+      .slice(0, 3);
+    if (lines.length > 0) {
+      newsBox.innerHTML = lines.map((l: string) => `<p>${l.replace(/[<>&]/g, '')}</p>`).join('');
+    }
+  } catch {
+    // Keep existing headlines on error
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ AI Refresh';
+  }
+});
+
+document.getElementById('taskbar-widgets-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (!widgetsBoard) return;
+  const isVis = widgetsBoard.style.display !== 'none';
+  closeWin11Popups(widgetsBoard);
+  widgetsBoard.style.display = isVis ? 'none' : 'flex';
+});
+
+document.getElementById('widgets-close-btn')?.addEventListener('click', () => {
+  if (widgetsBoard) widgetsBoard.style.display = 'none';
+});
+
+// --- 4. UNIVERSAL SEARCH & COMMAND PALETTE 95 ---
+const searchInput = document.getElementById('win11-search-input') as HTMLInputElement | null;
+const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
+
+const SEARCHABLE_ENTRIES = [
+  { label: '💻 My Gemtop (C:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
+  { label: '🌐 Netscape 95 (1996 Time-Machine Web Browser)', kind: 'Application', action: () => openApp('chrome') },
+  { label: '💬 Gemini AIM (1995 Instant Messenger)', kind: 'Application', action: () => openApp('gemini') },
+  { label: '📝 GemNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
+  { label: '🎨 GemPaint 95 (Pixel Studio & AI Critic)', kind: 'Application', action: () => openApp('paint') },
+  { label: '💣 GemSweeper Deluxe (Minesweeper + AI Advisor)', kind: 'Application', action: () => openApp('minesweeper') },
+  { label: '🎹 GemPlayer 95 (16-Bit Chiptune Synth & Retro TV)', kind: 'Application', action: () => openApp('mediaPlayer') },
+  { label: '📟 MS-DOS Prompt (COMMAND.COM + AI Kernel)', kind: 'Application', action: () => openApp('dosPrompt') },
+  { label: '⚙️ Display & Themes Control Panel', kind: 'System Setting', action: () => openApp('controlPanel') },
+  { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
+  { label: '🎯 Toggle Centered Taskbar (Windows 11 Mode)', kind: 'Win11 Feature', action: () => toggleCenteredTaskbar() },
+  { label: '⊞ Auto-Tile All Open Windows (Snap Grid)', kind: 'Win11 Feature', action: () => autoTileOpenWindows() },
+  { label: '🌙 Toggle Night Light 95 (Warm CRT Filter)', kind: 'Win11 Feature', action: () => toggleNightLight95() },
+  { label: '🎵 Play Lo-Fi Eno Startup Chime', kind: 'Audio Synth', action: () => sfx.playStartupChime() },
+];
+
+function renderSearchResults(query: string) {
+  if (!searchResults) return;
+  const q = query.trim().toLowerCase();
+  searchResults.innerHTML = '';
+
+  const matchingStatic = SEARCHABLE_ENTRIES.filter((item) => !q || item.label.toLowerCase().includes(q) || item.kind.toLowerCase().includes(q));
+  const matchingFiles = virtualFileSystem.filter((f) => f.type !== 'folder' && (!q || f.name.toLowerCase().includes(q)));
+
+  matchingStatic.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'search-result-item';
+    row.innerHTML = `<span>${item.label}</span><span class="search-result-kind">${item.kind}</span>`;
+    row.addEventListener('click', () => {
+      sfx.playClick();
+      if (searchFlyout) searchFlyout.style.display = 'none';
+      item.action();
+    });
+    searchResults.appendChild(row);
+  });
+
+  matchingFiles.forEach((file) => {
+    const row = document.createElement('div');
+    row.className = 'search-result-item';
+    row.innerHTML = `<span>📄 ${file.parent}\\${file.name}</span><span class="search-result-kind">C:\\ File</span>`;
+    row.addEventListener('click', () => {
+      sfx.playClick();
+      if (searchFlyout) searchFlyout.style.display = 'none';
+      if (file.type === 'text') openTextFileInNotepad(file.name, file.content || '');
+      else if (file.type === 'image') openImageFileInViewer(file.name, file.content || '');
+    });
+    searchResults.appendChild(row);
+  });
+
+  if (q.length > 1) {
+    const askRow = document.createElement('div');
+    askRow.className = 'search-result-item';
+    askRow.innerHTML = `<span>✨ Ask Windows Copilot 95: "<b>${q.replace(/[<>&]/g, '')}</b>"</span><span class="search-result-kind">AI Action</span>`;
+    askRow.addEventListener('click', () => {
+      if (searchFlyout) searchFlyout.style.display = 'none';
+      if (copilotSidebar) copilotSidebar.style.display = 'flex';
+      sendCopilotPrompt(query.trim());
+    });
+    searchResults.appendChild(askRow);
+  }
+}
+
+document.getElementById('taskbar-search-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (!searchFlyout) return;
+  const isVis = searchFlyout.style.display !== 'none';
+  closeWin11Popups(searchFlyout);
+  searchFlyout.style.display = isVis ? 'none' : 'block';
+  if (!isVis) {
+    renderSearchResults(searchInput?.value || '');
+    searchInput?.focus();
+  }
+});
+
+searchInput?.addEventListener('input', () => renderSearchResults(searchInput.value));
+document.getElementById('search-close-btn')?.addEventListener('click', () => {
+  if (searchFlyout) searchFlyout.style.display = 'none';
+});
+
+// --- 5. WINDOWS COPILOT 95 DOCKED RIGHT SIDEBAR ---
+const copilotLog = document.getElementById('copilot-chat-log') as HTMLDivElement | null;
+const copilotInput = document.getElementById('copilot-input') as HTMLInputElement | null;
+const copilotSendBtn = document.getElementById('copilot-send-btn') as HTMLButtonElement | null;
+
+function appendCopilotMessage(sender: 'user' | 'bot', text: string) {
+  if (!copilotLog) return;
+  const div = document.createElement('div');
+  div.className = `copilot-msg ${sender}`;
+  div.textContent = sender === 'user' ? `You: ${text}` : `Copilot 95: ${text}`;
+  copilotLog.appendChild(div);
+  copilotLog.scrollTop = copilotLog.scrollHeight;
+}
+
+async function sendCopilotPrompt(rawText?: string) {
+  const promptText = (rawText ?? copilotInput?.value ?? '').trim();
+  if (!promptText) return;
+  sfx.playClick();
+  if (!rawText && copilotInput) copilotInput.value = '';
+  appendCopilotMessage('user', promptText);
+
+  const lower = promptText.toLowerCase();
+  // Execute local OS actions if requested!
+  if (lower.includes('tile') || lower.includes('snap')) {
+    autoTileOpenWindows();
+    appendCopilotMessage('bot', 'Done! I snapped and tiled your open Windows 95 applications across the screen.');
+    return;
+  }
+  if (lower.includes('center') && lower.includes('taskbar')) {
+    toggleCenteredTaskbar();
+    appendCopilotMessage('bot', 'Toggled the Windows 11 Centered Taskbar alignment in Windows 95!');
+    return;
+  }
+  if (lower.includes('night light') || lower.includes('amber')) {
+    toggleNightLight95();
+    appendCopilotMessage('bot', 'Toggled Night Light 95 warm CRT amber eye-saver filter!');
+    return;
+  }
+  if (lower.includes('hot dog') || lower.includes('hotdog')) {
+    applyTheme('hotdog');
+    appendCopilotMessage('bot', 'Activated the legendary 1995 Hot Dog Stand color scheme!');
+    return;
+  }
+  if (lower.includes('cyberpunk')) {
+    applyTheme('cyberpunk');
+    appendCopilotMessage('bot', 'Switched desktop to Cyberpunk 1995 Neon Grid!');
+    return;
+  }
+  if (lower.includes('vaporwave')) {
+    applyTheme('vaporwave');
+    appendCopilotMessage('bot', 'Switched desktop to Vaporwave Sunset!');
+    return;
+  }
+
+  if (copilotSendBtn) copilotSendBtn.disabled = true;
+  try {
+    if (!geminiInstance && !(await initializeGeminiIfNeeded('Copilot95'))) return;
+    const res = await geminiInstance.models.generateContent({
+      model: 'gemini-4-hydrogen',
+      contents: promptText,
+      config: {
+        systemInstruction:
+          'You are Windows Copilot 95, the Windows 11 AI sidebar assistant backported into Windows 95. Be helpful, witty, concise (2-3 sentences), and blend modern AI capability with 1995 Windows 95 charm.',
+      },
+    });
+    appendCopilotMessage('bot', res.text?.trim() || 'Ready for your next command!');
+    sfx.playAimReceive();
+  } catch (e: any) {
+    appendCopilotMessage('bot', `Co-processor busy: ${e.message}`);
+  } finally {
+    if (copilotSendBtn) copilotSendBtn.disabled = false;
+  }
+}
+
+document.getElementById('taskbar-copilot-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  if (!copilotSidebar) return;
+  const isVis = copilotSidebar.style.display !== 'none';
+  copilotSidebar.style.display = isVis ? 'none' : 'flex';
+});
+
+document.getElementById('copilot-close-btn')?.addEventListener('click', () => {
+  if (copilotSidebar) copilotSidebar.style.display = 'none';
+});
+
+copilotSendBtn?.addEventListener('click', () => sendCopilotPrompt());
+copilotInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendCopilotPrompt();
+});
+
+document.querySelectorAll('.copilot-action-chip').forEach((chip) => {
+  chip.addEventListener('click', () => {
+    sfx.playClick();
+    const sys = (chip as HTMLElement).dataset.sys;
+    if (sys === 'tile') {
+      autoTileOpenWindows();
+      appendCopilotMessage('bot', 'Snapped open windows into a clean grid!');
+    } else if (sys === 'center-bar') {
+      toggleCenteredTaskbar();
+      appendCopilotMessage('bot', 'Toggled Centered Taskbar mode!');
+    } else if (sys === 'theme') {
+      currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
+      applyTheme(THEMES[currentThemeIndex]);
+      appendCopilotMessage('bot', `Switched theme to ${THEMES[currentThemeIndex].toUpperCase()}!`);
+    } else if (sys === 'synth') {
+      openApp('mediaPlayer').then(() => startChiptuneSynth());
+      appendCopilotMessage('bot', 'Launched GemPlayer 95 and started the 16-bit FM Chiptune Synth!');
+    }
+  });
+});
+
+// --- 6. QUICK SETTINGS & ACTION CENTER 95 ---
+function toggleCenteredTaskbar() {
+  sfx.playClick();
+  const isCentered = taskbarEl?.classList.toggle('centered-taskbar');
+  document.getElementById('qs-tile-center-taskbar')?.classList.toggle('active', Boolean(isCentered));
+}
+
+function toggleNightLight95() {
+  sfx.playClick();
+  const isNight = document.body.classList.toggle('night-light-active');
+  document.getElementById('qs-tile-nightlight')?.classList.toggle('active', isNight);
+}
+
+document.getElementById('tray-qs-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (!quickSettings) return;
+  const isVis = quickSettings.style.display !== 'none';
+  closeWin11Popups(quickSettings);
+  quickSettings.style.display = isVis ? 'none' : 'block';
+});
+
+document.getElementById('tray-clock')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('tray-qs-btn')?.click();
+});
+
+document.getElementById('qs-close-btn')?.addEventListener('click', () => {
+  if (quickSettings) quickSettings.style.display = 'none';
+});
+
+document.getElementById('qs-tile-dialup')?.addEventListener('click', (e) => {
+  sfx.playClick();
+  (e.currentTarget as HTMLElement).classList.toggle('active');
+});
+
+document.getElementById('qs-tile-center-taskbar')?.addEventListener('click', toggleCenteredTaskbar);
+document.getElementById('qs-tile-nightlight')?.addEventListener('click', toggleNightLight95);
+
+document.getElementById('qs-tile-crt')?.addEventListener('click', (e) => {
+  sfx.playClick();
+  const enabled = document.body.classList.toggle('crt-enabled');
+  (e.currentTarget as HTMLElement).classList.toggle('active', enabled);
+  const crtCheck = document.getElementById('cp-crt-toggle') as HTMLInputElement | null;
+  if (crtCheck) crtCheck.checked = enabled;
+});
+
+document.getElementById('qs-tile-audio')?.addEventListener('click', (e) => {
+  document.getElementById('tray-sound-btn')?.click();
+  (e.currentTarget as HTMLElement).classList.toggle('active', sfx.enabled);
+});
+
+document.getElementById('qs-tile-tilewin')?.addEventListener('click', () => {
+  if (quickSettings) quickSettings.style.display = 'none';
+  autoTileOpenWindows();
+});
+
+const brightnessSlider = document.getElementById('qs-brightness-slider') as HTMLInputElement | null;
+brightnessSlider?.addEventListener('input', () => {
+  desktop.style.filter = `brightness(${brightnessSlider.value}%)`;
+});
+
+document.getElementById('qs-open-themes-btn')?.addEventListener('click', () => {
+  if (quickSettings) quickSettings.style.display = 'none';
+  openApp('controlPanel');
+});
+
+document.addEventListener('click', (e) => {
+  const target = e.target as Node;
+  if (
+    widgetsBoard &&
+    widgetsBoard.style.display !== 'none' &&
+    !widgetsBoard.contains(target) &&
+    !document.getElementById('taskbar-widgets-btn')?.contains(target)
+  ) {
+    widgetsBoard.style.display = 'none';
+  }
+  if (
+    searchFlyout &&
+    searchFlyout.style.display !== 'none' &&
+    !searchFlyout.contains(target) &&
+    !document.getElementById('taskbar-search-btn')?.contains(target)
+  ) {
+    searchFlyout.style.display = 'none';
+  }
+  if (
+    taskviewOverlay &&
+    taskviewOverlay.style.display !== 'none' &&
+    !taskviewOverlay.contains(target) &&
+    !document.getElementById('taskbar-taskview-btn')?.contains(target)
+  ) {
+    taskviewOverlay.style.display = 'none';
+  }
+  if (
+    quickSettings &&
+    quickSettings.style.display !== 'none' &&
+    !quickSettings.contains(target) &&
+    !document.getElementById('system-tray')?.contains(target)
+  ) {
+    quickSettings.style.display = 'none';
+  }
+});
+
+

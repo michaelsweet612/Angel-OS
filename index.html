@@ -31,6 +31,8 @@
   <body class="crt-enabled">
     <!-- Optional CRT Scanline Overlay -->
     <div id="crt-overlay" class="crt-overlay"></div>
+    <!-- Windows 11 Night Light / Brightness Filter in Win95 -->
+    <div id="night-light-overlay" class="night-light-overlay"></div>
 
     <!-- Interactive Windows 95 BIOS POST & Cloud Splash Boot Sequence -->
     <div id="boot-screen" class="boot-screen">
@@ -211,15 +213,13 @@
       <!-- Desktop Welcome Sticky Widget -->
       <div class="desktop-sticky-note" id="desktop-welcome">
         <div class="sticky-header">
-          <span>📌 GEMINI 95 — QUICK TIPS</span>
+          <span>📌 GEMINI 95 × WIN 11 EDITION</span>
           <button id="sticky-close" title="Dismiss">✕</button>
         </div>
         <div class="sticky-body">
-          <p>• Click any icon to launch retro AI apps.</p>
-          <p>• <b>Netscape 95</b>: Browse <i>any</i> URL &amp; click links to generate live 1996 web pages!</p>
-          <p>• <b>GemPaint</b>: Use Airbrush, Fill, Shapes &amp; ask Clippy to critique your art.</p>
-          <p>• <b>GemPlayer</b>: Jam to built-in 16-bit synthwave or YouTube CRT TV.</p>
-          <p>• <b>Right-click desktop</b> for Themes, CRT scanlines &amp; MS-DOS.</p>
+          <p>• <b>Snap Layouts 95</b>: Hover any window's <b>□</b> Maximize button to snap into grids!</p>
+          <p>• <b>Taskbar 11-in-95</b>: Try <b>🔍 Search</b>, <b>🪟 Task View</b> (Virtual Desktops), <b>🌤️ Widgets</b> &amp; <b>✨ Copilot 95</b>.</p>
+          <p>• <b>Quick Settings</b>: Click the System Tray clock/icons to toggle <b>Centered Taskbar</b> &amp; <b>Night Light</b>!</p>
         </div>
       </div>
 
@@ -694,22 +694,263 @@
         </div>
       </div>
 
+      <!-- ==================== WINDOWS 11-IN-95 OVERLAYS & PANELS ==================== -->
+
+      <!-- 1. SNAP LAYOUTS 95 FLYOUT (Appears on Hover/Click of Window □ Maximize Button) -->
+      <div id="snap-layouts-flyout" class="snap-layouts-flyout" style="display: none">
+        <div class="snap-flyout-header">Snap Layouts 95</div>
+        <div class="snap-groups-grid">
+          <!-- 50 / 50 Split -->
+          <div class="snap-group snap-2col" title="50 / 50 Split">
+            <button class="snap-zone" data-snap="left-half" title="Snap Left Half"></button>
+            <button class="snap-zone" data-snap="right-half" title="Snap Right Half"></button>
+          </div>
+          <!-- 3 Columns -->
+          <div class="snap-group snap-3col" title="Three Columns">
+            <button class="snap-zone" data-snap="col-left" title="Left Column"></button>
+            <button class="snap-zone" data-snap="col-center" title="Center Column"></button>
+            <button class="snap-zone" data-snap="col-right" title="Right Column"></button>
+          </div>
+          <!-- Left Main + 2 Right Stacked -->
+          <div class="snap-group snap-main-stack" title="Main + Right Stack">
+            <button class="snap-zone snap-tall" data-snap="left-half" title="Left Main"></button>
+            <div class="snap-sub-stack">
+              <button class="snap-zone" data-snap="top-right" title="Top Right"></button>
+              <button class="snap-zone" data-snap="bottom-right" title="Bottom Right"></button>
+            </div>
+          </div>
+          <!-- 4 Quadrants -->
+          <div class="snap-group snap-4quad" title="Four Quadrants">
+            <button class="snap-zone" data-snap="top-left" title="Top Left"></button>
+            <button class="snap-zone" data-snap="top-right" title="Top Right"></button>
+            <button class="snap-zone" data-snap="bottom-left" title="Bottom Left"></button>
+            <button class="snap-zone" data-snap="bottom-right" title="Bottom Right"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. WIDGETS BOARD 95 (Slide-Out Win95 Left Drawer) -->
+      <div id="win11-widgets-board" class="win11-widgets-board" style="display: none">
+        <div class="window-titlebar">
+          <span class="window-title">🌤️ Windows 95 Widgets Board (WINWIDGET.EXE)</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="widgets-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="widgets-scroll-body">
+          <!-- Weather Radar Widget -->
+          <div class="widget-card95">
+            <div class="widget-card-header">
+              <span>☀️ DOPPLER WEATHER '95</span>
+              <select id="widget-weather-city" class="win95-select">
+                <option value="Redmond, WA|72°F|Partly Cloudy · Barometer 30.12 inHg">Redmond, WA</option>
+                <option value="Silicon Valley, CA|78°F|Clear Skies · Dial-Up Conditions Optimal">Silicon Valley</option>
+                <option value="Tokyo, JP|66°F|Neon Drizzle · Akihabara Humidity 68%">Tokyo, JP</option>
+                <option value="London, UK|61°F|Overcast · Tea Index: High">London, UK</option>
+              </select>
+            </div>
+            <div class="widget-weather-main">
+              <div class="weather-big-temp tabular-nums" id="widget-temp-val">72°F</div>
+              <div class="weather-desc" id="widget-weather-desc">Partly Cloudy · Barometer 30.12 inHg</div>
+            </div>
+          </div>
+
+          <!-- 1995 Tech Stock Ticker Widget -->
+          <div class="widget-card95">
+            <div class="widget-card-header">
+              <span>📈 NASDAQ 1995 TECH TICKER</span>
+              <button class="win95-btn" id="widget-stock-boom-btn">Simulate Boom</button>
+            </div>
+            <div class="widget-stock-list tabular-nums" id="widget-stock-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Windows 11 Focus Session Timer in 95 Style -->
+          <div class="widget-card95">
+            <div class="widget-card-header">
+              <span>⏱️ FOCUS SESSION 95 (POMODORO)</span>
+              <span id="focus-streak-label" class="tabular-nums">Streak: 1 🔥</span>
+            </div>
+            <div class="widget-focus-body">
+              <div class="focus-digital-clock tabular-nums" id="focus-timer-display">25:00</div>
+              <div class="focus-btn-group">
+                <button class="win95-btn" id="focus-start-btn">▶ Start Focus</button>
+                <button class="win95-btn" id="focus-reset-btn">↺ Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI 1995 News Feed Widget -->
+          <div class="widget-card95">
+            <div class="widget-card-header">
+              <span>📰 MSNBC / 1995 AI WIRE</span>
+              <button class="win95-btn" id="widget-news-refresh-btn">↻ AI Refresh</button>
+            </div>
+            <div class="widget-news-list" id="widget-news-list">
+              <p>• <b>Aug 24, 1995</b>: Crowds line up at midnight for Windows 95 boxes with 13 floppy disks.</p>
+              <p>• <b>Tech Watch</b>: 28.8k modems declared "faster than humanly necessary" by analysts.</p>
+              <p>• <b>Gaming</b>: 3Dfx Voodoo graphics accelerator rumors stun E3 attendees.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. UNIVERSAL SEARCH & COMMAND PALETTE 95 (Win11 Search Flyout) -->
+      <div id="win11-search-flyout" class="win11-search-flyout" style="display: none">
+        <div class="window-titlebar">
+          <span class="window-title">🔍 Universal Search &amp; Command Palette 95</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="search-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="search-flyout-body">
+          <input
+            type="text"
+            id="win11-search-input"
+            class="win11-search-input"
+            placeholder="Type to search apps, C:\ files, settings, or ask Gemini AI..."
+            autocomplete="off"
+          />
+          <div class="search-results-list" id="win11-search-results"></div>
+        </div>
+      </div>
+
+      <!-- 4. TASK VIEW & VIRTUAL DESKTOPS 95 BAR -->
+      <div id="win11-taskview-overlay" class="win11-taskview-overlay" style="display: none">
+        <div class="window-titlebar">
+          <span class="window-title">🪟 Task View — Virtual Desktops &amp; Window Tiling Manager</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="taskview-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="taskview-body">
+          <div class="virtual-desktops-row">
+            <button class="vdesk-card active" data-desk="1">
+              <div class="vdesk-title">🖥️ Desktop 1: Main 95</div>
+              <div class="vdesk-sub" id="vdesk-count-1">Active Workspace</div>
+            </button>
+            <button class="vdesk-card" data-desk="2">
+              <div class="vdesk-title">🌌 Desktop 2: Cyber Lab</div>
+              <div class="vdesk-sub" id="vdesk-count-2">Clean Workspace</div>
+            </button>
+            <button class="vdesk-card" data-desk="3">
+              <div class="vdesk-title">🕹️ Desktop 3: Arcade Zone</div>
+              <div class="vdesk-sub" id="vdesk-count-3">Gaming Workspace</div>
+            </button>
+          </div>
+          <div class="taskview-actions-bar">
+            <button class="win95-btn" id="taskview-tile-btn">⊞ Auto-Tile Open Windows</button>
+            <button class="win95-btn" id="taskview-cascade-btn">❐ Cascade Windows</button>
+            <span class="taskview-hint">Tip: Switching Virtual Desktops isolates your open windows per workspace!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. WINDOWS COPILOT 95 DOCKED RIGHT SIDEBAR -->
+      <div id="win11-copilot-sidebar" class="win11-copilot-sidebar" style="display: none">
+        <div class="window-titlebar">
+          <span class="window-title">✨ Windows Copilot 95 (System Agent)</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="copilot-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="copilot-subheader">
+          <span>AI OS Controller · Can tile windows, switch themes &amp; launch apps!</span>
+        </div>
+        <div class="copilot-quick-actions">
+          <button class="win95-btn copilot-action-chip" data-sys="tile">⊞ Tile Windows</button>
+          <button class="win95-btn copilot-action-chip" data-sys="center-bar">🎯 Center Taskbar</button>
+          <button class="win95-btn copilot-action-chip" data-sys="theme">🌈 Cycle Theme</button>
+          <button class="win95-btn copilot-action-chip" data-sys="synth">🎹 Play 16-Bit Synth</button>
+        </div>
+        <div class="copilot-chat-log" id="copilot-chat-log">
+          <div class="copilot-msg bot">
+            <b>Copilot 95:</b> Welcome to Windows 11 backported to 1995! Ask me anything or tell me to <i>"switch to Cyberpunk theme"</i>, <i>"tile my windows"</i>, or <i>"write a note to C:\"</i>!
+          </div>
+        </div>
+        <div class="copilot-input-row">
+          <input type="text" id="copilot-input" placeholder="Ask Copilot 95 or issue an OS command..." />
+          <button class="win95-btn" id="copilot-send-btn">Send</button>
+        </div>
+      </div>
+
+      <!-- 6. QUICK SETTINGS & ACTION CENTER 95 (System Tray Flyout) -->
+      <div id="win11-quick-settings" class="win11-quick-settings" style="display: none">
+        <div class="window-titlebar">
+          <span class="window-title">⚙️ Quick Settings 95 (Control Center)</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="qs-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="qs-tiles-grid">
+          <button class="qs-tile active" id="qs-tile-dialup">
+            <span class="qs-icon">📞</span>
+            <span class="qs-label">56k Dial-Up</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-center-taskbar">
+            <span class="qs-icon">🎯</span>
+            <span class="qs-label">Center Taskbar</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-nightlight">
+            <span class="qs-icon">🌙</span>
+            <span class="qs-label">Night Light 95</span>
+          </button>
+          <button class="qs-tile active" id="qs-tile-crt">
+            <span class="qs-icon">📺</span>
+            <span class="qs-label">CRT Scanlines</span>
+          </button>
+          <button class="qs-tile active" id="qs-tile-audio">
+            <span class="qs-icon">🔊</span>
+            <span class="qs-label">Retro SFX</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-tilewin">
+            <span class="qs-icon">⊞</span>
+            <span class="qs-label">Tile Windows</span>
+          </button>
+        </div>
+        <div class="qs-sliders">
+          <div class="qs-slider-row">
+            <span>☀️ CRT Brightness</span>
+            <input type="range" id="qs-brightness-slider" min="55" max="115" value="100" />
+          </div>
+        </div>
+        <div class="qs-footer">
+          <span>🔋 APC Back-UPS 95: 100%</span>
+          <button class="win95-btn" id="qs-open-themes-btn">🎨 Themes</button>
+        </div>
+      </div>
+
       <!-- ==================== TASKBAR ==================== -->
       <div id="taskbar">
-        <button id="start-button">
-          <img
-            src="https://storage.googleapis.com/gemini-95-icons/start-gemini.png"
-            alt="Start"
-            referrerpolicy="no-referrer"
-          />
-          <span>Start</span>
-        </button>
-        <div class="taskbar-divider"></div>
-        <button class="win95-btn taskbar-quick-btn" id="show-desktop-btn" title="Minimize All Windows">🖥️</button>
+        <div class="taskbar-left-cluster" id="taskbar-left-cluster">
+          <button id="start-button">
+            <img
+              src="https://storage.googleapis.com/gemini-95-icons/start-gemini.png"
+              alt="Start"
+              referrerpolicy="no-referrer"
+            />
+            <span>Start</span>
+          </button>
+          <button class="win95-btn taskbar-win11-btn" id="taskbar-search-btn" title="Universal Search (Win11-in-95)">
+            🔍 <span>Search</span>
+          </button>
+          <button class="win95-btn taskbar-win11-btn" id="taskbar-taskview-btn" title="Task View & Virtual Desktops">
+            🪟 <span id="taskbar-desk-label">Desk 1</span>
+          </button>
+          <button class="win95-btn taskbar-win11-btn" id="taskbar-widgets-btn" title="Windows 95 Widgets Board">
+            🌤️ <span>72°F</span>
+          </button>
+          <button class="win95-btn taskbar-quick-btn" id="show-desktop-btn" title="Minimize All Windows">🖥️</button>
+        </div>
         <div class="taskbar-divider"></div>
         <div id="taskbar-apps"></div>
+        <button class="win95-btn taskbar-copilot-btn" id="taskbar-copilot-btn" title="Toggle Windows Copilot 95 Sidebar">
+          ✨ <span>Copilot 95</span>
+        </button>
         <!-- System Tray -->
-        <div id="system-tray" class="system-tray">
+        <div id="system-tray" class="system-tray" title="Click to open Quick Settings 95">
+          <button class="tray-icon-btn" id="tray-qs-btn" title="Quick Settings Flyout">📶</button>
           <button class="tray-icon-btn" id="tray-crt-btn" title="Toggle CRT Scanlines">📺</button>
           <button class="tray-icon-btn" id="tray-sound-btn" title="Toggle Retro SFX">🔊</button>
           <span id="tray-clock" class="tray-clock">12:00 PM</span>
