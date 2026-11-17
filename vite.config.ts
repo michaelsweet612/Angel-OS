@@ -5,15 +5,36 @@
 /* tslint:disable */
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, type Plugin} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
+
+const disableViteClientWs: Plugin = {
+  name: 'disable-vite-client-ws',
+  apply: 'serve',
+  enforce: 'post',
+  transform(code, id) {
+    if (id.includes('vite/dist/client/client.mjs')) {
+      return {
+        code: code.replace(
+          /transport\.connect\(createHMRHandler\(handleMessage\)\);?/g,
+          '/* HMR WebSocket disabled in preview environment */',
+        ),
+        map: null,
+      };
+    }
+    return null;
+  },
+};
 
 export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    hmr: false,
+    ws: false,
   },
   plugins: [
+    disableViteClientWs,
     react(),
     VitePWA({
       registerType: 'autoUpdate',
