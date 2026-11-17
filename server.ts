@@ -5,8 +5,10 @@
  */
 
 import {GoogleGenAI} from '@google/genai';
+import dns from 'dns/promises';
 import express from 'express';
 import fs from 'fs';
+import net from 'net';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
@@ -158,6 +160,168 @@ async function startServer() {
       status: 'ok',
       hasKey: Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY),
     });
+  });
+
+  function isPrivateOrReservedIp(ip: string): boolean {
+    const clean = ip.replace(/^::ffff:/i, '');
+    if (net.isIPv4(clean)) {
+      const parts = clean.split('.').map(Number);
+      const [a, b] = parts;
+      if (a === 0 || a === 10 || a === 127) return true;
+      if (a === 100 && b >= 64 && b <= 127) return true;
+      if (a === 169 && b === 254) return true;
+      if (a === 172 && b >= 16 && b <= 31) return true;
+      if (a === 192 && b === 0) return true;
+      if (a === 192 && b === 168) return true;
+      if (a >= 224) return true;
+      return false;
+    }
+    if (net.isIPv6(ip)) {
+      const lower = ip.toLowerCase();
+      if (lower === '::' || lower === '::1') return true;
+      if (lower.startsWith('fe80:') || lower.startsWith('fc') || lower.startsWith('fd') || lower.startsWith('ff')) {
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  async function validatePublicHttpUrl(rawUrl: string): Promise<URL> {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Only HTTP and HTTPS URLs are supported.');
+    }
+    const host = parsed.hostname.replace(/^\[|\]$/g, '');
+    if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
+      throw new Error('Local or internal hostnames are blocked.');
+    }
+    if (net.isIP(host)) {
+      if (isPrivateOrReservedIp(host)) {
+        throw new Error('Private or reserved IP addresses are blocked.');
+      }
+      return parsed;
+    }
+    try {
+      const records = await dns.lookup(host, {all: true});
+      if (!records || records.length === 0) {
+        throw new Error(`Host not found: ${host}`);
+      }
+      for (const rec of records) {
+        if (isPrivateOrReservedIp(rec.address)) {
+          throw new Error('Target resolved to a private or reserved network address.');
+        }
+      }
+    } catch (err: any) {
+      if (err?.message?.includes('blocked') || err?.message?.includes('private')) {
+        throw err;
+      }
+      // Note: if direct DNS lookup fails behind an upstream HTTP proxy, let fetch attempt proxy resolution unless explicitly private
+    }
+    return parsed;
+  }
+
+  app.get('/api/browse', async (req, res) => {
+    const rawUrl = typeof req.query.url === 'string' ? req.query.url.trim() : '';
+    if (!rawUrl) {
+      res.status(400).json({ok: false, error: 'Missing ?url= parameter.'});
+      return;
+    }
+
+    try {
+      let currentUrl = (await validatePublicHttpUrl(rawUrl)).toString();
+      let response: Response | null = null;
+
+      for (let hops = 0; hops < 4; hops++) {
+        response = await fetch(currentUrl, {
+          redirect: 'manual',
+          signal: AbortSignal.timeout(7500),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        });
+
+        if (response.status >= 300 && response.status < 400) {
+          const loc = response.headers.get('location');
+          if (!loc) break;
+          const nextUrl = new URL(loc, currentUrl).toString();
+          currentUrl = (await validatePublicHttpUrl(nextUrl)).toString();
+          continue;
+        }
+        break;
+      }
+
+      if (!response) {
+        res.status(502).json({ok: false, error: 'No response from upstream server.'});
+        return;
+      }
+
+      const contentType = (response.headers.get('content-type') || 'text/html').toLowerCase();
+      if (contentType.startsWith('image/')) {
+        const html = `<!DOCTYPE html><html><head><title>${currentUrl}</title></head><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${currentUrl.replace(/"/g, '&quot;')}" style="max-width:100%;max-height:100vh;object-fit:contain;" /></body></html>`;
+        res.json({ok: true, finalUrl: currentUrl, status: response.status, title: currentUrl, html});
+        return;
+      }
+
+      const MAX_BYTES = 2 * 1024 * 1024;
+      const reader = response.body?.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      if (reader) {
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done || !value) break;
+          total += value.byteLength;
+          if (total > MAX_BYTES) {
+            chunks.push(value.slice(0, Math.max(0, value.byteLength - (total - MAX_BYTES))));
+            try { await reader.cancel(); } catch {}
+            break;
+          }
+          chunks.push(value);
+        }
+      }
+      const rawText = Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8');
+
+      if (!response.ok) {
+        res.json({
+          ok: false,
+          finalUrl: currentUrl,
+          status: response.status,
+          error: `Upstream returned HTTP ${response.status} ${response.statusText || ''}`.trim(),
+        });
+        return;
+      }
+
+      let html = rawText;
+      if (!contentType.includes('html') && !contentType.includes('xml')) {
+        const esc = rawText.replace(/[&<>]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c] || c));
+        html = `<!DOCTYPE html><html><head><title>${currentUrl}</title></head><body style="font-family:monospace;white-space:pre-wrap;padding:16px;background:#fff;color:#111;">${esc}</body></html>`;
+      } else {
+        // Strip framing/CSP meta restrictions and inject <base href="...">
+        html = html.replace(/<meta\b[^>]*http-equiv\s*=\s*["']?(?:Content-Security-Policy|X-Frame-Options)[^>]*>/gi, '');
+        const safeBase = currentUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        const baseTag = `<base href="${safeBase}" target="_self">`;
+        if (/<head\b[^>]*>/i.test(html)) {
+          html = html.replace(/<head\b[^>]*>/i, (m) => `${m}\n${baseTag}`);
+        } else {
+          html = `<!DOCTYPE html><html><head>${baseTag}</head><body>${html}</body></html>`;
+        }
+      }
+
+      const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : currentUrl;
+
+      res.json({ok: true, finalUrl: currentUrl, status: response.status, title, html});
+    } catch (error: any) {
+      res.status(200).json({
+        ok: false,
+        finalUrl: rawUrl,
+        status: 0,
+        error: error?.message || String(error),
+      });
+    }
   });
 
   app.post('/api/generate-content', async (req, res) => {

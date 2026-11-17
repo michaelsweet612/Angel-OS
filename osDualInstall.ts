@@ -997,7 +997,11 @@ interface BeforeInstallPromptEvent extends Event {
 
 let deferredPwaPrompt: BeforeInstallPromptEvent | null = null;
 let isStandaloneOsMode = false;
-let isOfflineMode = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+let isOfflineMode =
+  typeof navigator !== 'undefined' &&
+  typeof window !== 'undefined' &&
+  window.location.protocol === 'file:' &&
+  !navigator.onLine;
 
 export function getPwaHostState() {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
@@ -1131,6 +1135,19 @@ export function initPwaAndHostOsController(): void {
     isOfflineMode = true;
     syncPwaTaskbarAndBadges();
   });
+
+  // Verify real connectivity if navigator.onLine reports false (prevents spurious OFFLINE badge in headless/sandbox environments)
+  if (!navigator.onLine && window.location.protocol.startsWith('http')) {
+    fetch('/api/health', { cache: 'no-store' })
+      .then((r) => {
+        isOfflineMode = !r.ok;
+        syncPwaTaskbarAndBadges();
+      })
+      .catch(() => {
+        isOfflineMode = true;
+        syncPwaTaskbarAndBadges();
+      });
+  }
 
   document.addEventListener('fullscreenchange', () => {
     renderAbilityToInstallUI();

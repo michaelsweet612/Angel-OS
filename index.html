@@ -231,9 +231,9 @@
         <div class="os-setup-browser-pick">
           <label for="os-setup-browser-select"><b>Bundle Default Web Browser Engine During OS Setup:</b></label>
           <select id="os-setup-browser-select" class="win95-select">
+            <option value="chrome" selected>🟢 Google Chrome (Default Desktop Engine)</option>
             <option value="netscape">🌐 Netscape Navigator 95 Gold (v3.04)</option>
             <option value="ie3">📘 Microsoft Internet Explorer 3.0 (Plus! 95)</option>
-            <option value="cyberchrome">⚡ CyberChrome 95 Turbo (v1.0)</option>
             <option value="all">💿 Install All 3 Browser Engines Together</option>
           </select>
         </div>
@@ -446,83 +446,83 @@
       <div class="desktop-icons" id="desktop-icons">
         <div class="icon" data-app="abilityToInstall">
           <img
-            src="https://win98icons.alexmeub.com/icons/png/appwizard-4.png"
+            data-icon-key="abilityToInstall"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="Ability to Install"
-            referrerpolicy="no-referrer"
           />
           <span>Ability to Install</span>
         </div>
         <div class="icon" data-app="chrome" data-pkg-app="chrome">
           <img
             id="desktop-browser-icon-img"
-            src="https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png"
-            alt="Web Browser"
-            referrerpolicy="no-referrer"
+            data-icon-key="chrome"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Google Chrome"
           />
-          <span id="desktop-browser-icon-label">Netscape 95</span>
+          <span id="desktop-browser-icon-label">Google Chrome</span>
         </div>
         <div class="icon" data-app="controlPanel">
           <img
-            src="https://win98icons.alexmeub.com/icons/png/settings_gear-4.png"
+            data-icon-key="controlPanel"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="Settings & Control"
-            referrerpolicy="no-referrer"
           />
           <span>Settings &amp; Control</span>
         </div>
         <div class="icon" data-app="regedit" data-pkg-id="sys_regedit">
           <img
-            src="https://win98icons.alexmeub.com/icons/png/regedit-0.png"
+            data-icon-key="regedit"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="Registry Editor"
-            referrerpolicy="no-referrer"
           />
           <span>REGEDIT.EXE</span>
         </div>
         <div class="icon" data-app="myComputer">
           <img
-            src="https://storage.googleapis.com/gemini-95-icons/mycomputer.png"
+            data-icon-key="myComputer"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="My Gemtop"
-            referrerpolicy="no-referrer"
-            style="width: 54px; height: 44px; object-fit: contain"
+            style="object-fit: contain"
           />
           <span>My Gemtop</span>
         </div>
         <div class="icon" data-app="gemini" data-pkg-id="app_aim">
           <img
-            src="https://storage.googleapis.com/gemini-95-icons/GeminiChatRetro.png"
+            data-icon-key="gemini"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="Gemini AIM"
-            referrerpolicy="no-referrer"
           />
           <span>Gemini AIM</span>
         </div>
         <div class="icon" data-app="notepad" data-pkg-id="app_notepad">
           <img
-            src="https://storage.googleapis.com/gemini-95-icons/GemNotes.png"
+            data-icon-key="notepad"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="GemNotes"
-            referrerpolicy="no-referrer"
           />
           <span>GemNotes</span>
         </div>
         <div class="icon" data-app="paint" data-pkg-id="app_paint">
           <img
-            src="https://storage.googleapis.com/gemini-95-icons/gempaint.png"
+            data-icon-key="paint"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="GemPaint"
-            referrerpolicy="no-referrer"
           />
           <span>GemPaint</span>
         </div>
         <div class="icon" data-app="minesweeper" data-pkg-id="app_minesweeper">
           <img
-            src="https://storage.googleapis.com/gemini-95-icons/gemsweeper.png"
+            data-icon-key="minesweeper"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="GemSweeper"
-            referrerpolicy="no-referrer"
           />
           <span>GemSweeper</span>
         </div>
         <div class="icon" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">
           <img
-            src="https://storage.googleapis.com/gemini-95-icons/ytmediaplayer.png"
+            data-icon-key="mediaPlayer"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="GemPlayer"
-            referrerpolicy="no-referrer"
           />
           <span>GemPlayer</span>
         </div>
@@ -532,17 +532,17 @@
         </div>
         <div class="icon" data-app="doom" data-pkg-id="app_doom">
           <img
-            src="https://64.media.tumblr.com/1d89dfa76381e5c14210a2149c83790d/7a15f84c681c1cf9-c1/s540x810/86985984be99d5591e0cbc0dea6f05ffa3136dac.png"
+            data-icon-key="doom"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="Doom II"
-            referrerpolicy="no-referrer"
           />
           <span>Doom II</span>
         </div>
         <div class="icon" data-app="sysMonitor" data-pkg-id="sys_monitor" style="display: none">
           <img
-            src="https://win98icons.alexmeub.com/icons/png/sysmon-0.png"
+            data-icon-key="sysMonitor"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
             alt="System Monitor"
-            referrerpolicy="no-referrer"
           />
           <span>System Monitor</span>
         </div>
@@ -557,7 +557,7 @@
         <div class="sticky-body">
           <p>• <b>2 Ways to Install</b>: Run <b>.EXE Setup Files</b> in <code>C:\Downloads</code> (+ download Portable PC App) OR run a <b>Physical OS Install</b> (<code>FDISK.EXE</code>, Bootable <code>.ISO</code> &amp; Native PWA)!</p>
           <p>• <b>Settings &amp; Control</b>: 8 ultra-detailed tabs + live <b>REGEDIT.EXE</b> &amp; <b>CMOS BIOS</b> controlling every pixel, disk flag &amp; DSP parameter.</p>
-          <p>• <b>Multi-Engine Browser</b>: Surf <b>Tucows .EXE Depot</b>, AI Web &amp; Live URLs!</p>
+          <p>• <b>Google Chrome + Classics</b>: Physical tabbed Chrome with Live Web proxy, Search, AI Time-Machine &amp; Tucows <b>.EXE Depot</b>!</p>
         </div>
       </div>
 
@@ -593,10 +593,10 @@
         </div>
       </div>
 
-      <!-- 2. MULTI-ENGINE REINSTALLABLE WEB BROWSER (Netscape 95 / IE 3.0 / CyberChrome) -->
-      <div class="window resizable browser-engine-netscape" id="chrome" style="width: 740px; height: 530px">
+      <!-- 2. PHYSICAL GOOGLE CHROME + CLASSIC MULTI-ENGINE BROWSER -->
+      <div class="window resizable browser-engine-chrome" id="chrome" style="width: 820px; height: 560px">
         <div class="window-titlebar">
-          <span class="window-title" id="browser-window-title">Netscape Navigator 95 Gold — [Home Portal]</span>
+          <span class="window-title" id="browser-window-title">Google Chrome — New Tab</span>
           <div class="window-controls">
             <div class="window-minimize window-control-button" title="Minimize">−</div>
             <div class="window-maximize window-control-button" title="Maximize">□</div>
@@ -604,50 +604,79 @@
           </div>
         </div>
         <div class="window-content">
-          <!-- Multi-Tab Strip -->
+          <!-- Multi-Tab Strip (Chrome #dee1e6 top strip / Classic engine strip) -->
           <div class="browser-tabs-strip">
             <div class="browser-tabs-list" id="browser-tabs-list"></div>
-            <button class="win95-btn" id="browser-new-tab-btn" title="Open New Tab">+ Tab</button>
-            <div class="browser-engine-switcher">
-              <label for="browser-engine-select">Engine:</label>
-              <select id="browser-engine-select" class="win95-select" title="Switch Installed Browser Engine"></select>
-              <button class="win95-btn" id="browser-manage-install-btn" title="Install / Reinstall / Uninstall Browsers in Ability to Install">💿 Install/Reinstall</button>
-            </div>
+            <button class="win95-btn" id="browser-new-tab-btn" title="New Tab">+</button>
+            <div class="chrome-profile-badge" id="chrome-profile-badge" title="Angel-OS Profile · Google Chrome">G</div>
           </div>
 
-          <!-- Navigation & Mode Toolbar -->
+          <!-- Navigation & Omnibox Toolbar -->
           <div class="browser-toolbar">
             <div class="browser-nav-buttons">
-              <button class="win95-btn" id="browser-back" title="Back" disabled>◀</button>
-              <button class="win95-btn" id="browser-forward" title="Forward" disabled>▶</button>
-              <button class="win95-btn" id="browser-reload" title="Reload / Regenerate">↻</button>
-              <button class="win95-btn" id="browser-home" title="Engine Start Portal">🏠</button>
+              <button class="win95-btn" id="browser-back" title="Click to go back" disabled>←</button>
+              <button class="win95-btn" id="browser-forward" title="Click to go forward" disabled>→</button>
+              <button class="win95-btn" id="browser-reload" title="Reload this page">↻</button>
+              <button class="win95-btn" id="browser-home" title="Home (New Tab)">🏠</button>
             </div>
-            <div class="browser-mode-toggle" title="Switch between AI Web Synthesis and Real Live Iframe / Local C:\ Mode">
-              <button class="win95-btn active" id="browser-mode-ai">✨ AI Web</button>
-              <button class="win95-btn" id="browser-mode-live">🌐 Live URL</button>
-            </div>
-            <div class="address-bar-container">
+            <div class="address-bar-container chrome-omnibox">
+              <span class="chrome-security-pill" id="chrome-security-pill" title="Chrome Page Info">G</span>
               <input
                 type="text"
                 class="browser-address-bar"
-                placeholder="Type any domain, URL, Wikipedia topic, or file:///C:/..."
-                value="about:portal"
+                placeholder="Search Google or type a URL (e.g. wikipedia.org, example.com, chrome://settings)"
+                value="chrome://newtab"
               />
-              <button class="browser-go-button">Go!</button>
+              <div class="browser-mode-toggle" title="Switch between Real Live Web and AI Time-Machine Synthesis">
+                <button class="win95-btn active" id="browser-mode-live" title="Browse Real Live Websites via Proxy">🌐 Live</button>
+                <button class="win95-btn" id="browser-mode-ai" title="AI Time-Machine Web Synthesizer">✨ AI</button>
+              </div>
+              <button class="bookmark-chip" id="browser-add-bookmark-btn" title="Bookmark this tab">☆</button>
+              <button class="browser-go-button" title="Go to URL">Go</button>
             </div>
-            <div class="browser-throbber" id="browser-throbber" title="Active Browser Engine">N</div>
+            <div class="browser-throbber" id="browser-throbber" title="Active Browser Engine">C</div>
+            <button class="win95-btn" id="browser-source-btn" title="Inspect / Live-Edit HTML Source & Save to C:\">&lt;/&gt;</button>
+            <div class="chrome-menu-wrap">
+              <button class="win95-btn chrome-menu-btn" id="chrome-menu-btn" title="Customize and control Google Chrome">⋮</button>
+              <div id="chrome-menu-dropdown" class="chrome-menu-dropdown" style="display: none">
+                <div class="chrome-menu-item" id="chrome-menu-newtab">➕ New Tab</div>
+                <div class="chrome-menu-item" id="chrome-downloads-menu">📂 Downloads (C:\Downloads)</div>
+                <div class="chrome-menu-item" id="browser-exe-depot-menu">📥 .EXE Shareware Depot</div>
+                <div class="chrome-menu-divider"></div>
+                <div class="chrome-menu-row">
+                  <label for="browser-engine-select">Engine:</label>
+                  <select id="browser-engine-select" class="win95-select" title="Switch Installed Browser Engine"></select>
+                </div>
+                <div class="chrome-menu-row">
+                  <label for="chrome-era-select">AI Era:</label>
+                  <select id="chrome-era-select" class="win95-select" title="AI Synthesis Era">
+                    <option value="modern">Modern HTML5</option>
+                    <option value="2001">2001 Portal</option>
+                    <option value="1996">1996 GeoCities</option>
+                  </select>
+                </div>
+                <div class="chrome-menu-zoom-row">
+                  <span>Zoom</span>
+                  <div class="chrome-zoom-controls">
+                    <button class="win95-btn" id="chrome-zoom-out" title="Zoom Out">−</button>
+                    <span id="chrome-zoom-readout" class="tabular-nums">100%</span>
+                    <button class="win95-btn" id="chrome-zoom-in" title="Zoom In">+</button>
+                  </div>
+                </div>
+                <div class="chrome-menu-divider"></div>
+                <div class="chrome-menu-item" id="browser-manage-install-btn">💿 Install / Manage Engines...</div>
+                <div class="chrome-menu-item" id="browser-settings-btn">⚙️ Settings</div>
+                <div class="chrome-menu-item" id="chrome-about-btn">ℹ️ About Google Chrome</div>
+              </div>
+            </div>
           </div>
 
-          <!-- Bookmarks & Power Tools Bar -->
+          <!-- Bookmarks & Quick Tools Bar -->
           <div class="browser-bookmarks-bar">
             <span class="bookmarks-label">Bookmarks:</span>
             <div class="browser-bookmarks-items" id="browser-bookmarks-items"></div>
             <div class="browser-tools-right">
-              <button class="bookmark-chip" id="browser-exe-depot-btn" title="Open Tucows 95 .EXE Shareware Download Depot" style="background: #ffffcc; font-weight: 700">📥 Get .EXE</button>
-              <button class="bookmark-chip" id="browser-add-bookmark-btn" title="Bookmark Current Page">⭐ +Save</button>
-              <button class="bookmark-chip" id="browser-source-btn" title="Inspect / Live-Edit HTML Source & Save to C:\">📄 Source</button>
-              <button class="bookmark-chip" id="browser-settings-btn" title="Open Browser & Modem Settings">⚙️ Opts</button>
+              <button class="bookmark-chip" id="browser-exe-depot-btn" title="Open Tucows 95 .EXE Shareware Download Depot">📥 .EXE Depot</button>
             </div>
           </div>
 
@@ -662,7 +691,7 @@
               height="100%"
             ></iframe>
             <div class="browser-loading">
-              Generating website...
+              Loading page...
             </div>
             <!-- Live HTML Source Editor & Save to C:\ Drawer -->
             <div id="browser-source-drawer" class="browser-source-drawer" style="display: none">
@@ -678,8 +707,8 @@
             </div>
           </div>
           <div class="window-statusbar">
-            <span id="browser-status-text">Ready — Surf with AI Web Synthesis or Live Real-World URLs!</span>
-            <span id="browser-conn-badge" class="tabular-nums">📞 56,000 bps · Netscape 3.04</span>
+            <span id="browser-status-text">Google Chrome Ready — Search Google, browse live web URLs, or switch to ✨ AI!</span>
+            <span id="browser-conn-badge" class="tabular-nums">Chrome 131 · Live Web</span>
           </div>
         </div>
       </div>
@@ -878,9 +907,9 @@
         >
           <img
             id="image-viewer-img"
-            src="https://storage.googleapis.com/gemini-95-icons/%40ammaar%2B%40olacombe.png"
+            data-icon-key="samplePhoto"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='220' viewBox='0 0 320 220'%3E%3C/svg%3E"
             alt="Image"
-            referrerpolicy="no-referrer"
             style="max-width: 100%; max-height: 100%; object-fit: contain"
           />
         </div>
@@ -952,12 +981,13 @@
                 <button class="media-player-control-button" id="media-player-pause" title="Pause">❚❚</button>
                 <button class="media-player-control-button" id="media-player-stop" title="Stop">■</button>
               </div>
-              <div class="media-player-progress-bar-container-placeholder">
-                <div class="media-player-progress-bar-placeholder"></div>
+              <div class="media-player-progress-wrap" id="media-player-progress-bar" title="Seek playback position">
+                <div class="media-player-progress-fill" id="media-player-progress-fill" style="width: 0%"></div>
               </div>
-              <div class="media-player-volume-placeholder">
-                <span>🔊</span>
-                <div class="media-player-volume-slider-placeholder"></div>
+              <span class="media-player-time tabular-nums" id="media-player-time">0:00 / 0:00</span>
+              <div class="media-player-volume-wrap">
+                <span title="Volume">🔊</span>
+                <input type="range" id="media-player-volume" min="0" max="100" value="80" title="Volume" />
               </div>
             </div>
           </div>
@@ -1208,7 +1238,7 @@
           <div class="start-menu-item" data-app="controlPanel">⚙️ <b>Settings &amp; Control Panel</b></div>
           <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT)</div>
           <div class="start-menu-divider"></div>
-          <div class="start-menu-item" data-app="chrome" data-pkg-app="chrome" id="start-menu-browser-item">🌐 Netscape 95 (Web Browser)</div>
+          <div class="start-menu-item" data-app="chrome" data-pkg-app="chrome" id="start-menu-browser-item">🟢 Google Chrome (Web Browser)</div>
           <div class="start-menu-item" data-app="myComputer">💻 My Gemtop Explorer</div>
           <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
           <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
@@ -1399,7 +1429,7 @@
         </div>
         <div class="copilot-chat-log" id="copilot-chat-log">
           <div class="copilot-msg bot">
-            <b>Copilot 95:</b> Welcome to Windows 11 backported to 1995! Ask me anything or tell me to <i>"switch to Cyberpunk theme"</i>, <i>"tile my windows"</i>, or <i>"write a note to C:\"</i>!
+            <b>Copilot 95:</b> Welcome to Windows 10/11 backported to 1995! Ask me anything or tell me to <i>"switch to Cyberpunk theme"</i>, <i>"tile my windows"</i>, or <i>"write a note to C:\"</i>!
           </div>
         </div>
         <div class="copilot-input-row">
@@ -1425,6 +1455,10 @@
             <span class="qs-icon">🎯</span>
             <span class="qs-label">Center Taskbar</span>
           </button>
+          <button class="qs-tile" id="qs-tile-labels">
+            <span class="qs-icon">🏷️</span>
+            <span class="qs-label">Taskbar Labels</span>
+          </button>
           <button class="qs-tile" id="qs-tile-nightlight">
             <span class="qs-icon">🌙</span>
             <span class="qs-label">Night Light 95</span>
@@ -1436,6 +1470,14 @@
           <button class="qs-tile active" id="qs-tile-audio">
             <span class="qs-icon">🔊</span>
             <span class="qs-label">Retro SFX</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-top-dock">
+            <span class="qs-icon">⬆️</span>
+            <span class="qs-label">Top Taskbar</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-autohide">
+            <span class="qs-icon">🫥</span>
+            <span class="qs-label">Auto-Hide</span>
           </button>
           <button class="qs-tile" id="qs-tile-tilewin">
             <span class="qs-icon">⊞</span>
@@ -1454,43 +1496,89 @@
         </div>
       </div>
 
-      <!-- ==================== TASKBAR ==================== -->
+      <!-- ==================== TASKBAR (Win10 Icon Dock + Classic Win95 Bevels) ==================== -->
       <div id="taskbar">
         <div class="taskbar-left-cluster" id="taskbar-left-cluster">
-          <button id="start-button">
-            <img
-              src="https://storage.googleapis.com/gemini-95-icons/start-gemini.png"
-              alt="Start"
-              referrerpolicy="no-referrer"
-            />
+          <button id="start-button" title="Start Menu">
+            <svg class="start-win-flag" viewBox="0 0 18 18" aria-hidden="true">
+              <rect x="1" y="2" width="7" height="6" fill="#ff3b1f" stroke="#000" stroke-width="0.9" />
+              <rect x="10" y="2" width="7" height="6" fill="#32a852" stroke="#000" stroke-width="0.9" />
+              <rect x="1" y="10" width="7" height="6" fill="#0078d7" stroke="#000" stroke-width="0.9" />
+              <rect x="10" y="10" width="7" height="6" fill="#ffb900" stroke="#000" stroke-width="0.9" />
+            </svg>
             <span>Start</span>
           </button>
-          <button class="win95-btn taskbar-win11-btn" id="taskbar-search-btn" title="Universal Search (Win11-in-95)">
-            🔍 <span>Search</span>
+          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-search-btn" title="Universal Search">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="6.75" cy="6.75" r="4.5" fill="rgba(255,255,255,0.45)" stroke="#111827" stroke-width="1.5" />
+              <line x1="10.2" y1="10.2" x2="14.2" y2="14.2" stroke="#111827" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
           </button>
-          <button class="win95-btn taskbar-win11-btn" id="taskbar-taskview-btn" title="Task View & Virtual Desktops">
-            🪟 <span id="taskbar-desk-label">Desk 1</span>
+          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-taskview-btn" title="Task View & Virtual Desktops (Desktop 1)">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="1.5" y="3" width="8.5" height="6.5" fill="#dbeafe" stroke="#1e293b" stroke-width="1.3" />
+              <rect x="5" y="6.5" width="9" height="6.5" fill="#93c5fd" stroke="#000080" stroke-width="1.3" />
+            </svg>
+            <span class="taskbar-desk-badge" id="taskbar-desk-badge">1</span>
           </button>
-          <button class="win95-btn taskbar-win11-btn" id="taskbar-widgets-btn" title="Windows 95 Widgets Board">
-            🌤️ <span>72°F</span>
-          </button>
-          <button class="win95-btn taskbar-quick-btn" id="show-desktop-btn" title="Minimize All Windows">🖥️</button>
         </div>
         <div class="taskbar-divider"></div>
         <div id="taskbar-apps"></div>
-        <button class="win95-btn taskbar-install-os-btn" id="pwa-taskbar-install-btn" title="Install Gemini 95 as a Native Standalone OS App">
-          📲 <span>Install OS</span>
-        </button>
-        <button class="win95-btn taskbar-copilot-btn" id="taskbar-copilot-btn" title="Toggle Windows Copilot 95 Sidebar">
-          ✨ <span>Copilot 95</span>
-        </button>
-        <!-- System Tray -->
-        <div id="system-tray" class="system-tray" title="Click to open Quick Settings 95">
-          <span id="tray-offline-badge" class="tray-offline-badge" style="display: none" title="Running Offline via Service Worker Cache">⚡ OFFLINE</span>
-          <button class="tray-icon-btn" id="tray-qs-btn" title="Quick Settings Flyout">📶</button>
-          <button class="tray-icon-btn" id="tray-crt-btn" title="Toggle CRT Scanlines">📺</button>
-          <button class="tray-icon-btn" id="tray-sound-btn" title="Toggle Retro SFX">🔊</button>
-          <span id="tray-clock" class="tray-clock">12:00 PM</span>
+        <div class="taskbar-right-cluster" id="taskbar-right-cluster">
+          <div class="taskbar-divider"></div>
+          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-widgets-btn" title="Widgets Board — Redmond, WA: 72°F">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="5.5" cy="5.5" r="3" fill="#f59e0b" stroke="#78350f" stroke-width="0.9" />
+              <path d="M5 13h7.2a2.3 2.3 0 0 0 .3-4.58A3.2 3.2 0 0 0 6.2 7.6 2.6 2.6 0 0 0 5 13Z" fill="#f8fafc" stroke="#334155" stroke-width="1.1" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="win95-btn taskbar-copilot-btn taskbar-icon-btn" id="taskbar-copilot-btn" title="Windows Copilot 95">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 1.5 L9.7 6.3 L14.5 8 L9.7 9.7 L8 14.5 L6.3 9.7 L1.5 8 L6.3 6.3 Z" fill="#0078d7" stroke="#003c80" stroke-width="0.9" stroke-linejoin="round" />
+              <circle cx="8" cy="8" r="1.6" fill="#ffffff" />
+            </svg>
+          </button>
+          <button class="win95-btn taskbar-install-os-btn taskbar-icon-btn" id="pwa-taskbar-install-btn" title="Install Gemini 95 as a Native Standalone OS App">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="2" y="2" width="12" height="9" rx="1" fill="#0f766e" stroke="#111827" stroke-width="1.2" />
+              <rect x="6.2" y="11" width="3.6" height="2" fill="#475569" />
+              <rect x="4.5" y="13" width="7" height="1.4" fill="#1e293b" />
+              <path d="M8 3.6v4.2M6 6.2l2 2 2-2" fill="none" stroke="#fef08a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <!-- System Tray -->
+          <div id="system-tray" class="system-tray">
+            <span id="tray-offline-badge" class="tray-offline-badge" style="display: none" title="Running Offline via Service Worker Cache">OFFLINE</span>
+            <button class="tray-icon-btn" id="tray-qs-btn" title="Network & Quick Settings 95">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="2" y="10" width="2.4" height="4" fill="#000080" />
+                <rect x="5.5" y="7.5" width="2.4" height="6.5" fill="#000080" />
+                <rect x="9" y="5" width="2.4" height="9" fill="#000080" />
+                <rect x="12.5" y="2.5" width="2.4" height="11.5" fill="#0078d7" />
+              </svg>
+            </button>
+            <button class="tray-icon-btn" id="tray-crt-btn" title="CRT Scanlines On — Click to Toggle">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="1.5" y="2" width="13" height="9.5" rx="1" fill="#0f172a" stroke="#1e293b" stroke-width="1.2" />
+                <line x1="3" y1="5" x2="13" y2="5" stroke="#22d3ee" stroke-width="1" />
+                <line x1="3" y1="7.5" x2="13" y2="7.5" stroke="#38bdf8" stroke-width="1" />
+                <line x1="5" y1="13.5" x2="11" y2="13.5" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button class="tray-icon-btn" id="tray-sound-btn" title="Sound On — Click to Mute Retro SFX">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <polygon points="2,6 5.5,6 9.5,2.5 9.5,13.5 5.5,10 2,10" fill="#1e293b" />
+                <path class="tray-sound-waves" d="M11.5 5.3a3.6 3.6 0 0 1 0 5.4M13.2 3.5a6.2 6.2 0 0 1 0 9" fill="none" stroke="#1e293b" stroke-width="1.3" stroke-linecap="round" />
+                <line class="tray-sound-mute" x1="11" y1="5" x2="14.8" y2="11" stroke="#b91c1c" stroke-width="1.6" stroke-linecap="round" />
+                <line class="tray-sound-mute" x1="14.8" y1="5" x2="11" y2="11" stroke="#b91c1c" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+            </button>
+            <div id="tray-clock" class="tray-clock" title="Date, Time & Quick Settings 95">
+              <span class="tray-clock-time">12:00 PM</span>
+              <span class="tray-clock-date">8/24/1995</span>
+            </div>
+          </div>
+          <button class="taskbar-peek-btn" id="show-desktop-btn" title="Show Desktop (Minimize All Windows)" aria-label="Show Desktop"></button>
         </div>
       </div>
 
@@ -1498,9 +1586,10 @@
       <div id="paint-assistant">
         <div class="assistant-bubble">Warming up my art critic circuits...</div>
         <img
-          src="https://storage.googleapis.com/gemini-95-icons/robot-assistant.gif"
+          id="paint-assistant-img"
+          data-icon-key="robotAssistant"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
           alt="Paint Assistant"
-          referrerpolicy="no-referrer"
           class="assistant-image"
         />
       </div>

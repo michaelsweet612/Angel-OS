@@ -4,7 +4,7 @@
  * Ability to Install (InstallShield 95), and the Multi-Engine Reinstallable Browser.
  */
 
-export type BrowserEngineId = 'netscape' | 'ie3' | 'cyberchrome';
+export type BrowserEngineId = 'chrome' | 'netscape' | 'ie3';
 export type BrowserRenderMode = 'ai' | 'live';
 export type BrowserAiEra = '1996' | '2001' | 'modern';
 
@@ -42,8 +42,9 @@ export interface SystemRegistry {
   showWelcomeSticky: boolean;
   showClippyAssistant: boolean;
 
-  // --- Tab 3: Taskbar, Snap & Win11 Shell (HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer) ---
+  // --- Tab 3: Taskbar, Snap & Win10/11 Hybrid Shell (HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer) ---
   taskbarCentered: boolean;
+  taskbarShowLabels: boolean;
   taskbarPosition: 'bottom' | 'top';
   taskbarAutoHide: boolean;
   showSearchBtn: boolean;
@@ -135,6 +136,7 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   showClippyAssistant: true,
 
   taskbarCentered: false,
+  taskbarShowLabels: false,
   taskbarPosition: 'bottom',
   taskbarAutoHide: false,
   showSearchBtn: true,
@@ -155,14 +157,14 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   chimeTapeSaturation: 28,
   floppyMechanicalSfx: true,
 
-  defaultBrowserEngine: 'netscape',
-  defaultBrowserMode: 'ai',
+  defaultBrowserEngine: 'chrome',
+  defaultBrowserMode: 'live',
   browserAiEra: '1996',
   modemBaudRate: 56000,
   playModemHandshake: true,
   browserShowImages: true,
   browserEnableScripts: true,
-  browserHomePage: 'about:portal',
+  browserHomePage: 'chrome://newtab',
   browserZoomPercent: 100,
 
   cpuModel: 'Intel Pentium 133MHz',
@@ -250,6 +252,25 @@ export interface SoftwarePackage {
 
 export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
   {
+    pkgId: 'browser_chrome',
+    name: 'Google Chrome',
+    version: '131.0.6778',
+    publisher: 'Google LLC',
+    category: 'browser',
+    sizeMB: 24.5,
+    installDir: 'C:\\Program Files\\Google\\Chrome\\Application',
+    exeName: 'CHROME.EXE',
+    setupExeFileName: 'CHROME_SETUP.EXE',
+    appWindowId: 'chrome',
+    browserEngine: 'chrome',
+    iconHtml: '🟢',
+    description: 'Physical Google Chrome browser with real Live Web proxy browsing, multi-tab strip, Omnibox search & optional ✨ AI Web Time-Machine.',
+    installed: true,
+    desktopShortcut: true,
+    startMenuShortcut: true,
+    canUninstall: true,
+  },
+  {
     pkgId: 'browser_netscape',
     name: 'Netscape Navigator 95 Gold',
     version: '3.04',
@@ -262,8 +283,8 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     appWindowId: 'chrome',
     browserEngine: 'netscape',
     iconHtml: '🌐',
-    description: 'Classic 1996 Web 1.0 Navigator engine with GeoCities AI Time-Machine & Live Web Iframe support.',
-    installed: true,
+    description: 'Classic 1996 Web 1.0 Navigator engine with GeoCities AI Time-Machine & Live Web browsing support.',
+    installed: false,
     desktopShortcut: true,
     startMenuShortcut: true,
     canUninstall: true,
@@ -282,25 +303,6 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     browserEngine: 'ie3',
     iconHtml: '📘',
     description: 'Classic Windows 95 Plus! Internet Explorer 3.0 browser engine with MSN 1996 Portal & ActiveFrame.',
-    installed: false,
-    desktopShortcut: true,
-    startMenuShortcut: true,
-    canUninstall: true,
-  },
-  {
-    pkgId: 'browser_cyberchrome',
-    name: 'CyberChrome 95 Turbo',
-    version: '1.0.95',
-    publisher: 'Gemini Neural Systems',
-    category: 'browser',
-    sizeMB: 18.6,
-    installDir: 'C:\\Program Files\\CyberChrome',
-    exeName: 'CHROME95.EXE',
-    setupExeFileName: 'CYBERCHROME_SETUP.EXE',
-    appWindowId: 'chrome',
-    browserEngine: 'cyberchrome',
-    iconHtml: '⚡',
-    description: 'Retro-futuristic multi-tabbed browser backported from the future with Speed-Dial & Live Reader.',
     installed: false,
     desktopShortcut: true,
     startMenuShortcut: true,
@@ -452,9 +454,85 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
   },
 ];
 
-const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v2';
-const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v2';
-const BOOKMARKS_STORAGE_KEY = '__gemini95_browser_bookmarks_v2';
+function svgDataUri(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.replace(/\s+/g, ' ').trim())}`;
+}
+
+export const APP_SVG_ICONS: Record<string, string> = {
+  chrome: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="#ffffff"/><path d="M32 3 A29 29 0 0 1 57.5 18 H32 A14 14 0 0 0 19.8 25 L7.2 17 A29 29 0 0 1 32 3Z" fill="#ea4335"/><path d="M7.2 17 L19.8 25 A14 14 0 0 0 30.8 46 L23.5 59.8 A29 29 0 0 1 7.2 17Z" fill="#34a853"/><path d="M57.5 18 A29 29 0 0 1 23.5 59.8 L30.8 46 A14 14 0 0 0 45.8 29.5 H32 V18Z" fill="#fbbc05"/><circle cx="32" cy="32" r="13.5" fill="#ffffff"/><circle cx="32" cy="32" r="10.5" fill="#1a73e8"/></svg>',
+  ),
+  netscape: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="4" y="4" width="56" height="56" rx="8" fill="#0d4f6b" stroke="#000" stroke-width="2"/><path d="M12 48 Q32 22 52 48" fill="none" stroke="#38bdf8" stroke-width="4"/><path d="M20 46 V16 L44 46 V16" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/></svg>',
+  ),
+  ie3: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="#0078d7"/><path d="M10 38 C16 14 54 10 56 26 C40 34 18 46 8 42" fill="none" stroke="#ffd43b" stroke-width="5" stroke-linecap="round"/><text x="32" y="43" text-anchor="middle" font-family="Georgia,serif" font-weight="bold" font-size="38" fill="#ffffff">e</text></svg>',
+  ),
+  abilityToInstall: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="8,24 32,12 56,24 56,50 32,60 8,50" fill="#d97706" stroke="#111" stroke-width="2"/><polygon points="8,24 32,12 56,24 32,34" fill="#fbbf24" stroke="#111" stroke-width="2"/><circle cx="42" cy="20" r="13" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/><circle cx="42" cy="20" r="4" fill="#0078d7"/><path d="M22 40 L32 48 L42 40" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
+  ),
+  controlPanel: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="10" width="52" height="44" fill="#c0c0c0" stroke="#000" stroke-width="2"/><rect x="8" y="12" width="48" height="10" fill="#000080"/><circle cx="32" cy="38" r="12" fill="#475569" stroke="#000" stroke-width="2"/><circle cx="32" cy="38" r="5" fill="#e2e8f0"/><path d="M32 22v6M32 48v6M16 38h6M42 38h6" stroke="#1e293b" stroke-width="4"/></svg>',
+  ),
+  regedit: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="10" y="10" width="14" height="14" fill="#0284c7" stroke="#000" stroke-width="2"/><rect x="26" y="10" width="14" height="14" fill="#38bdf8" stroke="#000" stroke-width="2"/><rect x="10" y="26" width="14" height="14" fill="#7dd3fc" stroke="#000" stroke-width="2"/><rect x="26" y="26" width="14" height="14" fill="#0ea5e9" stroke="#000" stroke-width="2"/><rect x="38" y="34" width="16" height="16" fill="#38bdf8" stroke="#000" stroke-width="2"/><rect x="22" y="42" width="14" height="14" fill="#0284c7" stroke="#000" stroke-width="2"/></svg>',
+  ),
+  sysMonitor: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="8" width="52" height="40" rx="2" fill="#c0c0c0" stroke="#000" stroke-width="2"/><rect x="11" y="13" width="42" height="28" fill="#022c22"/><polyline points="13,32 22,32 26,18 32,37 38,23 44,30 51,30" fill="none" stroke="#00ff66" stroke-width="3" stroke-linejoin="round"/><rect x="22" y="48" width="20" height="8" fill="#808080" stroke="#000" stroke-width="2"/></svg>',
+  ),
+  myComputer: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="10" y="6" width="44" height="32" rx="2" fill="#e5e0d8" stroke="#000" stroke-width="2"/><rect x="15" y="11" width="34" height="22" fill="#008080"/><rect x="18" y="14" width="12" height="9" fill="#38bdf8"/><rect x="6" y="40" width="52" height="16" fill="#d6d1c9" stroke="#000" stroke-width="2"/><rect x="34" y="46" width="18" height="3" fill="#334155"/><circle cx="15" cy="48" r="2.5" fill="#16a34a"/></svg>',
+  ),
+  gemini: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M10 12 H54 V42 H30 L18 54 V42 H10 Z" fill="#facc15" stroke="#000" stroke-width="2.5" stroke-linejoin="round"/><circle cx="32" cy="24" r="5.5" fill="#1d4ed8"/><path d="M21 37 C23 29 41 29 43 37" fill="#1d4ed8"/></svg>',
+  ),
+  notepad: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="12" y="10" width="38" height="46" fill="#ffffff" stroke="#000" stroke-width="2"/><rect x="12" y="10" width="38" height="9" fill="#0284c7" stroke="#000" stroke-width="2"/><line x1="18" y1="27" x2="44" y2="27" stroke="#64748b" stroke-width="2.5"/><line x1="18" y1="35" x2="44" y2="35" stroke="#64748b" stroke-width="2.5"/><line x1="18" y1="43" x2="36" y2="43" stroke="#64748b" stroke-width="2.5"/><polygon points="44,18 54,8 58,12 48,22 41,25" fill="#f59e0b" stroke="#000" stroke-width="1.5"/></svg>',
+  ),
+  paint: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><ellipse cx="30" cy="36" rx="22" ry="18" fill="#fef3c7" stroke="#000" stroke-width="2"/><circle cx="20" cy="30" r="4" fill="#ef4444"/><circle cx="31" cy="25" r="4" fill="#3b82f6"/><circle cx="42" cy="31" r="4" fill="#22c55e"/><circle cx="23" cy="43" r="4" fill="#eab308"/><polygon points="36,36 56,10 60,14 40,40" fill="#7c3aed" stroke="#000" stroke-width="1.5"/></svg>',
+  ),
+  minesweeper: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="52" fill="#c0c0c0" stroke="#000" stroke-width="2"/><circle cx="32" cy="34" r="14" fill="#111"/><path d="M32 14v40M12 34h40M19 21l26 26M45 21L19 47" stroke="#111" stroke-width="4" stroke-linecap="round"/><circle cx="27" cy="29" r="3.5" fill="#ffffff"/><polygon points="36,12 52,18 36,24" fill="#ef4444"/></svg>',
+  ),
+  mediaPlayer: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="10" width="48" height="44" fill="#1e293b" stroke="#000" stroke-width="2"/><rect x="13" y="15" width="38" height="22" fill="#0f172a"/><rect x="17" y="25" width="5" height="9" fill="#00ff66"/><rect x="24" y="19" width="5" height="15" fill="#38bdf8"/><rect x="31" y="22" width="5" height="12" fill="#f472b6"/><rect x="38" y="17" width="5" height="17" fill="#facc15"/><polygon points="26,41 40,47 26,53" fill="#e2e8f0"/></svg>',
+  ),
+  dosPrompt: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="10" width="52" height="44" fill="#c0c0c0" stroke="#000" stroke-width="2"/><rect x="9" y="13" width="46" height="7" fill="#000080"/><rect x="9" y="22" width="46" height="29" fill="#000000"/><text x="14" y="42" font-family="monospace" font-weight="bold" font-size="18" fill="#00ff66">C:\\_</text></svg>',
+  ),
+  doom: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="52" rx="6" fill="#450a0a" stroke="#000" stroke-width="2"/><path d="M14 48 L22 14 L32 26 L42 14 L50 48 Z" fill="#dc2626" stroke="#facc15" stroke-width="2"/><text x="32" y="43" text-anchor="middle" font-family="Impact,sans-serif" font-size="16" fill="#fde047">DOOM</text></svg>',
+  ),
+  imageViewer: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="10" width="48" height="44" fill="#ffffff" stroke="#000" stroke-width="2"/><rect x="13" y="15" width="38" height="28" fill="#38bdf8"/><circle cx="23" cy="24" r="5" fill="#fde047"/><polygon points="13,43 27,26 37,37 44,30 51,43" fill="#15803d"/></svg>',
+  ),
+  folder: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M8 16 H26 L32 22 H56 V50 H8 Z" fill="#facc15" stroke="#000" stroke-width="2"/><path d="M8 24 H56 V50 H8 Z" fill="#fde047" stroke="#000" stroke-width="2"/></svg>',
+  ),
+  textFile: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="14,8 40,8 50,18 50,56 14,56" fill="#ffffff" stroke="#000" stroke-width="2"/><polygon points="40,8 40,18 50,18" fill="#cbd5e1" stroke="#000" stroke-width="1.5"/><line x1="20" y1="26" x2="44" y2="26" stroke="#475569" stroke-width="2.5"/><line x1="20" y1="34" x2="44" y2="34" stroke="#475569" stroke-width="2.5"/><line x1="20" y1="42" x2="36" y2="42" stroke="#475569" stroke-width="2.5"/></svg>',
+  ),
+  imageFile: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="12,8 42,8 52,18 52,56 12,56" fill="#ffffff" stroke="#000" stroke-width="2"/><rect x="18" y="22" width="28" height="22" fill="#bae6fd" stroke="#0284c7" stroke-width="1.5"/><polygon points="18,44 28,31 36,39 41,34 46,44" fill="#16a34a"/><circle cx="24" cy="28" r="3" fill="#f59e0b"/></svg>',
+  ),
+  appExe: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="10" width="48" height="44" fill="#c0c0c0" stroke="#000" stroke-width="2"/><rect x="10" y="12" width="44" height="10" fill="#000080"/><text x="32" y="42" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="14" fill="#000">EXE</text></svg>',
+  ),
+  setupExe: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="10" y="10" width="44" height="44" fill="#fef08a" stroke="#000" stroke-width="2"/><rect x="10" y="10" width="44" height="11" fill="#000080"/><text x="32" y="18" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="8.5" fill="#fff">SETUP</text><path d="M32 26 V42 M24 36 L32 44 L40 36" fill="none" stroke="#b91c1c" stroke-width="3.5" stroke-linecap="round"/></svg>',
+  ),
+  robotAssistant: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><line x1="32" y1="6" x2="32" y2="14" stroke="#000" stroke-width="3"/><circle cx="32" cy="5" r="3.5" fill="#ef4444"/><rect x="12" y="14" width="40" height="32" rx="6" fill="#cbd5e1" stroke="#000" stroke-width="2.5"/><rect x="18" y="20" width="28" height="18" rx="3" fill="#0f172a"/><circle cx="25" cy="28" r="3" fill="#38bdf8"/><circle cx="39" cy="28" r="3" fill="#38bdf8"/><path d="M26 34 Q32 37 38 34" fill="none" stroke="#00ff66" stroke-width="2"/><rect x="20" y="48" width="24" height="10" rx="2" fill="#94a3b8" stroke="#000" stroke-width="2"/></svg>',
+  ),
+  samplePhoto: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="60%" stop-color="#312e81"/><stop offset="100%" stop-color="#db2777"/></linearGradient></defs><rect width="320" height="220" fill="url(#sky)"/><circle cx="160" cy="118" r="44" fill="#facc15"/><rect y="140" width="320" height="80" fill="#1e1b4b"/><path d="M0 160 L320 160 M0 185 L320 185 M160 140 L40 220 M160 140 L160 220 M160 140 L280 220" stroke="#22d3ee" stroke-width="1.5" opacity="0.7"/><text x="160" y="34" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="16" fill="#ffffff">GEMINI 95 ARCHIVE PHOTO</text><text x="160" y="206" text-anchor="middle" font-family="monospace" font-size="12" fill="#a5f3fc">REDMOND · CLASS OF 1995</text></svg>',
+  ),
+};
+
+const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v3';
+const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v3';
+const BOOKMARKS_STORAGE_KEY = '__gemini95_browser_bookmarks_v3';
 const PARTITIONS_STORAGE_KEY = '__gemini95_partition_table_v1';
 
 export interface BrowserBookmark {
@@ -464,12 +542,12 @@ export interface BrowserBookmark {
 }
 
 export const DEFAULT_BOOKMARKS: BrowserBookmark[] = [
-  { title: '📥 .EXE Shareware Depot', url: 'http://www.tucows-95-downloads.com', mode: 'ai' },
+  { title: '➕ New Tab', url: 'chrome://newtab', mode: 'live' },
+  { title: '📚 Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Windows_95', mode: 'live' },
+  { title: '🌐 Example.com', url: 'https://example.com', mode: 'live' },
+  { title: '▶ Synthwave TV', url: 'https://www.youtube.com/watch?v=4xDzrJKXOOY', mode: 'live' },
   { title: '🛍️ CyberMall 96', url: 'https://www.geocities.com/cybermall1996', mode: 'ai' },
-  { title: '👽 Area 51 Truth', url: 'https://www.area51-truth-1995.org', mode: 'ai' },
-  { title: '🍕 PizzaNet 95', url: 'https://www.pizzanet-delivery.com', mode: 'ai' },
-  { title: '📚 Wikipedia (Live)', url: 'https://en.m.wikipedia.org/wiki/Windows_95', mode: 'live' },
-  { title: '🐣 Tamagotchi Club', url: 'https://www.virtual-tamagotchi-club.jp', mode: 'ai' },
+  { title: '👽 Area 51 (AI)', url: 'https://www.area51-truth-1995.org', mode: 'ai' },
 ];
 
 export function loadPartitionTable(): PartitionTableState {
@@ -507,6 +585,9 @@ export function loadSystemRegistry(): SystemRegistry {
     const raw = window.localStorage.getItem(REGISTRY_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      if (parsed && parsed.defaultBrowserEngine === 'cyberchrome') {
+        parsed.defaultBrowserEngine = 'chrome';
+      }
       return { ...DEFAULT_SYSTEM_REGISTRY, ...parsed };
     }
   } catch (e) {
@@ -612,7 +693,8 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_CURRENT_USER', subkey: 'Control Panel\\WindowMetrics', name: 'ShellIconSize', key: 'desktopIconSize', regType: 'REG_DWORD', description: 'Desktop icon pixel dimension (32-60)' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Control Panel\\WindowMetrics', name: 'DoubleClickLaunch', key: 'doubleClickIcons', regType: 'REG_DWORD', description: '1 = Require double-click on desktop icons' },
 
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'TaskbarAl', key: 'taskbarCentered', regType: 'REG_DWORD', description: '0 = Classic Win95 Left, 1 = Win11 Centered' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'TaskbarAl', key: 'taskbarCentered', regType: 'REG_DWORD', description: '0 = Left-Aligned Hybrid Dock, 1 = Centered Dock' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskbarLabels', key: 'taskbarShowLabels', regType: 'REG_DWORD', description: '0 = Icon-Only Win10 Dock, 1 = Classic Text Labels' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StuckRectsEdge', key: 'taskbarPosition', regType: 'REG_SZ', description: 'Taskbar dock edge (bottom|top)' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'AutoHide', key: 'taskbarAutoHide', regType: 'REG_DWORD', description: '1 = Auto-collapse taskbar until hover' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowSearch', key: 'showSearchBtn', regType: 'REG_DWORD', description: 'Display Universal Search button on taskbar' },
@@ -625,10 +707,10 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'SnapAssist', key: 'snapLayoutsEnabled', regType: 'REG_DWORD', description: 'Enable Win11 Snap Layouts flyout on Maximize' },
 
   // Browser Hive
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'DefaultEngine', key: 'defaultBrowserEngine', regType: 'REG_SZ', description: 'Active engine (netscape|ie3|cyberchrome)' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'RenderMode', key: 'defaultBrowserMode', regType: 'REG_SZ', description: 'Default mode (ai|live)' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'DefaultEngine', key: 'defaultBrowserEngine', regType: 'REG_SZ', description: 'Active engine (chrome|netscape|ie3)' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'RenderMode', key: 'defaultBrowserMode', regType: 'REG_SZ', description: 'Default mode (live|ai)' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'TimeMachineEra', key: 'browserAiEra', regType: 'REG_SZ', description: 'AI web style (1996|2001|modern)' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'StartPage', key: 'browserHomePage', regType: 'REG_SZ', description: 'Browser startup URL or about:portal' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'StartPage', key: 'browserHomePage', regType: 'REG_SZ', description: 'Browser startup URL or chrome://newtab' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'DisplayInlineImages', key: 'browserShowImages', regType: 'REG_DWORD', description: '1 = Render images & SVGs, 0 = Text-only' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Browser\\Main', name: 'ZoomPercent', key: 'browserZoomPercent', regType: 'REG_DWORD', description: 'Viewport zoom percentage (80-130)' },
 

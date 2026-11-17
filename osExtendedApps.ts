@@ -1,4 +1,5 @@
 import {
+  APP_SVG_ICONS,
   BrowserAiEra,
   BrowserBookmark,
   BrowserEngineId,
@@ -39,6 +40,8 @@ export interface OsBridgeCallbacks {
   showOsDialog: (message: string, title?: string) => void;
   rebootGemini95: () => void;
   updateClock: () => void;
+  syncTaskbarDock?: () => void;
+  clampOpenWindows?: () => void;
   getGeminiInstance: (context: string) => Promise<any | null>;
   injectShimIntoHtml: (rawHtml: string) => string;
   addVfsFile: (
@@ -90,7 +93,7 @@ let bridgeRef: OsBridgeCallbacks | null = null;
 let currentSettingsTab = 'display';
 let currentInstallerMode: 'exe' | 'os' = 'exe';
 let currentInstallerCategory: 'all' | 'browser' | 'core' | 'multimedia' | 'system' = 'all';
-let selectedInstallerPkgId = 'browser_netscape';
+let selectedInstallerPkgId = 'browser_chrome';
 let activeRegeditSubkey = 'HKEY_CURRENT_USER\\Control Panel\\Colors';
 let selectedRegDescriptor: RegistryEntryDescriptor | null = null;
 
@@ -130,26 +133,27 @@ export function getBrowserEngineMeta(engine: BrowserEngineId) {
     case 'ie3':
       return {
         shortTitle: 'Internet Explorer 3.0',
-        fullTitle: 'Microsoft Internet Explorer 3.0 (Plus! 95)',
+        fullTitle: 'Microsoft Internet Explorer 3.0',
         throbber: 'e',
-        iconUrl: 'https://win98icons.alexmeub.com/icons/png/msie1-2.png',
+        iconUrl: APP_SVG_ICONS.ie3,
         uaBadge: 'MSIE 3.02 · Win95',
       };
-    case 'cyberchrome':
-      return {
-        shortTitle: 'CyberChrome 95',
-        fullTitle: 'CyberChrome 95 Turbo',
-        throbber: '⚡',
-        iconUrl: 'https://storage.googleapis.com/gemini-95-icons/chrome-icon-2.png',
-        uaBadge: 'CyberChrome/1.0',
-      };
-    default:
+    case 'netscape':
       return {
         shortTitle: 'Netscape 95',
         fullTitle: 'Netscape Navigator 95 Gold',
         throbber: 'N',
-        iconUrl: 'https://win98icons.alexmeub.com/icons/png/world-3.png',
+        iconUrl: APP_SVG_ICONS.netscape,
         uaBadge: 'Mozilla/3.04Gold',
+      };
+    case 'chrome':
+    default:
+      return {
+        shortTitle: 'Google Chrome',
+        fullTitle: 'Google Chrome',
+        throbber: 'G',
+        iconUrl: APP_SVG_ICONS.chrome,
+        uaBadge: 'Chrome/131.0 · Angel-OS',
       };
   }
 }
@@ -259,6 +263,7 @@ export function applySystemRegistryToOS(skipSave = false): void {
   const taskbar = document.getElementById('taskbar');
   if (taskbar) {
     taskbar.classList.toggle('centered-taskbar', systemRegistry.taskbarCentered);
+    taskbar.classList.toggle('with-labels', Boolean(systemRegistry.taskbarShowLabels));
     taskbar.classList.toggle('top-docked', systemRegistry.taskbarPosition === 'top');
     taskbar.classList.toggle('auto-hide-taskbar', systemRegistry.taskbarAutoHide);
   }
@@ -279,9 +284,12 @@ export function applySystemRegistryToOS(skipSave = false): void {
 
   // Sync Quick Settings active tiles
   document.getElementById('qs-tile-center-taskbar')?.classList.toggle('active', systemRegistry.taskbarCentered);
+  document.getElementById('qs-tile-labels')?.classList.toggle('active', Boolean(systemRegistry.taskbarShowLabels));
   document.getElementById('qs-tile-nightlight')?.classList.toggle('active', systemRegistry.nightLightEnabled);
   document.getElementById('qs-tile-crt')?.classList.toggle('active', systemRegistry.crtEnabled);
   document.getElementById('qs-tile-audio')?.classList.toggle('active', systemRegistry.audioEnabled);
+  document.getElementById('qs-tile-top-dock')?.classList.toggle('active', systemRegistry.taskbarPosition === 'top');
+  document.getElementById('qs-tile-autohide')?.classList.toggle('active', systemRegistry.taskbarAutoHide);
 
   // 5. Sound Blaster 16 DSP Sync
   if (bridgeRef) {
@@ -294,7 +302,15 @@ export function applySystemRegistryToOS(skipSave = false): void {
     bridgeRef.updateClock();
   }
   const traySound = document.getElementById('tray-sound-btn');
-  if (traySound) traySound.textContent = systemRegistry.audioEnabled ? '🔊' : '🔇';
+  if (traySound) {
+    traySound.classList.toggle('is-muted', !systemRegistry.audioEnabled);
+    traySound.title = systemRegistry.audioEnabled ? 'Sound On — Click to Mute Retro SFX' : 'Sound Muted — Click to Enable Retro SFX';
+  }
+  const trayCrt = document.getElementById('tray-crt-btn');
+  if (trayCrt) {
+    trayCrt.classList.toggle('is-crt-off', !systemRegistry.crtEnabled);
+    trayCrt.title = systemRegistry.crtEnabled ? 'CRT Scanlines On — Click to Toggle' : 'CRT Scanlines Off — Click to Toggle';
+  }
 
   // 6. BIOS POST & Explorer Hardware Labels
   const biosCpu = document.getElementById('bios-cpu-label');
@@ -348,7 +364,7 @@ export function syncInstalledShortcutsToDesktop(): void {
 
   // Ensure active defaultBrowserEngine is one of the installed ones if any exist
   if (hasAnyBrowser && !installedBrowsers.some((b) => b.browserEngine === systemRegistry.defaultBrowserEngine)) {
-    systemRegistry.defaultBrowserEngine = installedBrowsers[0].browserEngine || 'netscape';
+    systemRegistry.defaultBrowserEngine = installedBrowsers[0].browserEngine || 'chrome';
     saveSystemRegistry(systemRegistry);
   }
 
@@ -367,7 +383,7 @@ export function syncInstalledShortcutsToDesktop(): void {
   const startBrowserItem = document.getElementById('start-menu-browser-item');
   if (startBrowserItem) {
     startBrowserItem.style.display = hasAnyBrowser && (activeEnginePkg?.startMenuShortcut ?? true) ? '' : 'none';
-    startBrowserItem.innerHTML = `${activeEnginePkg?.iconHtml || '🌐'} ${meta.shortTitle} (Web Browser)`;
+    startBrowserItem.innerHTML = `${activeEnginePkg?.iconHtml || '🟢'} ${meta.shortTitle}`;
   }
 
   // Disk space meter in Ability to Install
@@ -377,15 +393,19 @@ export function syncInstalledShortcutsToDesktop(): void {
     const used = packageCatalog.reduce((sum, p) => sum + (p.installed ? p.sizeMB : 0), 24.5);
     diskMeter.textContent = `C:\\ Used: ${used.toFixed(1)} / ${cCap} MB (${systemRegistry.fileSystemFormat})`;
   }
+
+  bridgeRef?.syncTaskbarDock?.();
+  bridgeRef?.clampOpenWindows?.();
 }
 
-// ==================== MULTI-ENGINE REINSTALLABLE WEB BROWSER ====================
+// ==================== MULTI-ENGINE & PHYSICAL GOOGLE CHROME WEB BROWSER ====================
 interface BrowserTabState {
   id: string;
   title: string;
   url: string;
   mode: BrowserRenderMode;
   cachedHtml: string;
+  embedUrl?: string;
   history: string[];
   historyIdx: number;
 }
@@ -394,17 +414,68 @@ const browserTabs: BrowserTabState[] = [];
 let activeTabId = '';
 let renderActiveBrowserTabFn: (() => void) | null = null;
 let navigateActiveBrowserTabFn: ((url: string, pushHistory?: boolean, explicitMode?: BrowserRenderMode) => Promise<void>) | null = null;
+let switchBrowserToAiFn: ((url?: string) => void) | null = null;
+
+export function switchBrowserToAiMode(url?: string): void {
+  switchBrowserToAiFn?.(url);
+}
+
+function escapeHtml(raw: string): string {
+  return String(raw || '').replace(/[&<>"']/g, (ch) => {
+    switch (ch) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#39;';
+      default:
+        return ch;
+    }
+  });
+}
+
+function extractYouTubeId(rawUrl: string): string | null {
+  try {
+    const u = new URL(rawUrl);
+    const host = u.hostname.replace(/^www\./, '').toLowerCase();
+    if (host === 'youtu.be') {
+      const id = u.pathname.replace(/^\/+/, '').split('/')[0];
+      return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      if (u.pathname === '/watch') {
+        const v = u.searchParams.get('v') || '';
+        return /^[a-zA-Z0-9_-]{11}$/.test(v) ? v : null;
+      }
+      const embedMatch = u.pathname.match(/^\/(?:embed|shorts)\/([a-zA-Z0-9_-]{11})/);
+      if (embedMatch) return embedMatch[1];
+    }
+  } catch {}
+  return null;
+}
+
+function isHomePortalUrl(rawUrl: string): boolean {
+  const lower = (rawUrl || '').trim().toLowerCase();
+  return !lower || lower === 'chrome://newtab' || lower === 'about:portal' || lower === 'about:home' || lower === 'about:blank';
+}
 
 export function syncBrowserChromeToEngine(): void {
   const win = document.getElementById('chrome');
   if (!win) return;
   const installedBrowsers = getInstalledBrowsers();
   const engineSelect = document.getElementById('browser-engine-select') as HTMLSelectElement | null;
+  const eraSelect = document.getElementById('chrome-era-select') as HTMLSelectElement | null;
+  const zoomReadout = document.getElementById('chrome-zoom-readout');
   const throbber = document.getElementById('browser-throbber');
   const connBadge = document.getElementById('browser-conn-badge');
   const winTitle = document.getElementById('browser-window-title');
 
-  win.classList.remove('browser-engine-netscape', 'browser-engine-ie3', 'browser-engine-cyberchrome');
+  win.classList.remove('browser-engine-chrome', 'browser-engine-netscape', 'browser-engine-ie3', 'browser-engine-cyberchrome');
   win.classList.add(`browser-engine-${systemRegistry.defaultBrowserEngine}`);
 
   if (engineSelect) {
@@ -419,16 +490,26 @@ export function syncBrowserChromeToEngine(): void {
     });
   }
 
+  if (eraSelect) {
+    eraSelect.value = systemRegistry.browserAiEra;
+  }
+  if (zoomReadout) {
+    zoomReadout.textContent = `${systemRegistry.browserZoomPercent}%`;
+  }
+
   const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
+  const currentTab = browserTabs.find((t) => t.id === activeTabId);
   if (throbber) throbber.textContent = meta.throbber;
   if (connBadge) {
     const kbps = systemRegistry.modemBaudRate >= 1000000 ? 'T1 1.0 Mbps' : `${(systemRegistry.modemBaudRate / 1000).toFixed(1)} kbps`;
-    connBadge.textContent = `📞 ${kbps} · ${meta.uaBadge}`;
+    const modeLabel = (currentTab?.mode || systemRegistry.defaultBrowserMode) === 'live' ? 'Live Web' : 'AI Web';
+    connBadge.textContent = `${meta.shortTitle} · ${modeLabel} · ${kbps}`;
   }
 
-  const currentTab = browserTabs.find((t) => t.id === activeTabId);
   if (winTitle) {
-    winTitle.textContent = `${meta.fullTitle} — [${currentTab?.title || 'Home Portal'}]`;
+    const tabTitle = currentTab?.title || (systemRegistry.defaultBrowserEngine === 'chrome' ? 'New Tab' : 'Home Portal');
+    winTitle.textContent =
+      systemRegistry.defaultBrowserEngine === 'chrome' ? `${meta.shortTitle} — ${tabTitle}` : `${meta.fullTitle} — [${tabTitle}]`;
   }
 
   const iframe = document.getElementById('browser-frame') as HTMLIFrameElement | null;
@@ -437,10 +518,379 @@ export function syncBrowserChromeToEngine(): void {
   }
 }
 
+function buildChromeNewTabHtml(): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>New Tab</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #ffffff;
+    color: #202124;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  .ntp-topbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 22px;
+    font-size: 13px;
+  }
+  .ntp-topbar a {
+    color: #3c4043;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .ntp-topbar a:hover {
+    text-decoration: underline;
+  }
+  .ntp-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #1a73e8;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ntp-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px 44px 20px;
+  }
+  .google-wordmark {
+    margin-bottom: 24px;
+    user-select: none;
+  }
+  .ntp-search-form {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  .ntp-search-box {
+    width: 100%;
+    height: 46px;
+    border-radius: 999px;
+    border: 1px solid #dfe1e5;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(32, 33, 36, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 12px;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .ntp-search-box:hover,
+  .ntp-search-box:focus-within {
+    border-color: rgba(223, 225, 229, 0);
+    box-shadow: 0 3px 12px rgba(32, 33, 36, 0.2);
+  }
+  .ntp-search-icon {
+    color: #9aa0a6;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .ntp-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: #202124;
+    background: transparent;
+  }
+  .ntp-btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .ntp-btn {
+    background: #f8f9fa;
+    border: 1px solid #f8f9fa;
+    border-radius: 4px;
+    color: #3c4043;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 18px;
+    cursor: pointer;
+  }
+  .ntp-btn:hover {
+    border-color: #dadce0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: #202124;
+  }
+  .ntp-btn.ai {
+    background: #e8f0fe;
+    color: #1967d2;
+    border-color: #d2e3fc;
+  }
+  .ntp-shortcuts {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: repeat(6, 92px);
+    gap: 10px;
+    max-width: 100%;
+  }
+  @media (max-width: 620px) {
+    .ntp-shortcuts { grid-template-columns: repeat(3, 92px); }
+  }
+  .shortcut-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 6px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #202124;
+    font-size: 12px;
+    text-align: center;
+    transition: background-color 0.12s ease;
+  }
+  .shortcut-tile:hover {
+    background: #f1f3f4;
+  }
+  .shortcut-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #f1f3f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a73e8;
+  }
+  .shortcut-name {
+    max-width: 82px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ntp-footer {
+    padding: 10px 18px;
+    border-top: 1px solid #f1f3f4;
+    color: #5f6368;
+    font-size: 11.5px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+  <div class="ntp-topbar">
+    <a href="live://https://en.m.wikipedia.org/wiki/Main_Page">Wikipedia</a>
+    <a href="http://www.tucows-95-downloads.com">.EXE Depot</a>
+    <a href="chrome://settings">Settings</a>
+    <span class="ntp-avatar" title="Angel-OS User">A</span>
+  </div>
+
+  <div class="ntp-main">
+    <svg class="google-wordmark" width="248" height="82" viewBox="0 0 272 92" aria-label="Google">
+      <text x="10" y="68" font-family="'Product Sans', 'Plus Jakarta Sans', Arial, sans-serif" font-size="68" font-weight="700" letter-spacing="-2">
+        <tspan fill="#4285F4">G</tspan><tspan fill="#EA4335">o</tspan><tspan fill="#FBBC05">o</tspan><tspan fill="#4285F4">g</tspan><tspan fill="#34A853">l</tspan><tspan fill="#EA4335">e</tspan>
+      </text>
+    </svg>
+
+    <form class="ntp-search-form" id="ntp-search-form">
+      <div class="ntp-search-box">
+        <span class="ntp-search-icon">🔍</span>
+        <input
+          type="text"
+          id="ntp-query"
+          class="ntp-search-input"
+          placeholder="Search Google or type a URL (e.g. example.com, wikipedia.org)"
+          autocomplete="off"
+          autofocus
+        />
+      </div>
+      <div class="ntp-btn-row">
+        <button type="submit" class="ntp-btn">Search Live Web</button>
+        <button type="button" class="ntp-btn ai" id="ntp-ai-btn">✨ Synthesize with AI Web</button>
+      </div>
+    </form>
+
+    <div class="ntp-shortcuts">
+      <a class="shortcut-tile" href="live://https://en.m.wikipedia.org/wiki/Windows_95">
+        <div class="shortcut-circle" style="background:#e8f0fe;color:#1967d2;">W</div>
+        <span class="shortcut-name">Windows 95</span>
+      </a>
+      <a class="shortcut-tile" href="live://https://example.com">
+        <div class="shortcut-circle" style="background:#e6f4ea;color:#137333;">🌐</div>
+        <span class="shortcut-name">Example.com</span>
+      </a>
+      <a class="shortcut-tile" href="live://https://www.youtube.com/watch?v=4xDzrJKXOOY">
+        <div class="shortcut-circle" style="background:#fce8e6;color:#c5221f;">▶</div>
+        <span class="shortcut-name">Synthwave TV</span>
+      </a>
+      <a class="shortcut-tile" href="http://www.tucows-95-downloads.com">
+        <div class="shortcut-circle" style="background:#fef7e0;color:#b06000;">📥</div>
+        <span class="shortcut-name">.EXE Depot</span>
+      </a>
+      <a class="shortcut-tile" href="https://www.area51-truth-1995.org">
+        <div class="shortcut-circle" style="background:#f3e8fd;color:#7627bb;">👽</div>
+        <span class="shortcut-name">Area 51 (AI)</span>
+      </a>
+      <a class="shortcut-tile" href="chrome://settings">
+        <div class="shortcut-circle" style="background:#f1f3f4;color:#3c4043;">⚙️</div>
+        <span class="shortcut-name">Settings</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="ntp-footer">
+    <span>Google Chrome · Angel-OS Edition</span>
+    <span>Type any URL above for real Live Web via /api/browse, or toggle ✨ AI for Time-Machine pages</span>
+  </div>
+
+  <script>
+    (function() {
+      var form = document.getElementById('ntp-search-form');
+      var input = document.getElementById('ntp-query');
+      var aiBtn = document.getElementById('ntp-ai-btn');
+      function go(forceAi) {
+        var q = (input && input.value || '').trim();
+        if (!q) return;
+        if (forceAi) {
+          window.parent.postMessage({ __gemini95Navigate: true, url: 'ai://' + q }, '*');
+          return;
+        }
+        var target = (/^(https?:|chrome:|about:|file:|live:)/i.test(q) || (q.indexOf('.') !== -1 && q.indexOf(' ') === -1))
+          ? (q.indexOf('://') === -1 ? 'live://https://' + q : q)
+          : 'live://' + q;
+        window.parent.postMessage({ __gemini95Navigate: true, url: target }, '*');
+      }
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          go(false);
+        });
+      }
+      if (aiBtn) {
+        aiBtn.addEventListener('click', function() {
+          go(true);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>`;
+}
+
+function buildChromeSettingsHtml(): string {
+  const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Chrome Settings</title>
+<style>
+  body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #f8f9fa; color: #202124; }
+  header { background: #ffffff; border-bottom: 1px solid #dadce0; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; color: #202124; }
+  main { max-width: 660px; margin: 20px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: #ffffff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .card h2 { margin: 0 0 8px 0; font-size: 14px; color: #1a73e8; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid #f1f3f4; font-size: 13px; }
+  .row:first-of-type { border-top: none; }
+  .btn { background: #1a73e8; color: #fff; border: none; border-radius: 4px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn.secondary { background: #f1f3f4; color: #202124; border: 1px solid #dadce0; }
+  code { background: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>⚙️ Google Chrome — Settings</h1>
+    <a class="btn secondary" href="chrome://newtab">← Back to New Tab</a>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Active Engine &amp; Connection Profile</h2>
+      <div class="row"><span>Default Browser Engine</span><b>${escapeHtml(meta.fullTitle)}</b></div>
+      <div class="row"><span>Default Browsing Mode</span><code>${systemRegistry.defaultBrowserMode.toUpperCase()}</code></div>
+      <div class="row"><span>AI Time-Machine Era</span><code>${systemRegistry.browserAiEra}</code></div>
+      <div class="row"><span>Viewport Zoom</span><code>${systemRegistry.browserZoomPercent}%</code></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" onclick="window.parent.postMessage({ __gemini95OpenSettings: true, tab: 'browser' }, '*')">Open OS Browser &amp; Modem Settings</button>
+        <button class="btn secondary" onclick="window.parent.postMessage({ __gemini95OpenInstaller: true, cat: 'browser' }, '*')">Manage Classic Browser Engines...</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Built-in Chrome Pages</h2>
+      <div class="row"><span>New Tab Page</span><a href="chrome://newtab">chrome://newtab</a></div>
+      <div class="row"><span>Downloads &amp; .EXE Shareware Mirror</span><a href="chrome://downloads">chrome://downloads</a></div>
+    </div>
+  </main>
+</body>
+</html>`;
+}
+
+function buildChromeErrorPageHtml(url: string, reason: string): string {
+  const safeUrl = escapeHtml(url);
+  const safeReason = escapeHtml(reason);
+  const encodedUrlArg = JSON.stringify(url);
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Site Unreachable</title>
+<style>
+  body { margin: 0; font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #ffffff; color: #202124; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+  .err-wrap { max-width: 540px; width: 100%; }
+  .dino { font-size: 42px; margin-bottom: 12px; }
+  h1 { margin: 0 0 8px 0; font-size: 22px; font-weight: 600; color: #202124; }
+  p { margin: 6px 0; font-size: 13.5px; color: #5f6368; line-height: 1.5; }
+  .reason { margin: 12px 0; padding: 10px 12px; background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; font-family: monospace; font-size: 12px; color: #c5221f; word-break: break-word; }
+  .code { font-family: monospace; font-size: 11.5px; color: #70757a; margin-top: 10px; }
+  .actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 999px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: #1a73e8; color: #ffffff; }
+  .btn-primary:hover { background: #1765cc; }
+  .btn-secondary { background: #ffffff; color: #1a73e8; border: 1px solid #dadce0; }
+  .btn-secondary:hover { background: #f1f3f4; }
+</style>
+</head>
+<body>
+  <div class="err-wrap">
+    <div class="dino">🦖</div>
+    <h1>This site can’t be reached in Live Web mode</h1>
+    <p><b>${safeUrl}</b> could not be loaded cleanly through the Live Web proxy.</p>
+    <div class="reason">${safeReason}</div>
+    <p>You can synthesize a working version of this destination with <b>✨ AI Web</b> or try reloading it.</p>
+    <div class="actions">
+      <button class="btn btn-primary" onclick='window.parent.postMessage({ __gemini95SwitchToAi: true, url: ${encodedUrlArg} }, "*")'>✨ Load with AI Web</button>
+      <button class="btn btn-secondary" onclick='window.parent.postMessage({ __gemini95Navigate: true, url: ${encodedUrlArg} }, "*")'>↻ Reload Live</button>
+      <a class="btn btn-secondary" href="chrome://newtab">🏠 New Tab</a>
+    </div>
+    <div class="code">ERR_LIVE_PROXY_UNAVAILABLE</div>
+  </div>
+</body>
+</html>`;
+}
+
 function buildEnginePortalHtml(engine: BrowserEngineId): string {
   if (engine === 'ie3') {
     return `<!DOCTYPE html>
-<html><head><style>
+<html><head><title>MSN Start Page</title><style>
   body { background: #ffffff; color: #000000; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
   .hdr { background: linear-gradient(90deg, #003399, #0066cc); color: #fff; padding: 14px 18px; border-bottom: 3px solid #ffcc00; }
   .hdr h1 { margin: 0; font-size: 21px; }
@@ -453,52 +903,29 @@ function buildEnginePortalHtml(engine: BrowserEngineId): string {
 </style></head><body>
   <div class="hdr">
     <h1>📘 The Microsoft Network (MSN) — Internet Explorer 3.0 Start Page</h1>
-    <p>ActiveX &amp; HTML 3.2 Ready · Switch between ✨ AI Web and 🌐 Live URL anytime in the toolbar!</p>
+    <p>ActiveX &amp; HTML 3.2 Ready · Switch between 🌐 Live and ✨ AI anytime in the toolbar!</p>
   </div>
   <div class="grid">
     <div class="box">
       <h3>🌐 AI Time-Machine Channels</h3>
-      • <a href="https://www.msn-1996-news.com">MSN 1996 Computing &amp; Windows 95 Central</a><br><br>
-      • <a href="https://www.encarta-95-atlas.org">Encarta 95 World Knowledge Encyclopedia</a><br><br>
-      • <a href="https://www.directx-pc-gaming-96.com">Windows 95 Game SDK &amp; 3Dfx Showcase</a>
+      • <a href="ai://https://www.msn-1996-news.com">MSN 1996 Computing &amp; Windows 95 Central</a><br><br>
+      • <a href="ai://https://www.encarta-95-atlas.org">Encarta 95 World Knowledge Encyclopedia</a><br><br>
+      • <a href="http://www.tucows-95-downloads.com">Tucows 95 .EXE Shareware Mirror</a>
     </div>
     <div class="box">
       <h3>📚 Live Wikipedia &amp; Real Web</h3>
-      Click <b>🌐 Live URL</b> above or try:<br><br>
+      Click <b>🌐 Live</b> above or try:<br><br>
       • <a href="live://https://en.m.wikipedia.org/wiki/Internet_Explorer_3">Wikipedia: Internet Explorer 3 (Live)</a><br><br>
       • <a href="live://https://en.m.wikipedia.org/wiki/Windows_95">Wikipedia: Windows 95 History (Live)</a><br><br>
-      • <a href="live://https://en.m.wikipedia.org/wiki/World_Wide_Web">Wikipedia: World Wide Web (Live)</a>
+      • <a href="live://https://example.com">Example.com (Live)</a>
     </div>
   </div>
 </body></html>`;
   }
 
-  if (engine === 'cyberchrome') {
+  if (engine === 'netscape') {
     return `<!DOCTYPE html>
-<html><head><style>
-  body { background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; margin: 0; padding: 20px; text-align: center; }
-  h1 { color: #38bdf8; margin: 6px 0; font-size: 24px; }
-  .sub { color: #94a3b8; font-size: 12px; margin-bottom: 18px; }
-  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 620px; margin: 0 auto; }
-  .tile { background: #1e293b; border: 1px solid #334155; padding: 14px 10px; text-align: left; font-size: 12px; }
-  .tile a { color: #fbbf24; font-weight: 700; text-decoration: none; display: block; margin-bottom: 4px; font-size: 13px; }
-  .tile a:hover { text-decoration: underline; }
-</style></head><body>
-  <h1>⚡ CyberChrome 95 Turbo — Speed Dial</h1>
-  <div class="sub">Backported Multi-Tab Engine · Supports AI Web Generation, Live URLs &amp; C:\ Local HTML</div>
-  <div class="tiles">
-    <div class="tile"><a href="https://www.cyberdeck-builders-2095.io">🦾 CyberDeck Hardware</a>AI-synthesized retro-future hardware portal</div>
-    <div class="tile"><a href="live://https://en.m.wikipedia.org/wiki/Retrocomputing">🖥️ Retrocomputing (Live)</a>Real live Wikipedia article frame</div>
-    <div class="tile"><a href="https://www.vaporwave-arcade-mall.net">🌴 Neon Mall 1995</a>AI GeoCities synthwave plaza</div>
-    <div class="tile"><a href="live://https://en.m.wikipedia.org/wiki/Brian_Eno">🎹 Brian Eno Chime (Live)</a>History of The Microsoft Sound</div>
-    <div class="tile"><a href="https://www.mars-pathfinder-1997.gov">🚀 Mars Sojourner</a>AI JPL 90s telemetry page</div>
-    <div class="tile"><a href="https://www.bbs-ansi-art-gallery.org">💾 BBS Underground</a>ANSI art &amp; shareware archive</div>
-  </div>
-</body></html>`;
-  }
-
-  return `<!DOCTYPE html>
-<html><head><style>
+<html><head><title>Netscape Portal</title><style>
   body { background: #000044; color: #ffff00; font-family: "Courier New", monospace; text-align: center; margin: 0; padding: 16px; }
   marquee { background: #ff00ff; color: #ffffff; font-weight: bold; padding: 4px; font-size: 13px; border: 2px ridge #00ffff; }
   h1 { color: #00ffff; text-shadow: 2px 2px #ff00ff; margin: 10px 0 4px 0; font-size: 22px; }
@@ -509,35 +936,38 @@ function buildEnginePortalHtml(engine: BrowserEngineId): string {
   a:hover { color: #ff00ff; background: #ffff00; }
   .counter { display: inline-block; margin-top: 12px; background: #000; color: #00ff00; border: 2px inset #808080; padding: 4px 10px; font-weight: bold; letter-spacing: 3px; }
 </style></head><body>
-  <marquee>★ NETSCAPE NAVIGATOR 95 GOLD ★ MULTI-TAB AI WEB + LIVE REAL-WORLD IFRAME BROWSER ★ REINSTALL OR SWAP ENGINES ANYTIME IN "ABILITY TO INSTALL"! ★</marquee>
+  <marquee>★ NETSCAPE NAVIGATOR 95 GOLD ★ MULTI-TAB LIVE REAL WEB + AI TIME-MACHINE BROWSER ★ SWAP ENGINES ANYTIME IN CHROME SETTINGS OR "ABILITY TO INSTALL"! ★</marquee>
   <h1>🌐 NETSCAPE GEMINI 95 CYBER-PORTAL</h1>
-  <div class="sub">Dual Engine: ✨ AI Web Synthesis + 🌐 Live Wikipedia/Web Iframe · Customizable in Master Settings</div>
+  <div class="sub">Dual Engine: 🌐 Live Web Proxy + ✨ AI Time-Machine · Customizable in Master Settings</div>
   <table>
     <tr>
       <td width="50%">
         <b>🚀 1996 AI TIME-MACHINE SITES</b><br><br>
-        • <a href="https://www.cybermall1996.com">CyberMall 1996 Virtual Shopping</a><br>
-        • <a href="https://www.area51-ufos-1995.org">Area 51 Declassified UFO Photos</a><br>
-        • <a href="https://www.pizzanet-95.com">PizzaNet: Order Pepperoni Over TCP/IP</a><br>
-        • <a href="https://www.nintendo-ultra64-rumors.net">Project Reality / Ultra 64 Secrets</a>
+        • <a href="ai://https://www.cybermall1996.com">CyberMall 1996 Virtual Shopping</a><br>
+        • <a href="ai://https://www.area51-ufos-1995.org">Area 51 Declassified UFO Photos</a><br>
+        • <a href="ai://https://www.pizzanet-95.com">PizzaNet: Order Pepperoni Over TCP/IP</a><br>
+        • <a href="http://www.tucows-95-downloads.com">Tucows 95 .EXE Shareware Mirror</a>
       </td>
       <td width="50%">
         <b>🌍 LIVE REAL-WORLD WEB &amp; LOCAL C:\</b><br><br>
         • <a href="live://https://en.m.wikipedia.org/wiki/Windows_95">Live Wikipedia: Windows 95</a><br>
         • <a href="live://https://en.m.wikipedia.org/wiki/Netscape_Navigator">Live Wikipedia: Netscape Navigator</a><br>
-        • <a href="live://https://en.m.wikipedia.org/wiki/Doom_II">Live Wikipedia: DOOM II</a><br>
-        • <a href="https://www.y2k-millennium-bug.com">Y2K Millennium Bug Survival Guide</a>
+        • <a href="live://https://example.com">Live Example.com</a><br>
+        • <a href="ai://https://www.y2k-millennium-bug.com">Y2K Millennium Bug Survival Guide</a>
       </td>
     </tr>
   </table>
   <div class="counter">VISITOR #0095884</div>
 </body></html>`;
+  }
+
+  return buildChromeNewTabHtml();
 }
 
 export function navigateBrowserExternal(url: string): void {
   if (!isAppInstalled('chrome')) {
     bridgeRef?.showOsDialog(
-      'No Web Browser is currently installed on C:\\! Launching "Ability to Install" so you can install Netscape 95, Internet Explorer 3.0, or CyberChrome 95.',
+      'No Web Browser is currently installed on C:\\! Launching "Ability to Install" so you can install Google Chrome, Netscape 95, or Internet Explorer 3.0.',
       'Missing Browser Executable',
     );
     openAbilityToInstallCategory('browser');
@@ -546,6 +976,8 @@ export function navigateBrowserExternal(url: string): void {
   bridgeRef?.openApp('chrome').then(() => {
     if (url.startsWith('live://')) {
       navigateActiveBrowserTabFn?.(url.replace(/^live:\/\//, ''), true, 'live');
+    } else if (url.startsWith('ai://')) {
+      navigateActiveBrowserTabFn?.(url.replace(/^ai:\/\//, ''), true, 'ai');
     } else {
       navigateActiveBrowserTabFn?.(url, true);
     }
@@ -556,8 +988,12 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
   const tabsListEl = windowElement.querySelector('#browser-tabs-list') as HTMLDivElement;
   const newTabBtn = windowElement.querySelector('#browser-new-tab-btn') as HTMLButtonElement;
   const engineSelect = windowElement.querySelector('#browser-engine-select') as HTMLSelectElement;
-  const manageInstallBtn = windowElement.querySelector('#browser-manage-install-btn') as HTMLButtonElement;
+  const eraSelect = windowElement.querySelector('#chrome-era-select') as HTMLSelectElement | null;
+  const zoomOutBtn = windowElement.querySelector('#chrome-zoom-out') as HTMLButtonElement | null;
+  const zoomInBtn = windowElement.querySelector('#chrome-zoom-in') as HTMLButtonElement | null;
+  const manageInstallBtn = windowElement.querySelector('#browser-manage-install-btn') as HTMLElement | null;
   const addressBar = windowElement.querySelector('.browser-address-bar') as HTMLInputElement;
+  const securityPill = windowElement.querySelector('#chrome-security-pill') as HTMLElement | null;
   const goButton = windowElement.querySelector('.browser-go-button') as HTMLButtonElement;
   const backBtn = windowElement.querySelector('#browser-back') as HTMLButtonElement;
   const forwardBtn = windowElement.querySelector('#browser-forward') as HTMLButtonElement;
@@ -567,9 +1003,15 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
   const modeLiveBtn = windowElement.querySelector('#browser-mode-live') as HTMLButtonElement;
   const bookmarksContainer = windowElement.querySelector('#browser-bookmarks-items') as HTMLDivElement;
   const exeDepotBtn = windowElement.querySelector('#browser-exe-depot-btn') as HTMLButtonElement | null;
-  const addBookmarkBtn = windowElement.querySelector('#browser-add-bookmark-btn') as HTMLButtonElement;
-  const sourceBtn = windowElement.querySelector('#browser-source-btn') as HTMLButtonElement;
-  const settingsBtn = windowElement.querySelector('#browser-settings-btn') as HTMLButtonElement;
+  const addBookmarkBtn = windowElement.querySelector('#browser-add-bookmark-btn') as HTMLButtonElement | null;
+  const sourceBtn = windowElement.querySelector('#browser-source-btn') as HTMLButtonElement | null;
+  const settingsBtn = windowElement.querySelector('#browser-settings-btn') as HTMLElement | null;
+  const chromeMenuBtn = windowElement.querySelector('#chrome-menu-btn') as HTMLButtonElement | null;
+  const chromeMenuDropdown = windowElement.querySelector('#chrome-menu-dropdown') as HTMLDivElement | null;
+  const chromeMenuNewTab = windowElement.querySelector('#chrome-menu-newtab') as HTMLElement | null;
+  const chromeDownloadsMenu = windowElement.querySelector('#chrome-downloads-menu') as HTMLElement | null;
+  const chromeExeDepotMenu = windowElement.querySelector('#browser-exe-depot-menu') as HTMLElement | null;
+  const chromeAboutBtn = windowElement.querySelector('#chrome-about-btn') as HTMLElement | null;
   const sourceDrawer = windowElement.querySelector('#browser-source-drawer') as HTMLDivElement;
   const sourceTextarea = windowElement.querySelector('#browser-source-textarea') as HTMLTextAreaElement;
   const applySourceBtn = windowElement.querySelector('#browser-apply-source-btn') as HTMLButtonElement;
@@ -579,20 +1021,33 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
   const iframe = windowElement.querySelector('#browser-frame') as HTMLIFrameElement;
   const loadingEl = windowElement.querySelector('.browser-loading') as HTMLDivElement;
 
+  function closeChromeMenu() {
+    if (chromeMenuDropdown) chromeMenuDropdown.style.display = 'none';
+  }
+
+  function getDefaultHomeUrl(): string {
+    const configured = (systemRegistry.browserHomePage || '').trim();
+    if (!configured || configured === 'about:portal') {
+      return systemRegistry.defaultBrowserEngine === 'chrome' ? 'chrome://newtab' : 'about:portal';
+    }
+    return configured;
+  }
+
   function getActiveTab(): BrowserTabState {
     let tab = browserTabs.find((t) => t.id === activeTabId);
     if (!tab) {
-      tab = createNewTab(systemRegistry.browserHomePage || 'about:portal', false);
+      tab = createNewTab(getDefaultHomeUrl(), false);
     }
     return tab;
   }
 
-  function createNewTab(initialUrl = 'about:portal', autoNav = true): BrowserTabState {
+  function createNewTab(initialUrl = getDefaultHomeUrl(), autoNav = true): BrowserTabState {
     const id = `tab_${Date.now()}_${Math.floor(Math.random() * 999)}`;
     const portal = buildEnginePortalHtml(systemRegistry.defaultBrowserEngine);
+    const defaultTitle = systemRegistry.defaultBrowserEngine === 'chrome' ? 'New Tab' : 'Home Portal';
     const tab: BrowserTabState = {
       id,
-      title: 'Home Portal',
+      title: isHomePortalUrl(initialUrl) ? defaultTitle : initialUrl.slice(0, 22),
       url: initialUrl,
       mode: systemRegistry.defaultBrowserMode,
       cachedHtml: portal,
@@ -602,7 +1057,7 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
     browserTabs.push(tab);
     activeTabId = id;
     renderTabsBar();
-    if (autoNav && initialUrl !== 'about:portal') {
+    if (autoNav && !isHomePortalUrl(initialUrl)) {
       navigateTab(initialUrl, false, tab.mode);
     } else {
       displayTabContent(tab);
@@ -627,6 +1082,8 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
         browserBookmarks.splice(idx, 1);
         saveBrowserBookmarks(browserBookmarks);
         renderBookmarksBar();
+        const t = browserTabs.find((x) => x.id === activeTabId);
+        if (t) updateToolbarFromTab(t);
       });
       bookmarksContainer.appendChild(btn);
     });
@@ -638,6 +1095,23 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
     browserTabs.forEach((t) => {
       const div = document.createElement('div');
       div.className = `browser-tab-item${t.id === activeTabId ? ' active' : ''}`;
+
+      const fav = document.createElement('span');
+      fav.className = 'browser-tab-favicon';
+      const lowerUrl = t.url.toLowerCase();
+      if (isHomePortalUrl(t.url)) {
+        fav.textContent = systemRegistry.defaultBrowserEngine === 'chrome' ? 'G' : '🏠';
+      } else if (lowerUrl.startsWith('chrome://settings')) {
+        fav.textContent = '⚙️';
+      } else if (lowerUrl.startsWith('chrome://downloads') || lowerUrl.includes('tucows')) {
+        fav.textContent = '📥';
+      } else if (lowerUrl.startsWith('file://')) {
+        fav.textContent = '📁';
+      } else {
+        fav.textContent = t.mode === 'live' ? '🌐' : '✨';
+      }
+      div.appendChild(fav);
+
       const span = document.createElement('span');
       span.className = 'browser-tab-title';
       span.textContent = t.title;
@@ -677,25 +1151,62 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
     forwardBtn.disabled = tab.historyIdx >= tab.history.length - 1;
     modeAiBtn.classList.toggle('active', tab.mode === 'ai');
     modeLiveBtn.classList.toggle('active', tab.mode === 'live');
+
+    if (securityPill) {
+      const lower = tab.url.toLowerCase();
+      if (isHomePortalUrl(tab.url) || lower.startsWith('chrome://') || lower.startsWith('about:')) {
+        securityPill.textContent = 'G';
+        securityPill.title = 'Google Chrome Internal Page';
+      } else if (lower.startsWith('file://')) {
+        securityPill.textContent = '📁';
+        securityPill.title = 'Local C:\\ File';
+      } else if (tab.mode === 'ai') {
+        securityPill.textContent = '✨';
+        securityPill.title = 'AI Web Time-Machine Page';
+      } else if (lower.startsWith('https://')) {
+        securityPill.textContent = '🔒';
+        securityPill.title = 'Live HTTPS Connection via Angel-OS Proxy';
+      } else {
+        securityPill.textContent = '🌐';
+        securityPill.title = 'Live HTTP Connection via Angel-OS Proxy';
+      }
+    }
+
+    if (addBookmarkBtn) {
+      const isBm = browserBookmarks.some((b) => b.url === tab.url);
+      addBookmarkBtn.classList.toggle('bookmarked', isBm);
+      addBookmarkBtn.textContent = isBm ? '★' : '☆';
+      addBookmarkBtn.title = isBm ? 'Remove bookmark for this tab' : 'Bookmark this tab';
+    }
+
     syncBrowserChromeToEngine();
   }
 
   function displayTabContent(tab: BrowserTabState) {
     updateToolbarFromTab(tab);
-    if (tab.url === 'about:portal') {
+    if (isHomePortalUrl(tab.url)) {
       const portal = buildEnginePortalHtml(systemRegistry.defaultBrowserEngine);
       tab.cachedHtml = portal;
+      tab.embedUrl = undefined;
       iframe.removeAttribute('src');
       iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(portal) : portal;
       return;
     }
-    if (tab.mode === 'live' && !tab.url.startsWith('file://')) {
-      iframe.removeAttribute('srcdoc');
-      iframe.src = tab.url;
-    } else {
+    if (tab.url.toLowerCase() === 'chrome://settings') {
+      const settingsHtml = buildChromeSettingsHtml();
+      tab.cachedHtml = settingsHtml;
+      tab.embedUrl = undefined;
       iframe.removeAttribute('src');
-      iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
+      iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(settingsHtml) : settingsHtml;
+      return;
     }
+    if (tab.embedUrl) {
+      iframe.removeAttribute('srcdoc');
+      iframe.src = tab.embedUrl;
+      return;
+    }
+    iframe.removeAttribute('src');
+    iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
   }
 
   async function navigateTab(rawUrl: string, pushHistory = true, explicitMode?: BrowserRenderMode): Promise<void> {
@@ -708,28 +1219,51 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
     if (url.startsWith('live://')) {
       url = url.replace(/^live:\/\//, '');
       tab.mode = 'live';
+    } else if (url.startsWith('ai://')) {
+      url = url.replace(/^ai:\/\//, '');
+      tab.mode = 'ai';
     }
 
-    if (url === 'about:portal' || url === 'about:home') {
-      tab.url = 'about:portal';
-      tab.title = 'Home Portal';
+    if (isHomePortalUrl(url)) {
+      const homeTarget = systemRegistry.defaultBrowserEngine === 'chrome' ? 'chrome://newtab' : 'about:portal';
+      tab.url = homeTarget;
+      tab.title = systemRegistry.defaultBrowserEngine === 'chrome' ? 'New Tab' : 'Home Portal';
+      tab.embedUrl = undefined;
       if (pushHistory) {
         tab.history.splice(tab.historyIdx + 1);
-        tab.history.push('about:portal');
+        tab.history.push(homeTarget);
         tab.historyIdx = tab.history.length - 1;
       }
       renderTabsBar();
       displayTabContent(tab);
-      if (statusText) statusText.textContent = 'Loaded Engine Start Portal.';
+      if (statusText) {
+        statusText.textContent = systemRegistry.defaultBrowserEngine === 'chrome' ? 'Google Chrome — New Tab' : 'Loaded Engine Start Portal.';
+      }
       return;
     }
 
-    // Built-in 1995 Tucows / WinSite .EXE Shareware Depot!
-    if (url.toLowerCase().includes('tucows-95-downloads') || url.toLowerCase() === 'about:downloads') {
-      const depotUrl = 'http://www.tucows-95-downloads.com';
+    if (url.toLowerCase() === 'chrome://settings') {
+      tab.url = 'chrome://settings';
+      tab.title = 'Settings';
+      tab.embedUrl = undefined;
+      tab.cachedHtml = buildChromeSettingsHtml();
+      if (pushHistory) {
+        tab.history.splice(tab.historyIdx + 1);
+        tab.history.push('chrome://settings');
+        tab.historyIdx = tab.history.length - 1;
+      }
+      renderTabsBar();
+      displayTabContent(tab);
+      if (statusText) statusText.textContent = 'Google Chrome Settings loaded.';
+      return;
+    }
+
+    // Built-in Tucows / WinSite .EXE Shareware Depot & chrome://downloads!
+    if (url.toLowerCase().includes('tucows-95-downloads') || url.toLowerCase() === 'about:downloads' || url.toLowerCase() === 'chrome://downloads') {
+      const depotUrl = url.toLowerCase() === 'chrome://downloads' ? 'chrome://downloads' : 'http://www.tucows-95-downloads.com';
       tab.url = depotUrl;
-      tab.title = 'Tucows .EXE Depot';
-      tab.mode = 'ai';
+      tab.title = depotUrl === 'chrome://downloads' ? 'Downloads' : 'Tucows .EXE Depot';
+      tab.embedUrl = undefined;
       tab.cachedHtml = buildSharewareDepotHtml();
       if (pushHistory) {
         tab.history.splice(tab.historyIdx + 1);
@@ -738,7 +1272,7 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
       }
       renderTabsBar();
       displayTabContent(tab);
-      if (statusText) statusText.textContent = 'Connected to Tucows 95 Win32 .EXE Shareware Mirror — Click Save .EXE or Run .EXE!';
+      if (statusText) statusText.textContent = 'Loaded .EXE Shareware & Downloads Mirror — Click Save .EXE or Run .EXE!';
       return;
     }
 
@@ -749,9 +1283,15 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
       if (found && found.content) {
         tab.url = `file:///C:/Documents/${found.name}`;
         tab.title = found.name;
+        tab.embedUrl = undefined;
         tab.cachedHtml = found.content.includes('<html')
           ? found.content
-          : `<html><body style="font-family:monospace;padding:16px;background:#fff;color:#000;"><pre>${found.content.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] || c))}</pre></body></html>`;
+          : `<html><body style="font-family:monospace;padding:16px;background:#fff;color:#000;"><pre>${escapeHtml(found.content)}</pre></body></html>`;
+        if (pushHistory) {
+          tab.history.splice(tab.historyIdx + 1);
+          tab.history.push(tab.url);
+          tab.historyIdx = tab.history.length - 1;
+        }
         renderTabsBar();
         displayTabContent(tab);
         if (statusText) statusText.textContent = `Opened local file ${found.name} from C:\\`;
@@ -765,9 +1305,8 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
         if (url.includes('.') && !url.includes(' ')) {
           url = 'https://' + url;
         } else {
-          // Treat plain search query in Live Mode as a live Wikipedia mobile article lookup!
-          const wikiSlug = encodeURIComponent(url.trim().replace(/\s+/g, '_'));
-          url = `https://en.m.wikipedia.org/wiki/Special:Search?search=${wikiSlug}`;
+          // Treat plain search query in Live Mode as a live Wikipedia search/article lookup
+          url = `https://en.m.wikipedia.org/w/index.php?search=${encodeURIComponent(url.trim())}`;
         }
       }
     } else {
@@ -785,7 +1324,8 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
     }
 
     tab.url = url;
-    tab.title = domain.slice(0, 22);
+    tab.title = domain.slice(0, 24);
+    tab.embedUrl = undefined;
     if (pushHistory) {
       tab.history.splice(tab.historyIdx + 1);
       tab.history.push(url);
@@ -807,23 +1347,69 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
         : systemRegistry.modemBaudRate <= 28800
           ? 550
           : systemRegistry.modemBaudRate <= 56000
-            ? 260
+            ? 180
             : 0;
 
-    // LIVE REAL-WORLD IFRAME MODE
+    // LIVE REAL-WORLD PROXY MODE (Fetches via /api/browse -> srcdoc with YouTube embed fast-path)
     if (tab.mode === 'live') {
-      if (statusText) statusText.textContent = `Connecting to live host ${domain}...`;
-      if (simulatedDelayMs > 0) {
-        loadingEl.innerHTML = `<div style="border:2px outset #fff;background:#c0c0c0;padding:14px;color:#000;"><b>🌐 Establishing TCP/IP Live Stream (${systemRegistry.modemBaudRate} bps)...</b><br/><small>${domain}</small></div>`;
-        loadingEl.style.display = 'flex';
-        await new Promise((r) => setTimeout(r, simulatedDelayMs));
+      const ytId = extractYouTubeId(url);
+      if (ytId) {
+        const embedUrl = `https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0`;
+        tab.embedUrl = embedUrl;
+        tab.title = `YouTube · ${ytId}`;
+        tab.cachedHtml = `<!DOCTYPE html><html><body style="margin:0;background:#000;"><iframe src="${embedUrl}" style="width:100%;height:100vh;border:0;" allowfullscreen></iframe></body></html>`;
         loadingEl.style.display = 'none';
+        iframe.removeAttribute('srcdoc');
+        iframe.src = embedUrl;
+        renderTabsBar();
+        updateToolbarFromTab(tab);
+        if (statusText) statusText.textContent = `Embedded YouTube video: ${ytId}`;
+        return;
       }
-      iframe.removeAttribute('srcdoc');
-      iframe.src = url;
-      tab.cachedHtml = `<!-- Live External URL: ${url} -->\n<html><body><p>Live URL loaded: <a href="${url}">${url}</a></p></body></html>`;
-      if (statusText) {
-        statusText.textContent = `Live Iframe Connected: ${domain} (Tip: If an external host blocks iframes, switch to ✨ AI Web!)`;
+
+      if (statusText) statusText.textContent = `Connecting to live host ${domain}...`;
+      loadingEl.innerHTML = `<div style="border:1px solid #dadce0;border-radius:8px;background:#ffffff;padding:16px 20px;color:#202124;box-shadow:0 4px 14px rgba(0,0,0,0.12);"><b>🌐 Fetching Live Page...</b><br/><small style="color:#5f6368;">${escapeHtml(domain)}</small></div>`;
+      loadingEl.style.display = 'flex';
+
+      try {
+        if (simulatedDelayMs > 0) {
+          await new Promise((r) => setTimeout(r, simulatedDelayMs));
+        }
+        const resp = await fetch(`/api/browse?url=${encodeURIComponent(url)}`);
+        const data = await resp.json().catch(() => null);
+        if (resp.ok && data && data.ok && typeof data.html === 'string') {
+          if (typeof data.finalUrl === 'string' && data.finalUrl) tab.url = data.finalUrl;
+          if (typeof data.title === 'string' && data.title) tab.title = data.title.slice(0, 26);
+          tab.cachedHtml = data.html;
+          tab.embedUrl = undefined;
+          iframe.removeAttribute('src');
+          iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(data.html) : data.html;
+          renderTabsBar();
+          updateToolbarFromTab(tab);
+          if (statusText) statusText.textContent = `Loaded Live: ${tab.url} (HTTP ${data.status || 200})`;
+        } else {
+          const reason = data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
+          tab.title = 'Site Unreachable';
+          tab.embedUrl = undefined;
+          tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
+          iframe.removeAttribute('src');
+          iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
+          renderTabsBar();
+          updateToolbarFromTab(tab);
+          if (statusText) statusText.textContent = `Live Web could not reach ${domain} (${reason}) — Click "Load with ✨ AI Web" inside page.`;
+        }
+      } catch (err: any) {
+        const reason = String(err?.message || 'Network connection error');
+        tab.title = 'Site Unreachable';
+        tab.embedUrl = undefined;
+        tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
+        iframe.removeAttribute('src');
+        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
+        renderTabsBar();
+        updateToolbarFromTab(tab);
+        if (statusText) statusText.textContent = `Live Web error: ${reason}`;
+      } finally {
+        loadingEl.style.display = 'none';
       }
       return;
     }
@@ -847,14 +1433,14 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
     loadingEl.innerHTML = `
       <div style="border:2px outset #fff; background:#c0c0c0; padding:16px; max-width:360px; box-shadow:3px 3px 0 #000; color:#000;">
         <div style="background:#000080; color:#fff; font-weight:bold; padding:3px 6px; margin-bottom:10px; font-size:12px;">
-          📞 Dial-Up Networking — ${systemRegistry.modemBaudRate.toLocaleString()} bps (${systemRegistry.browserAiEra} Era)
+          ✨ AI Web Synthesizer — ${systemRegistry.browserAiEra} Era (${systemRegistry.modemBaudRate.toLocaleString()} bps)
         </div>
-        <p style="margin:6px 0; font-size:12px;">Host: <b>${domain.replace(/[<>&"]/g, '')}</b></p>
-        <p style="margin:4px 0; font-size:11px; color:#333;">Engine: ${getBrowserEngineMeta(systemRegistry.defaultBrowserEngine).fullTitle}</p>
+        <p style="margin:6px 0; font-size:12px;">Host: <b>${escapeHtml(domain)}</b></p>
+        <p style="margin:4px 0; font-size:11px; color:#333;">Engine: ${escapeHtml(getBrowserEngineMeta(systemRegistry.defaultBrowserEngine).fullTitle)}</p>
       </div>
     `;
     loadingEl.style.display = 'flex';
-    if (statusText) statusText.textContent = `Dialing ${domain} at ${systemRegistry.modemBaudRate} bps...`;
+    if (statusText) statusText.textContent = `Synthesizing ${domain} (${systemRegistry.browserAiEra} Era)...`;
 
     try {
       if (simulatedDelayMs > 0) await new Promise((r) => setTimeout(r, simulatedDelayMs));
@@ -878,17 +1464,26 @@ Requirements:
 
       let htmlContent = (result.text || '').replace(/```html|```/gi, '').trim();
       if (!htmlContent.toLowerCase().includes('<html')) {
-        htmlContent = `<!DOCTYPE html><html><head><title>${domain}</title></head><body style="background:#001a33;color:#00ffcc;font-family:monospace;padding:16px;"><h1>${domain}</h1><div>${htmlContent}</div></body></html>`;
+        htmlContent = `<!DOCTYPE html><html><head><title>${escapeHtml(domain)}</title></head><body style="background:#001a33;color:#00ffcc;font-family:monospace;padding:16px;"><h1>${escapeHtml(domain)}</h1><div>${htmlContent}</div></body></html>`;
+      }
+
+      const titleMatch = htmlContent.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (titleMatch?.[1]) {
+        tab.title = titleMatch[1].replace(/\s+/g, ' ').trim().slice(0, 24) || tab.title;
       }
 
       tab.cachedHtml = htmlContent;
+      tab.embedUrl = undefined;
       iframe.removeAttribute('src');
       iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(htmlContent) : htmlContent;
+      renderTabsBar();
+      updateToolbarFromTab(tab);
       if (statusText) statusText.textContent = `Document: Done (${domain} · ${htmlContent.length} bytes)`;
     } catch (err: any) {
-      const msg = String(err?.message || 'Connection failed').replace(/[<>&]/g, '');
+      const msg = escapeHtml(String(err?.message || 'Connection failed'));
       tab.cachedHtml = `<html><body style="font-family:monospace;background:#c0c0c0;padding:20px;"><h2>Browser Connection Error</h2><p>${msg}</p></body></html>`;
-      iframe.srcdoc = tab.cachedHtml;
+      iframe.removeAttribute('src');
+      iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
       if (statusText) statusText.textContent = 'Error loading document.';
     } finally {
       loadingEl.style.display = 'none';
@@ -897,11 +1492,20 @@ Requirements:
 
   renderActiveBrowserTabFn = () => displayTabContent(getActiveTab());
   navigateActiveBrowserTabFn = navigateTab;
+  switchBrowserToAiFn = (targetUrl?: string) => {
+    const tab = getActiveTab();
+    tab.mode = 'ai';
+    systemRegistry.defaultBrowserMode = 'ai';
+    applySystemRegistryToOS();
+    updateToolbarFromTab(tab);
+    navigateTab(targetUrl || tab.url, false, 'ai');
+  };
 
   // Wire Browser UI Controls
   newTabBtn?.addEventListener('click', () => {
     bridgeRef?.sfx.playClick();
-    createNewTab('about:portal', false);
+    closeChromeMenu();
+    createNewTab(getDefaultHomeUrl(), false);
   });
 
   engineSelect?.addEventListener('change', () => {
@@ -909,13 +1513,90 @@ Requirements:
     systemRegistry.defaultBrowserEngine = engineSelect.value as BrowserEngineId;
     applySystemRegistryToOS();
     const t = getActiveTab();
-    if (t.url === 'about:portal') displayTabContent(t);
+    if (isHomePortalUrl(t.url)) {
+      t.url = systemRegistry.defaultBrowserEngine === 'chrome' ? 'chrome://newtab' : 'about:portal';
+      t.title = systemRegistry.defaultBrowserEngine === 'chrome' ? 'New Tab' : 'Home Portal';
+      renderTabsBar();
+      displayTabContent(t);
+    }
+    closeChromeMenu();
+  });
+
+  eraSelect?.addEventListener('change', () => {
+    bridgeRef?.sfx.playClick();
+    systemRegistry.browserAiEra = eraSelect.value as BrowserAiEra;
+    applySystemRegistryToOS();
+    renderMasterSettingsCurrentTab();
+  });
+
+  zoomOutBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    bridgeRef?.sfx.playClick();
+    systemRegistry.browserZoomPercent = Math.max(80, systemRegistry.browserZoomPercent - 10);
+    applySystemRegistryToOS();
+    renderMasterSettingsCurrentTab();
+  });
+
+  zoomInBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    bridgeRef?.sfx.playClick();
+    systemRegistry.browserZoomPercent = Math.min(130, systemRegistry.browserZoomPercent + 10);
+    applySystemRegistryToOS();
+    renderMasterSettingsCurrentTab();
   });
 
   manageInstallBtn?.addEventListener('click', () => {
     bridgeRef?.sfx.playClick();
+    closeChromeMenu();
     openAbilityToInstallCategory('browser');
   });
+
+  chromeMenuBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    bridgeRef?.sfx.playClick();
+    if (!chromeMenuDropdown) return;
+    chromeMenuDropdown.style.display = chromeMenuDropdown.style.display === 'none' ? 'block' : 'none';
+  });
+
+  chromeMenuNewTab?.addEventListener('click', () => {
+    bridgeRef?.sfx.playClick();
+    closeChromeMenu();
+    createNewTab(getDefaultHomeUrl(), false);
+  });
+
+  chromeDownloadsMenu?.addEventListener('click', () => {
+    bridgeRef?.sfx.playClick();
+    closeChromeMenu();
+    navigateTab('chrome://downloads', true);
+  });
+
+  chromeExeDepotMenu?.addEventListener('click', () => {
+    bridgeRef?.sfx.playClick();
+    closeChromeMenu();
+    navigateTab('http://www.tucows-95-downloads.com', true, 'ai');
+  });
+
+  chromeAboutBtn?.addEventListener('click', () => {
+    closeChromeMenu();
+    const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
+    bridgeRef?.showOsDialog(
+      `${meta.fullTitle} (${meta.uaBadge})\nMode: ${systemRegistry.defaultBrowserMode.toUpperCase()} · AI Era: ${systemRegistry.browserAiEra} · Zoom: ${systemRegistry.browserZoomPercent}%`,
+      `About ${meta.shortTitle}`,
+    );
+  });
+
+  document.addEventListener('click', (e) => {
+    if (
+      chromeMenuDropdown &&
+      chromeMenuDropdown.style.display !== 'none' &&
+      !chromeMenuDropdown.contains(e.target as Node) &&
+      e.target !== chromeMenuBtn &&
+      !chromeMenuBtn?.contains(e.target as Node)
+    ) {
+      closeChromeMenu();
+    }
+  });
+  window.addEventListener('blur', closeChromeMenu);
 
   modeAiBtn?.addEventListener('click', () => {
     bridgeRef?.sfx.playClick();
@@ -924,7 +1605,9 @@ Requirements:
     systemRegistry.defaultBrowserMode = 'ai';
     applySystemRegistryToOS();
     updateToolbarFromTab(tab);
-    if (tab.url !== 'about:portal') navigateTab(tab.url, false, 'ai');
+    if (!isHomePortalUrl(tab.url) && !tab.url.startsWith('chrome://')) {
+      navigateTab(tab.url, false, 'ai');
+    }
   });
 
   modeLiveBtn?.addEventListener('click', () => {
@@ -934,7 +1617,9 @@ Requirements:
     systemRegistry.defaultBrowserMode = 'live';
     applySystemRegistryToOS();
     updateToolbarFromTab(tab);
-    if (tab.url !== 'about:portal') navigateTab(tab.url, false, 'live');
+    if (!isHomePortalUrl(tab.url) && !tab.url.startsWith('chrome://')) {
+      navigateTab(tab.url, false, 'live');
+    }
   });
 
   goButton?.addEventListener('click', () => navigateTab(addressBar.value, true));
@@ -965,17 +1650,27 @@ Requirements:
 
   homeBtn?.addEventListener('click', () => {
     bridgeRef?.sfx.playClick();
-    navigateTab(systemRegistry.browserHomePage || 'about:portal', true);
+    navigateTab(getDefaultHomeUrl(), true);
   });
 
   addBookmarkBtn?.addEventListener('click', () => {
     bridgeRef?.sfx.playClick();
     const tab = getActiveTab();
-    const label = `${tab.mode === 'live' ? '🌐' : '✨'} ${tab.title.slice(0, 14)}`;
+    const existingIdx = browserBookmarks.findIndex((b) => b.url === tab.url);
+    if (existingIdx >= 0) {
+      browserBookmarks.splice(existingIdx, 1);
+      saveBrowserBookmarks(browserBookmarks);
+      renderBookmarksBar();
+      updateToolbarFromTab(tab);
+      if (statusText) statusText.textContent = `Removed bookmark for "${tab.title}".`;
+      return;
+    }
+    const label = `${isHomePortalUrl(tab.url) ? '➕' : tab.mode === 'live' ? '🌐' : '✨'} ${tab.title.slice(0, 14)}`;
     browserBookmarks.push({ title: label, url: tab.url, mode: tab.mode });
     saveBrowserBookmarks(browserBookmarks);
     renderBookmarksBar();
-    if (statusText) statusText.textContent = `Bookmarked "${tab.title}"! (Right-click any bookmark to remove)`;
+    updateToolbarFromTab(tab);
+    if (statusText) statusText.textContent = `Bookmarked "${tab.title}"! (Right-click any bookmark or click ★ to remove)`;
   });
 
   sourceBtn?.addEventListener('click', () => {
@@ -994,7 +1689,7 @@ Requirements:
     bridgeRef?.sfx.playClick();
     const tab = getActiveTab();
     tab.cachedHtml = sourceTextarea.value;
-    tab.mode = 'ai';
+    tab.embedUrl = undefined;
     if (sourceDrawer) sourceDrawer.style.display = 'none';
     displayTabContent(tab);
     if (statusText) statusText.textContent = 'Rendered live-edited HTML source!';
@@ -1022,12 +1717,13 @@ Requirements:
   });
 
   settingsBtn?.addEventListener('click', () => {
+    closeChromeMenu();
     openMasterSettingsTab('browser');
   });
 
   renderBookmarksBar();
   if (browserTabs.length === 0) {
-    createNewTab(systemRegistry.browserHomePage || 'about:portal', true);
+    createNewTab(getDefaultHomeUrl(), true);
   } else {
     renderTabsBar();
     displayTabContent(getActiveTab());
@@ -1261,7 +1957,7 @@ export function uninstallSoftwarePackage(pkg: SoftwarePackage): void {
     if (remainingOtherBrowsers.length === 0) {
       bridgeRef?.closeApp('chrome');
     } else if (systemRegistry.defaultBrowserEngine === pkg.browserEngine) {
-      systemRegistry.defaultBrowserEngine = remainingOtherBrowsers[0].browserEngine || 'netscape';
+      systemRegistry.defaultBrowserEngine = remainingOtherBrowsers[0].browserEngine || 'chrome';
     }
   } else {
     bridgeRef?.closeApp(pkg.appWindowId);
@@ -1590,7 +2286,7 @@ export function initOsReinstallerController(): void {
 
     const modeRadio = document.querySelector<HTMLInputElement>('input[name="os-setup-mode"]:checked');
     const setupMode = modeRadio?.value === 'clean' ? 'clean' : 'repair';
-    const chosenBrowser = browserPick?.value || 'netscape';
+    const chosenBrowser = browserPick?.value || 'chrome';
 
     selectStep.style.display = 'none';
     progStep.style.display = 'flex';
@@ -1649,7 +2345,7 @@ export function initOsReinstallerController(): void {
             p.startMenuShortcut = true;
           }
         });
-        systemRegistry.defaultBrowserEngine = chosenBrowser === 'all' ? 'netscape' : (chosenBrowser as BrowserEngineId);
+        systemRegistry.defaultBrowserEngine = chosenBrowser === 'all' ? 'chrome' : (chosenBrowser as BrowserEngineId);
         if (systemRegistry.biosBootOrder === 'CDROM_C_A') {
           systemRegistry.biosBootOrder = 'C_A_CDROM';
         }
@@ -1928,13 +2624,13 @@ export function renderMasterSettingsCurrentTab(): void {
   } else if (currentSettingsTab === 'taskbar') {
     container.innerHTML = `
       <fieldset class="settings-fieldset">
-        <legend>Taskbar Layout &amp; Windows 11 Backport Controls</legend>
+        <legend>Taskbar Layout &amp; Windows 10/11 Backport Controls</legend>
         <div class="settings-grid-2col">
           <div class="settings-row">
             <label>Taskbar Alignment:</label>
             <select id="st-tb-align" class="win95-select">
-              <option value="left" ${!r.taskbarCentered ? 'selected' : ''}>Classic Windows 95 Left</option>
-              <option value="center" ${r.taskbarCentered ? 'selected' : ''}>Windows 11 Centered</option>
+              <option value="left" ${!r.taskbarCentered ? 'selected' : ''}>Classic Left (Win10 + Win95 Dock)</option>
+              <option value="center" ${r.taskbarCentered ? 'selected' : ''}>Centered Icon Dock</option>
             </select>
           </div>
           <div class="settings-row">
@@ -1944,6 +2640,10 @@ export function renderMasterSettingsCurrentTab(): void {
               <option value="top" ${r.taskbarPosition === 'top' ? 'selected' : ''}>Top Menu-Bar Style</option>
             </select>
           </div>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Show App Labels on Taskbar</span>
+            <input type="checkbox" id="st-tb-labels" ${r.taskbarShowLabels ? 'checked' : ''} />
+          </label>
           <label class="settings-row" style="cursor:pointer;">
             <span>Auto-Hide Taskbar Until Hover</span>
             <input type="checkbox" id="st-tb-autohide" ${r.taskbarAutoHide ? 'checked' : ''} />
@@ -1988,6 +2688,7 @@ export function renderMasterSettingsCurrentTab(): void {
 
     bindSelect('st-tb-align', (v) => (r.taskbarCentered = v === 'center'));
     bindSelect('st-tb-edge', (v) => (r.taskbarPosition = v as any));
+    bindCheck('st-tb-labels', (c) => (r.taskbarShowLabels = c));
     bindCheck('st-tb-autohide', (c) => (r.taskbarAutoHide = c));
     container.querySelector('#st-start-lbl')?.addEventListener('input', (e) => {
       r.startButtonLabel = (e.target as HTMLInputElement).value || 'Start';
@@ -2183,7 +2884,7 @@ export function renderMasterSettingsCurrentTab(): void {
     bindSelect('st-br-era', (v) => (r.browserAiEra = v as BrowserAiEra));
     bindSlider('st-br-zoom', 'st-br-zoom-v', '%', (n) => (r.browserZoomPercent = n));
     container.querySelector('#st-br-home')?.addEventListener('input', (e) => {
-      r.browserHomePage = (e.target as HTMLInputElement).value.trim() || 'about:portal';
+      r.browserHomePage = (e.target as HTMLInputElement).value.trim() || 'chrome://newtab';
       applySystemRegistryToOS();
     });
     container.querySelector('#st-br-reinstall-btn')?.addEventListener('click', () => {
@@ -2197,10 +2898,10 @@ export function renderMasterSettingsCurrentTab(): void {
       bridgeRef?.sfx.playClick();
       browserBookmarks = DEFAULT_BOOKMARKS.map((b) => ({ ...b }));
       saveBrowserBookmarks(browserBookmarks);
-      bridgeRef?.showOsDialog('Default 1995 + Live Wikipedia bookmarks restored!', 'Browser Settings');
+      bridgeRef?.showOsDialog('Default Google Chrome + Live Web + 1995 bookmarks restored!', 'Browser Settings');
     });
     container.querySelector('#st-br-launch')?.addEventListener('click', () => {
-      navigateBrowserExternal(r.browserHomePage || 'about:portal');
+      navigateBrowserExternal(r.browserHomePage || 'chrome://newtab');
     });
   } else if (currentSettingsTab === 'hardware') {
     container.innerHTML = `

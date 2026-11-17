@@ -18,15 +18,18 @@ import {
   openAbilityToInstallCategory,
   openCmosBiosSetup,
   openInstallShieldWizard,
+  openMasterSettingsTab,
   openOsReinstallScreen,
   packageCatalog,
   registerOsBridge,
   renderAbilityToInstallUI,
   renderMasterSettingsCurrentTab,
   resetIdleTimer,
+  switchBrowserToAiMode,
   syncBrowserChromeToEngine,
   systemRegistry,
 } from './osExtendedApps';
+import { APP_SVG_ICONS } from './osSystemCore';
 import {
   downloadBootableIsoImage,
   downloadPortableHostApp,
@@ -408,7 +411,7 @@ const virtualFileSystem: VfsItem[] = [
     name: 'secret_photo.jpg',
     type: 'image',
     parent: 'C:\\',
-    content: 'https://storage.googleapis.com/gemini-95-icons/%40ammaar%2B%40olacombe.png',
+    content: APP_SVG_ICONS.samplePhoto,
   },
   // Pre-seeded standalone .EXE installers inside C:\Downloads ready to double-click/click!
   {
@@ -420,12 +423,12 @@ const virtualFileSystem: VfsItem[] = [
     content: 'MZ Win32 Self-Extracting Installer — Microsoft Internet Explorer 3.0 (Plus! 95)',
   },
   {
-    name: 'CYBERCHROME_SETUP.EXE',
+    name: 'CHROME_SETUP.EXE',
     type: 'installer_exe',
     parent: 'C:\\Downloads',
-    pkgId: 'browser_cyberchrome',
-    sizeMB: 18.6,
-    content: 'MZ Win32 Self-Extracting Installer — CyberChrome 95 Turbo',
+    pkgId: 'browser_chrome',
+    sizeMB: 24.5,
+    content: 'MZ Win32 Self-Extracting Installer — Google Chrome Browser',
   },
   {
     name: 'SYSMON95_SETUP.EXE',
@@ -468,7 +471,7 @@ const virtualFileSystem: VfsItem[] = [
     name: 'founders_1995.jpg',
     type: 'image',
     parent: 'C:\\Pictures',
-    content: 'https://storage.googleapis.com/gemini-95-icons/%40ammaar%2B%40olacombe.png',
+    content: APP_SVG_ICONS.samplePhoto,
   },
   {
     name: 'AUTOEXEC.BAT',
@@ -521,6 +524,24 @@ const FACTORY_VFS_SNAPSHOT: VfsItem[] = virtualFileSystem.map((item) => ({ ...it
 function resetVfsToFactory() {
   virtualFileSystem.length = 0;
   FACTORY_VFS_SNAPSHOT.forEach((item) => virtualFileSystem.push({ ...item }));
+}
+
+function hydrateSvgIcons(): void {
+  document.querySelectorAll<HTMLImageElement>('img[data-icon-key]').forEach((img) => {
+    const key = img.dataset.iconKey;
+    if (key && APP_SVG_ICONS[key]) {
+      img.src = APP_SVG_ICONS[key];
+    }
+    if (!img.dataset.fallbackBound) {
+      img.dataset.fallbackBound = '1';
+      img.addEventListener('error', () => {
+        if (!img.dataset.fallbackApplied) {
+          img.dataset.fallbackApplied = '1';
+          img.src = APP_SVG_ICONS.appExe;
+        }
+      });
+    }
+  });
 }
 
 // --- Sandbox Storage Shim for Browser Iframe ---
@@ -626,13 +647,47 @@ function buildHostStorageAndNavigationShimScript(): string {
   } catch (e) {}
   document.addEventListener("click", function(e) {
     var a = e.target && e.target.closest ? e.target.closest("a") : null;
-    if (a && a.getAttribute("href")) {
-      var href = a.getAttribute("href");
-      if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
-        e.preventDefault();
-        window.parent.postMessage({ __gemini95Navigate: true, url: href }, "*");
-      }
+    if (!a) return;
+    var rawHref = a.getAttribute("href");
+    if (!rawHref || rawHref.startsWith("#") || /^(javascript:|mailto:|tel:)/i.test(rawHref)) return;
+    var url = rawHref;
+    var hasBase = !!document.querySelector("base[href]");
+    if (/^(live:|ai:|chrome:|about:|file:|https?:)/i.test(rawHref)) {
+      url = rawHref;
+    } else if ((hasBase || rawHref.indexOf("//") === 0) && a.href && !a.href.startsWith("about:srcdoc")) {
+      url = a.href;
     }
+    e.preventDefault();
+    window.parent.postMessage({ __gemini95Navigate: true, url: url }, "*");
+  });
+  document.addEventListener("submit", function(e) {
+    var form = e.target;
+    if (!form || !form.tagName || form.tagName.toUpperCase() !== "FORM") return;
+    var method = (form.getAttribute("method") || "get").toLowerCase();
+    if (method !== "get" || e.defaultPrevented) return;
+    var rawAction = form.getAttribute("action") || "";
+    var actionUrl = rawAction;
+    if (/^(live:|ai:|chrome:|about:|file:|https?:)/i.test(rawAction)) {
+      actionUrl = rawAction;
+    } else if ((document.querySelector("base[href]") || rawAction.indexOf("//") === 0) && form.action && !form.action.startsWith("about:srcdoc")) {
+      actionUrl = form.action;
+    } else if (!rawAction) {
+      return;
+    }
+    try {
+      var fd = new FormData(form);
+      var params = new URLSearchParams();
+      fd.forEach(function(val, key) {
+        if (typeof val === "string") params.append(key, val);
+      });
+      var qs = params.toString();
+      var targetUrl = actionUrl.split("#")[0];
+      if (qs) {
+        targetUrl += (targetUrl.indexOf("?") === -1 ? "?" : "&") + qs;
+      }
+      e.preventDefault();
+      window.parent.postMessage({ __gemini95Navigate: true, url: targetUrl }, "*");
+    } catch (err) {}
   });
 })();<\/script>`;
 }
@@ -659,13 +714,213 @@ const taskbarAppsContainer = document.getElementById('taskbar-apps') as HTMLDivE
 const paintAssistant = document.getElementById('paint-assistant') as HTMLDivElement;
 const assistantBubble = paintAssistant?.querySelector('.assistant-bubble') as HTMLDivElement;
 
+const taskbarEl = document.getElementById('taskbar') as HTMLDivElement | null;
+
 let activeWindow: HTMLDivElement | null = null;
 let highestZIndex = 20;
-const openApps = new Map<string, { windowEl: HTMLDivElement; taskbarButton: HTMLDivElement }>();
+const openApps = new Map<string, { windowEl: HTMLDivElement }>();
+const minimizedApps = new Set<string>();
 const initializedApps = new Set<string>();
+let currentVirtualDesktop = 1;
+const appDesktopMap = new Map<string, number>();
+let resumeMinesweeperTimer: (() => void) | null = null;
+let mediaPlayerYtInitialized = false;
+let mediaPlayerProgressInterval: number | null = null;
+let startMediaVisualizer: (() => void) | null = null;
+let resumeMediaPlayerYtIfNeeded: (() => void) | null = null;
 let geminiInstance: any | null = null;
 let paintCritiqueIntervalId: number | null = null;
 const paintResizeObserverMap = new Map<Element, ResizeObserver>();
+
+const PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'notepad', 'paint', 'dosPrompt', 'abilityToInstall', 'controlPanel'] as const;
+
+function getAppDockMeta(appName: string): { icon: string; title: string } {
+  if (appName === 'chrome') {
+    const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
+    return { icon: meta.iconUrl, title: meta.shortTitle };
+  }
+  const titles: Record<string, string> = {
+    myComputer: 'My Gemtop',
+    abilityToInstall: 'Ability to Install',
+    controlPanel: 'Settings & Control',
+    regedit: 'REGEDIT.EXE',
+    sysMonitor: 'System Monitor',
+    notepad: 'GemNotes',
+    paint: 'GemPaint',
+    doom: 'Doom II',
+    gemini: 'Gemini AIM',
+    minesweeper: 'GemSweeper',
+    imageViewer: 'Image Viewer',
+    mediaPlayer: 'GemPlayer',
+    dosPrompt: 'MS-DOS Prompt',
+  };
+  return {
+    icon: APP_SVG_ICONS[appName] || APP_SVG_ICONS.appExe,
+    title: titles[appName] || appName,
+  };
+}
+
+function getTaskbarHeightPx(): number {
+  return taskbarEl?.offsetHeight || 40;
+}
+
+function clampWindowToViewport(windowElement: HTMLDivElement, keepFullInside = false): void {
+  if (!windowElement || windowElement.classList.contains('maximized') || windowElement.style.display === 'none') return;
+  const tbH = getTaskbarHeightPx();
+  const isTop = systemRegistry.taskbarPosition === 'top';
+  const topBound = isTop ? tbH + 4 : 4;
+  const bottomBound = Math.max(topBound + 120, window.innerHeight - (isTop ? 4 : tbH + 4));
+  const availW = Math.max(260, window.innerWidth - 8);
+  const availH = Math.max(190, bottomBound - topBound);
+
+  if (windowElement.offsetWidth > availW) {
+    windowElement.style.width = `${availW}px`;
+  }
+  if (windowElement.offsetHeight > availH) {
+    windowElement.style.height = `${availH}px`;
+  }
+
+  const w = windowElement.offsetWidth || parseInt(windowElement.style.width || '420', 10) || 420;
+  const h = windowElement.offsetHeight || parseInt(windowElement.style.height || '320', 10) || 320;
+  let left = parseFloat(windowElement.style.left || '40');
+  let top = parseFloat(windowElement.style.top || '40');
+  if (Number.isNaN(left)) left = 40;
+  if (Number.isNaN(top)) top = topBound;
+
+  if (keepFullInside) {
+    const maxLeft = Math.max(4, window.innerWidth - w - 4);
+    const maxTop = Math.max(topBound, bottomBound - h);
+    left = Math.max(4, Math.min(left, maxLeft));
+    top = Math.max(topBound, Math.min(top, maxTop));
+  } else {
+    const minLeft = -(w - 80);
+    const maxLeft = Math.max(4, window.innerWidth - 80);
+    const maxTop = Math.max(topBound, bottomBound - 36);
+    left = Math.max(minLeft, Math.min(left, maxLeft));
+    top = Math.max(topBound, Math.min(top, maxTop));
+  }
+
+  windowElement.style.left = `${Math.round(left)}px`;
+  windowElement.style.top = `${Math.round(top)}px`;
+}
+
+function syncTaskbarDockActiveState(): void {
+  if (!taskbarAppsContainer) return;
+  taskbarAppsContainer.querySelectorAll<HTMLButtonElement>('.taskbar-app').forEach((btn) => {
+    const appName = btn.dataset.appName || '';
+    const appData = openApps.get(appName);
+    const appDesk = appDesktopMap.get(appName) || 1;
+    const isOpenOnDesk = Boolean(appData && appDesk === currentVirtualDesktop);
+    const isMin = isOpenOnDesk && minimizedApps.has(appName);
+    const isActive = Boolean(
+      isOpenOnDesk &&
+        !isMin &&
+        activeWindow &&
+        activeWindow.id === appName &&
+        appData!.windowEl.style.display !== 'none',
+    );
+    btn.classList.toggle('is-open', isOpenOnDesk);
+    btn.classList.toggle('is-minimized', isMin);
+    btn.classList.toggle('active', isActive);
+  });
+}
+
+function syncTaskbarDock(): void {
+  if (!taskbarAppsContainer) return;
+  taskbarAppsContainer.innerHTML = '';
+
+  const appsToRender: string[] = [];
+  PINNED_TASKBAR_APPS.forEach((appName) => {
+    if (isAppInstalled(appName) || openApps.has(appName)) {
+      appsToRender.push(appName);
+    }
+  });
+  openApps.forEach((_, appName) => {
+    const appDesk = appDesktopMap.get(appName) || 1;
+    if (
+      !appsToRender.includes(appName) &&
+      appDesk === currentVirtualDesktop
+    ) {
+      appsToRender.push(appName);
+    }
+  });
+
+  appsToRender.forEach((appName) => {
+    const meta = getAppDockMeta(appName);
+    const appData = openApps.get(appName);
+    const appDesk = appDesktopMap.get(appName) || 1;
+    const isOpenOnDesk = Boolean(appData && appDesk === currentVirtualDesktop);
+    const isMin = isOpenOnDesk && minimizedApps.has(appName);
+    const isActive = Boolean(
+      isOpenOnDesk &&
+        !isMin &&
+        activeWindow &&
+        activeWindow.id === appName &&
+        appData!.windowEl.style.display !== 'none',
+    );
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'taskbar-app';
+    btn.dataset.appName = appName;
+    if (isOpenOnDesk) btn.classList.add('is-open');
+    if (isMin) btn.classList.add('is-minimized');
+    if (isActive) btn.classList.add('active');
+    btn.title = isOpenOnDesk ? `${meta.title} (${isMin ? 'Minimized' : 'Running'})` : `${meta.title} (Pinned)`;
+
+    const img = document.createElement('img');
+    img.src = meta.icon;
+    img.alt = meta.title;
+    img.addEventListener('error', () => {
+      if (!img.dataset.fallbackApplied) {
+        img.dataset.fallbackApplied = '1';
+        img.src = APP_SVG_ICONS.appExe;
+      }
+    });
+    btn.appendChild(img);
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'taskbar-app-label';
+    labelSpan.textContent = meta.title;
+    btn.appendChild(labelSpan);
+
+    btn.addEventListener('click', () => {
+      sfx.playClick();
+      if (openApps.has(appName)) {
+        const targetDesk = appDesktopMap.get(appName) || 1;
+        const winEl = openApps.get(appName)!.windowEl;
+        if (targetDesk !== currentVirtualDesktop) {
+          minimizedApps.delete(appName);
+          switchVirtualDesktop(targetDesk);
+          winEl.style.display = 'flex';
+          clampWindowToViewport(winEl, true);
+          bringToFront(winEl);
+          return;
+        }
+        if (winEl === activeWindow && winEl.style.display !== 'none') {
+          minimizeApp(appName);
+        } else {
+          minimizedApps.delete(appName);
+          winEl.style.display = 'flex';
+          clampWindowToViewport(winEl, true);
+          bringToFront(winEl);
+          if (appName === 'myComputer') renderExplorerFolder(currentExplorerPath);
+          if (appName === 'chrome') syncBrowserChromeToEngine();
+          if (appName === 'minesweeper') resumeMinesweeperTimer?.();
+          if (appName === 'mediaPlayer') {
+            startMediaVisualizer?.();
+            resumeMediaPlayerYtIfNeeded?.();
+          }
+          syncTaskbarDockActiveState();
+        }
+      } else {
+        openApp(appName);
+      }
+    });
+
+    taskbarAppsContainer.appendChild(btn);
+  });
+}
 
 // --- Initialize Gemini Proxy ---
 async function initializeGeminiIfNeeded(context: string): Promise<boolean> {
@@ -687,16 +942,12 @@ async function initializeGeminiIfNeeded(context: string): Promise<boolean> {
 function bringToFront(windowElement: HTMLDivElement): void {
   if (activeWindow && activeWindow !== windowElement) {
     activeWindow.classList.remove('active');
-    const prevAppName = activeWindow.id;
-    openApps.get(prevAppName)?.taskbarButton.classList.remove('active');
   }
   highestZIndex++;
   windowElement.style.zIndex = highestZIndex.toString();
   windowElement.classList.add('active');
   activeWindow = windowElement;
-
-  const appNameRef = windowElement.id;
-  openApps.get(appNameRef)?.taskbarButton.classList.add('active');
+  syncTaskbarDockActiveState();
 }
 
 function toggleMaximize(windowElement: HTMLDivElement): void {
@@ -705,15 +956,11 @@ function toggleMaximize(windowElement: HTMLDivElement): void {
   bringToFront(windowElement);
 }
 
-function findIconElement(appName: string): HTMLDivElement | undefined {
-  return Array.from(icons).find((icon) => icon.dataset.app === appName);
-}
-
 export async function openApp(appName: string, bypassPkgCheck = false): Promise<void> {
   if (!bypassPkgCheck && !isAppInstalled(appName)) {
     if (appName === 'chrome') {
       showOsDialog(
-        'No Web Browser is currently installed on C:\\! Launching "Ability to Install" so you can install Netscape 95, Internet Explorer 3.0, or CyberChrome 95.',
+        'No Web Browser is currently installed on C:\\! Launching "Ability to Install" so you can install Google Chrome, Netscape 95, or Internet Explorer 3.0.',
         'Missing Browser Executable',
       );
       openAbilityToInstallCategory('browser');
@@ -732,112 +979,34 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   sfx.playWindowOpen();
 
   if (openApps.has(appName)) {
+    const appDesk = appDesktopMap.get(appName) || 1;
+    if (appDesk !== currentVirtualDesktop) {
+      minimizedApps.delete(appName);
+      switchVirtualDesktop(appDesk);
+    }
+    minimizedApps.delete(appName);
     windowElement.style.display = 'flex';
+    clampWindowToViewport(windowElement, true);
     bringToFront(windowElement);
     if (appName === 'myComputer') renderExplorerFolder(currentExplorerPath);
     if (appName === 'chrome') syncBrowserChromeToEngine();
+    if (appName === 'minesweeper') resumeMinesweeperTimer?.();
+    if (appName === 'mediaPlayer') {
+      startMediaVisualizer?.();
+      resumeMediaPlayerYtIfNeeded?.();
+    }
+    syncTaskbarDock();
     return;
   }
 
+  minimizedApps.delete(appName);
+  appDesktopMap.set(appName, currentVirtualDesktop);
+  openApps.set(appName, { windowEl: windowElement });
   windowElement.style.display = 'flex';
+  clampWindowToViewport(windowElement, true);
   bringToFront(windowElement);
-
-  const taskbarButton = document.createElement('div');
-  taskbarButton.classList.add('taskbar-app');
-  taskbarButton.dataset.appName = appName;
-
-  let iconSrc = '';
-  let title = appName;
-  const iconElement = findIconElement(appName);
-  if (iconElement && appName !== 'chrome') {
-    const img = iconElement.querySelector('img');
-    const span = iconElement.querySelector('span');
-    if (img) iconSrc = img.src;
-    if (span) title = span.textContent || appName;
-  } else {
-    switch (appName) {
-      case 'myComputer':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/mycomputer.png';
-        title = 'My Gemtop';
-        break;
-      case 'chrome': {
-        const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
-        iconSrc = meta.iconUrl;
-        title = meta.shortTitle;
-        break;
-      }
-      case 'abilityToInstall':
-        iconSrc = 'https://win98icons.alexmeub.com/icons/png/appwizard-4.png';
-        title = 'Ability to Install';
-        break;
-      case 'regedit':
-        iconSrc = 'https://win98icons.alexmeub.com/icons/png/regedit-0.png';
-        title = 'REGEDIT.EXE';
-        break;
-      case 'sysMonitor':
-        iconSrc = 'https://win98icons.alexmeub.com/icons/png/sysmon-0.png';
-        title = 'System Monitor';
-        break;
-      case 'notepad':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/GemNotes.png';
-        title = 'GemNotes';
-        break;
-      case 'paint':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/gempaint.png';
-        title = 'GemPaint';
-        break;
-      case 'doom':
-        iconSrc = 'https://64.media.tumblr.com/1d89dfa76381e5c14210a2149c83790d/7a15f84c681c1cf9-c1/s540x810/86985984be99d5591e0cbc0dea6f05ffa3136dac.png';
-        title = 'Doom II';
-        break;
-      case 'gemini':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/GeminiChatRetro.png';
-        title = 'Gemini AIM';
-        break;
-      case 'minesweeper':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/gemsweeper.png';
-        title = 'GemSweeper';
-        break;
-      case 'imageViewer':
-        iconSrc = 'https://win98icons.alexmeub.com/icons/png/display_properties-4.png';
-        title = 'Image Viewer';
-        break;
-      case 'mediaPlayer':
-        iconSrc = 'https://storage.googleapis.com/gemini-95-icons/ytmediaplayer.png';
-        title = 'GemPlayer';
-        break;
-      case 'dosPrompt':
-        title = 'MS-DOS Prompt';
-        break;
-      case 'controlPanel':
-        iconSrc = 'https://win98icons.alexmeub.com/icons/png/settings_gear-4.png';
-        title = 'Settings & Control';
-        break;
-    }
-  }
-
-  if (iconSrc) {
-    const img = document.createElement('img');
-    img.src = iconSrc;
-    img.alt = title;
-    img.referrerPolicy = 'no-referrer';
-    taskbarButton.appendChild(img);
-  }
-  taskbarButton.appendChild(document.createTextNode(title));
-
-  taskbarButton.addEventListener('click', () => {
-    sfx.playClick();
-    if (windowElement === activeWindow && windowElement.style.display !== 'none') {
-      minimizeApp(appName);
-    } else {
-      windowElement.style.display = 'flex';
-      bringToFront(windowElement);
-    }
-  });
-
-  taskbarAppsContainer.appendChild(taskbarButton);
-  openApps.set(appName, { windowEl: windowElement, taskbarButton });
-  taskbarButton.classList.add('active');
+  syncTaskbarDock();
+  updateVirtualDesktopCounts();
 
   // Initialize specific app logic once or refresh as needed
   if (appName === 'myComputer') {
@@ -894,8 +1063,11 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     initGeminiChat(windowElement);
   } else if (appName === 'minesweeper') {
     initMinesweeperGame(windowElement);
+    resumeMinesweeperTimer?.();
   } else if (appName === 'mediaPlayer') {
     initMediaPlayer(windowElement);
+    startMediaVisualizer?.();
+    resumeMediaPlayerYtIfNeeded?.();
   } else if (appName === 'dosPrompt') {
     initDosPrompt(windowElement);
   }
@@ -906,11 +1078,12 @@ function closeApp(appName: string): void {
   if (!appData) return;
   sfx.playClick();
 
-  const { windowEl, taskbarButton } = appData;
+  const { windowEl } = appData;
   windowEl.style.display = 'none';
   windowEl.classList.remove('active', 'maximized');
-  taskbarButton.remove();
   openApps.delete(appName);
+  minimizedApps.delete(appName);
+  appDesktopMap.delete(appName);
 
   if (dosInstances[appName]) {
     const container = document.getElementById(`${appName}-content`);
@@ -926,8 +1099,26 @@ function closeApp(appName: string): void {
     if (paintAssistant) paintAssistant.classList.remove('visible');
   }
 
+  if (appName === 'minesweeper' && minesweeperTimerInterval) {
+    clearInterval(minesweeperTimerInterval);
+    minesweeperTimerInterval = null;
+  }
+
   if (appName === 'mediaPlayer') {
     stopChiptuneSynth();
+    if (synthAnimFrameId !== null) {
+      cancelAnimationFrame(synthAnimFrameId);
+      synthAnimFrameId = null;
+    }
+    if (mediaPlayerProgressInterval !== null) {
+      clearInterval(mediaPlayerProgressInterval);
+      mediaPlayerProgressInterval = null;
+    }
+    mediaPlayerYtInitialized = false;
+    const progressFill = document.getElementById('media-player-progress-fill') as HTMLDivElement | null;
+    if (progressFill) progressFill.style.width = '0%';
+    const timeEl = document.getElementById('media-player-time');
+    if (timeEl) timeEl.textContent = '0:00 / 0:00';
     const player = youtubePlayers[appName];
     if (player) {
       try {
@@ -942,31 +1133,38 @@ function closeApp(appName: string): void {
     activeWindow = null;
     let nextAppToActivate: HTMLDivElement | null = null;
     let maxZ = -1;
-    openApps.forEach((data) => {
-      const z = parseInt(data.windowEl.style.zIndex || '0', 10);
-      if (z > maxZ) {
-        maxZ = z;
-        nextAppToActivate = data.windowEl;
+    openApps.forEach((data, name) => {
+      const desk = appDesktopMap.get(name) || 1;
+      if (data.windowEl.style.display !== 'none' && desk === currentVirtualDesktop) {
+        const z = parseInt(data.windowEl.style.zIndex || '0', 10);
+        if (z > maxZ) {
+          maxZ = z;
+          nextAppToActivate = data.windowEl;
+        }
       }
     });
     if (nextAppToActivate) bringToFront(nextAppToActivate);
   }
+
+  syncTaskbarDock();
+  updateVirtualDesktopCounts();
 }
 
 function minimizeApp(appName: string): void {
   const appData = openApps.get(appName);
   if (!appData) return;
-  const { windowEl, taskbarButton } = appData;
+  const { windowEl } = appData;
   windowEl.style.display = 'none';
   windowEl.classList.remove('active');
-  taskbarButton.classList.remove('active');
+  minimizedApps.add(appName);
 
   if (activeWindow === windowEl) {
     activeWindow = null;
     let nextAppToActivate: string | null = null;
-    let maxZ = 0;
+    let maxZ = -1;
     openApps.forEach((data, name) => {
-      if (data.windowEl.style.display !== 'none') {
+      const desk = appDesktopMap.get(name) || 1;
+      if (data.windowEl.style.display !== 'none' && desk === currentVirtualDesktop) {
         const z = parseInt(data.windowEl.style.zIndex || '0', 10);
         if (z > maxZ) {
           maxZ = z;
@@ -976,6 +1174,7 @@ function minimizeApp(appName: string): void {
     });
     if (nextAppToActivate) bringToFront(openApps.get(nextAppToActivate)!.windowEl);
   }
+  syncTaskbarDock();
 }
 
 // --- 1. MY GEMTOP (Virtual File System Explorer) ---
@@ -993,20 +1192,42 @@ function renderExplorerFolder(pathStr: string) {
   const items = virtualFileSystem.filter((item) => item.parent === pathStr);
   if (statusCount) statusCount.textContent = `${items.length} object(s)`;
 
+  if (items.length === 0) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'explorer-empty-state';
+    emptyDiv.textContent = `This folder (${pathStr}) is empty.`;
+    view.appendChild(emptyDiv);
+    return;
+  }
+
   items.forEach((item) => {
     const iconDiv = document.createElement('div');
     iconDiv.className = 'window-icon';
-    let imgSrc = 'https://win98icons.alexmeub.com/icons/png/notepad_file-0.png';
+    let imgSrc = APP_SVG_ICONS.textFile;
     if (item.type === 'folder') {
-      imgSrc = 'https://win98icons.alexmeub.com/icons/png/directory_closed-4.png';
+      imgSrc = APP_SVG_ICONS.folder;
     } else if (item.type === 'image') {
-      imgSrc = 'https://win98icons.alexmeub.com/icons/png/paint_file-0.png';
+      imgSrc = APP_SVG_ICONS.imageFile;
     } else if (item.type === 'app') {
-      imgSrc = 'https://win98icons.alexmeub.com/icons/png/console_prompt-0.png';
+      imgSrc = APP_SVG_ICONS.appExe;
     } else if (item.type === 'installer_exe') {
-      imgSrc = 'https://win98icons.alexmeub.com/icons/png/appwizard-4.png';
+      imgSrc = APP_SVG_ICONS.setupExe;
     }
-    iconDiv.innerHTML = `<img src="${imgSrc}" alt="${item.name}" referrerpolicy="no-referrer" /><span>${item.name}</span>`;
+
+    const imgEl = document.createElement('img');
+    imgEl.src = imgSrc;
+    imgEl.alt = item.name;
+    imgEl.addEventListener('error', () => {
+      if (!imgEl.dataset.fallbackApplied) {
+        imgEl.dataset.fallbackApplied = '1';
+        imgEl.src = APP_SVG_ICONS.textFile;
+      }
+    });
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = item.name;
+    iconDiv.appendChild(imgEl);
+    iconDiv.appendChild(labelSpan);
+
     iconDiv.title =
       item.type === 'installer_exe'
         ? `${item.name} (${(item.sizeMB || 4.2).toFixed(1)} MB Win32 Self-Extracting .EXE Installer — Click to Run)`
@@ -1129,10 +1350,37 @@ window.addEventListener('message', (event: MessageEvent) => {
     return;
   }
 
+  if (data && data.__gemini95SwitchToAi === true) {
+    switchBrowserToAiMode(typeof data.url === 'string' ? data.url : undefined);
+    return;
+  }
+
+  if (data && data.__gemini95OpenSettings === true) {
+    openMasterSettingsTab(typeof data.tab === 'string' ? (data.tab as any) : 'browser');
+    return;
+  }
+
+  if (data && data.__gemini95OpenInstaller === true) {
+    openAbilityToInstallCategory((data.cat as any) || 'browser');
+    return;
+  }
+
   if (data && data.__gemini95Navigate === true && typeof data.url === 'string') {
-    let targetUrl = data.url;
-    if (!targetUrl.startsWith('live://') && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-      targetUrl = 'https://www.geocities.com/' + targetUrl.replace(/^\/+/, '');
+    let targetUrl = data.url.trim();
+    if (
+      !/^(live:|ai:|chrome:|about:|file:|https?:)/i.test(targetUrl)
+    ) {
+      const addrEl = document.querySelector('#chrome .browser-address-bar') as HTMLInputElement | null;
+      const currentAddr = addrEl?.value.trim() || '';
+      if (currentAddr.startsWith('http://') || currentAddr.startsWith('https://')) {
+        try {
+          targetUrl = new URL(targetUrl, currentAddr).toString();
+        } catch {
+          targetUrl = 'https://www.geocities.com/' + targetUrl.replace(/^\/+/, '');
+        }
+      } else {
+        targetUrl = 'https://www.geocities.com/' + targetUrl.replace(/^\/+/, '');
+      }
     }
     navigateBrowserExternal(targetUrl);
   }
@@ -1151,6 +1399,7 @@ function initNotepadStory(windowElement: HTMLDivElement): void {
   const newBtn = windowElement.querySelector('#notepad-new-btn') as HTMLButtonElement;
   const saveBtn = windowElement.querySelector('#notepad-save-btn') as HTMLButtonElement;
   const wordCountEl = document.getElementById('notepad-word-count');
+  const statusEl = document.getElementById('notepad-status');
   const titleEl = document.getElementById('notepad-window-title');
 
   if (!textarea) return;
@@ -1159,8 +1408,17 @@ function initNotepadStory(windowElement: HTMLDivElement): void {
     const val = textarea.value.trim();
     const words = val ? val.split(/\s+/).length : 0;
     if (wordCountEl) wordCountEl.textContent = `${words} words · ${textarea.value.length} chars`;
+    if (statusEl) {
+      const pos = textarea.selectionStart ?? 0;
+      const before = textarea.value.slice(0, pos);
+      const lines = before.split('\n');
+      statusEl.textContent = `Ln ${lines.length}, Col ${lines[lines.length - 1].length + 1}`;
+    }
   };
   textarea.addEventListener('input', updateCounts);
+  textarea.addEventListener('click', updateCounts);
+  textarea.addEventListener('keyup', updateCounts);
+  updateCounts();
 
   newBtn?.addEventListener('click', () => {
     sfx.playClick();
@@ -1845,7 +2103,7 @@ function initMinesweeperGame(windowElement: HTMLDivElement): void {
   }
 
   function handleCellRightClick(cell: MinesweeperCell) {
-    if (minesweeperGameOver || cell.isRevealed || (minesweeperFirstClick && !minesweeperTimerInterval)) return;
+    if (minesweeperGameOver || cell.isRevealed || minesweeperFirstClick) return;
     sfx.playClick();
     cell.isFlagged = !cell.isFlagged;
     cell.element.textContent = cell.isFlagged ? '🚩' : '';
@@ -1879,8 +2137,8 @@ function initMinesweeperGame(windowElement: HTMLDivElement): void {
 
   function startTimer() {
     if (minesweeperTimerInterval) return;
-    minesweeperTimeElapsed = 0;
     minesweeperTimerInterval = window.setInterval(() => {
+      if (windowElement.style.display === 'none') return;
       minesweeperTimeElapsed++;
       timerElement.textContent = `⏱️ ${String(Math.min(999, minesweeperTimeElapsed)).padStart(3, '0')}`;
     }, 1000);
@@ -2009,6 +2267,11 @@ function initMinesweeperGame(windowElement: HTMLDivElement): void {
     resetGame();
   });
   hintButton.addEventListener('click', getAiHint);
+  resumeMinesweeperTimer = () => {
+    if (!minesweeperFirstClick && !minesweeperGameOver && !minesweeperTimerInterval) {
+      startTimer();
+    }
+  };
   resetGame();
 }
 
@@ -2169,8 +2432,11 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
   const stopSynthBtn = windowElement.querySelector('#synth-stop-btn') as HTMLButtonElement;
   const tempoSlider = windowElement.querySelector('#synth-tempo') as HTMLInputElement;
 
+  let ytControlsBound = false;
+
   // Visualizer loop
-  if (visCanvas) {
+  startMediaVisualizer = () => {
+    if (!visCanvas || synthAnimFrameId !== null) return;
     const vCtx = visCanvas.getContext('2d');
     const bars = 28;
     const heights = new Array(bars).fill(6);
@@ -2207,8 +2473,9 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
       }
       synthAnimFrameId = requestAnimationFrame(drawVis);
     };
-    if (!synthAnimFrameId) drawVis();
-  }
+    synthAnimFrameId = requestAnimationFrame(drawVis);
+  };
+  startMediaVisualizer();
 
   playToggleBtn?.addEventListener('click', () => {
     sfx.playClick();
@@ -2249,7 +2516,6 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
     ytPanel.style.display = 'none';
   });
 
-  let ytInitialized = false;
   tabYt?.addEventListener('click', async () => {
     sfx.playClick();
     stopChiptuneSynth();
@@ -2257,29 +2523,48 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
     tabSynth.classList.remove('active');
     synthPanel.style.display = 'none';
     ytPanel.style.display = 'flex';
-    if (!ytInitialized) {
-      ytInitialized = true;
+    if (!mediaPlayerYtInitialized) {
+      mediaPlayerYtInitialized = true;
       await setupYouTubePlayer();
     }
   });
 
+  resumeMediaPlayerYtIfNeeded = () => {
+    if (ytPanel && ytPanel.style.display !== 'none' && !mediaPlayerYtInitialized) {
+      mediaPlayerYtInitialized = true;
+      void setupYouTubePlayer();
+    }
+  };
+
   async function setupYouTubePlayer() {
     const urlInput = windowElement.querySelector('.media-player-input') as HTMLInputElement;
     const loadButton = windowElement.querySelector('.media-player-load-button') as HTMLButtonElement;
+    const videoContainer = windowElement.querySelector('.media-player-video-container') as HTMLDivElement | null;
     const playerContainerDivId = `youtube-player-${appName}`;
-    const playerDiv = windowElement.querySelector(`#${playerContainerDivId}`) as HTMLDivElement;
+    let playerDiv = windowElement.querySelector(`#${playerContainerDivId}`) as HTMLElement | null;
     const playButton = windowElement.querySelector('#media-player-play') as HTMLButtonElement;
     const pauseButton = windowElement.querySelector('#media-player-pause') as HTMLButtonElement;
     const stopButton = windowElement.querySelector('#media-player-stop') as HTMLButtonElement;
+    const volumeSlider = windowElement.querySelector('#media-player-volume') as HTMLInputElement | null;
+    const progressBar = windowElement.querySelector('#media-player-progress-bar') as HTMLDivElement | null;
+    const progressFill = windowElement.querySelector('#media-player-progress-fill') as HTMLDivElement | null;
+    const timeEl = windowElement.querySelector('#media-player-time') as HTMLSpanElement | null;
 
-    if (!urlInput || !loadButton || !playerDiv || !playButton || !pauseButton || !stopButton) return;
-
-    try {
-      await loadYouTubeApi();
-    } catch (error: any) {
-      playerDiv.innerHTML = `<p class="media-player-status-message">Could not load YouTube API: ${error.message}</p>`;
-      return;
+    if (!urlInput || !loadButton || !playButton || !pauseButton || !stopButton) return;
+    if (!playerDiv && videoContainer) {
+      playerDiv = document.createElement('div');
+      playerDiv.id = playerContainerDivId;
+      videoContainer.innerHTML = '';
+      videoContainer.appendChild(playerDiv);
     }
+    if (!playerDiv) return;
+
+    const formatYtTime = (sec: number) => {
+      if (!Number.isFinite(sec) || sec < 0) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    };
 
     const createPlayer = (videoId: string) => {
       if (youtubePlayers[appName]) {
@@ -2287,36 +2572,101 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
           youtubePlayers[appName].destroy();
         } catch {}
       }
-      playerDiv.innerHTML = '';
+      if (videoContainer) {
+        videoContainer.innerHTML = `<div id="${playerContainerDivId}"></div>`;
+      } else {
+        playerDiv!.innerHTML = '';
+      }
       // @ts-ignore
       youtubePlayers[appName] = new YT.Player(playerContainerDivId, {
         height: '100%',
         width: '100%',
         videoId,
         playerVars: { playsinline: 1, autoplay: 1, controls: 0, modestbranding: 1, rel: 0, fs: 0, origin: window.location.origin },
+        events: {
+          onReady: (ev: any) => {
+            if (volumeSlider) {
+              try {
+                ev.target.setVolume(parseInt(volumeSlider.value, 10) || 80);
+              } catch {}
+            }
+          },
+        },
       });
     };
 
-    loadButton.addEventListener('click', () => {
-      const videoId = getYouTubeVideoId(urlInput.value.trim());
-      if (videoId) createPlayer(videoId);
-    });
+    if (!ytControlsBound) {
+      ytControlsBound = true;
 
-    windowElement.querySelectorAll('.yt-preset-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const vid = (btn as HTMLElement).dataset.vid;
-        if (vid) {
-          urlInput.value = vid;
-          createPlayer(vid);
+      loadButton.addEventListener('click', () => {
+        const videoId = getYouTubeVideoId(urlInput.value.trim());
+        if (videoId && ytApiLoaded) createPlayer(videoId);
+      });
+
+      urlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') loadButton.click();
+      });
+
+      windowElement.querySelectorAll('.yt-preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const vid = (btn as HTMLElement).dataset.vid;
+          if (vid) {
+            urlInput.value = vid;
+            if (ytApiLoaded) createPlayer(vid);
+          }
+        });
+      });
+
+      playButton.addEventListener('click', () => youtubePlayers[appName]?.playVideo?.());
+      pauseButton.addEventListener('click', () => youtubePlayers[appName]?.pauseVideo?.());
+      stopButton.addEventListener('click', () => youtubePlayers[appName]?.stopVideo?.());
+
+      volumeSlider?.addEventListener('input', () => {
+        const vol = parseInt(volumeSlider.value, 10);
+        if (!Number.isNaN(vol)) {
+          youtubePlayers[appName]?.setVolume?.(vol);
         }
       });
-    });
 
-    playButton.addEventListener('click', () => youtubePlayers[appName]?.playVideo?.());
-    pauseButton.addEventListener('click', () => youtubePlayers[appName]?.pauseVideo?.());
-    stopButton.addEventListener('click', () => youtubePlayers[appName]?.stopVideo?.());
+      progressBar?.addEventListener('click', (e) => {
+        const p = youtubePlayers[appName];
+        const dur = p?.getDuration?.() || 0;
+        if (!dur) return;
+        const rect = progressBar.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / Math.max(1, rect.width)));
+        p.seekTo?.(dur * ratio, true);
+      });
+    }
 
-    createPlayer(DEFAULT_YOUTUBE_VIDEO_ID);
+    try {
+      await loadYouTubeApi();
+    } catch (error: any) {
+      const container = windowElement.querySelector(`#${playerContainerDivId}`) || videoContainer;
+      if (container) {
+        container.innerHTML = `<p class="media-player-status-message">Could not load YouTube API: ${error.message}</p>`;
+      }
+      mediaPlayerYtInitialized = false;
+      return;
+    }
+
+    if (mediaPlayerProgressInterval !== null) clearInterval(mediaPlayerProgressInterval);
+    mediaPlayerProgressInterval = window.setInterval(() => {
+      const p = youtubePlayers[appName];
+      if (!p || typeof p.getCurrentTime !== 'function' || typeof p.getDuration !== 'function') return;
+      try {
+        const cur = p.getCurrentTime() || 0;
+        const dur = p.getDuration() || 0;
+        if (progressFill) {
+          progressFill.style.width = dur > 0 ? `${Math.min(100, Math.max(0, (cur / dur) * 100)).toFixed(1)}%` : '0%';
+        }
+        if (timeEl) {
+          timeEl.textContent = `${formatYtTime(cur)} / ${formatYtTime(dur)}`;
+        }
+      } catch {}
+    }, 500);
+
+    const activeVid = getYouTubeVideoId(urlInput.value.trim()) || DEFAULT_YOUTUBE_VIDEO_ID;
+    createPlayer(activeVid);
   }
 }
 
@@ -2667,13 +3017,26 @@ document.getElementById('tray-sound-btn')?.addEventListener('click', () => {
 
 function updateClock() {
   const clockEl = document.getElementById('tray-clock');
-  if (clockEl) {
-    clockEl.textContent = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: systemRegistry.clockShowSeconds ? '2-digit' : undefined,
-      hour12: !systemRegistry.clock24Hour,
-    });
+  if (!clockEl) return;
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: systemRegistry.clockShowSeconds ? '2-digit' : undefined,
+    hour12: !systemRegistry.clock24Hour,
+  });
+  const dateStr = now.toLocaleDateString([], {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timeSpan = clockEl.querySelector('.tray-clock-time');
+  const dateSpan = clockEl.querySelector('.tray-clock-date');
+  if (timeSpan && dateSpan) {
+    timeSpan.textContent = timeStr;
+    dateSpan.textContent = dateStr;
+  } else {
+    clockEl.textContent = timeStr;
   }
 }
 updateClock();
@@ -2710,6 +3073,7 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     else if (action === 'open-paint') openApp('paint');
     else if (action === 'open-display') openApp('controlPanel', true);
     else if (action === 'cycle-theme') {
+      currentThemeIndex = Math.max(0, THEMES.indexOf(systemRegistry.themePreset as any));
       currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
       applyTheme(THEMES[currentThemeIndex]);
     } else if (action === 'toggle-crt') {
@@ -2821,12 +3185,14 @@ windows.forEach((windowElement, idx) => {
       if (!isDragging) return;
       let x = e.clientX - dragOffsetX;
       let y = e.clientY - dragOffsetY;
-      const taskbarHeight = 36;
-      const maxY = window.innerHeight - windowElement.offsetHeight - taskbarHeight;
+      const tbH = getTaskbarHeightPx();
+      const isTop = systemRegistry.taskbarPosition === 'top';
+      const minY = isTop ? tbH : 0;
+      const maxY = Math.max(minY, window.innerHeight - (isTop ? 0 : tbH) - 36);
       const minX = -(windowElement.offsetWidth - 60);
       const maxXAdjusted = window.innerWidth - 60;
       x = Math.max(minX, Math.min(x, maxXAdjusted));
-      y = Math.max(0, Math.min(y, Math.max(0, maxY)));
+      y = Math.max(minY, Math.min(y, maxY));
       windowElement.style.left = `${x}px`;
       windowElement.style.top = `${y}px`;
     };
@@ -3030,7 +3396,6 @@ const searchFlyout = document.getElementById('win11-search-flyout') as HTMLDivEl
 const taskviewOverlay = document.getElementById('win11-taskview-overlay') as HTMLDivElement | null;
 const copilotSidebar = document.getElementById('win11-copilot-sidebar') as HTMLDivElement | null;
 const quickSettings = document.getElementById('win11-quick-settings') as HTMLDivElement | null;
-const taskbarEl = document.getElementById('taskbar') as HTMLDivElement | null;
 
 function closeWin11Popups(except?: HTMLElement | null) {
   [snapFlyout, widgetsBoard, searchFlyout, taskviewOverlay, quickSettings].forEach((el) => {
@@ -3046,11 +3411,14 @@ function snapWindowToZone(winEl: HTMLDivElement, zone: string) {
   sfx.playWindowOpen();
   winEl.classList.remove('maximized');
   winEl.style.display = 'flex';
+  minimizedApps.delete(winEl.id);
   bringToFront(winEl);
 
   const copilotWidth = copilotSidebar && copilotSidebar.style.display !== 'none' ? 320 : 0;
+  const tbH = getTaskbarHeightPx();
+  const topBase = systemRegistry.taskbarPosition === 'top' ? tbH : 0;
   const availW = window.innerWidth - copilotWidth;
-  const availH = window.innerHeight - 36;
+  const availH = Math.max(200, window.innerHeight - tbH);
   const halfW = Math.floor(availW / 2);
   const halfH = Math.floor(availH / 2);
   const thirdW = Math.floor(availW / 3);
@@ -3058,55 +3426,55 @@ function snapWindowToZone(winEl: HTMLDivElement, zone: string) {
   switch (zone) {
     case 'left-half':
       winEl.style.left = '0px';
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${halfW}px`;
       winEl.style.height = `${availH}px`;
       break;
     case 'right-half':
       winEl.style.left = `${halfW}px`;
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${availW - halfW}px`;
       winEl.style.height = `${availH}px`;
       break;
     case 'col-left':
       winEl.style.left = '0px';
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${thirdW}px`;
       winEl.style.height = `${availH}px`;
       break;
     case 'col-center':
       winEl.style.left = `${thirdW}px`;
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${thirdW}px`;
       winEl.style.height = `${availH}px`;
       break;
     case 'col-right':
       winEl.style.left = `${thirdW * 2}px`;
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${availW - thirdW * 2}px`;
       winEl.style.height = `${availH}px`;
       break;
     case 'top-left':
       winEl.style.left = '0px';
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${halfW}px`;
       winEl.style.height = `${halfH}px`;
       break;
     case 'top-right':
       winEl.style.left = `${halfW}px`;
-      winEl.style.top = '0px';
+      winEl.style.top = `${topBase}px`;
       winEl.style.width = `${availW - halfW}px`;
       winEl.style.height = `${halfH}px`;
       break;
     case 'bottom-left':
       winEl.style.left = '0px';
-      winEl.style.top = `${halfH}px`;
+      winEl.style.top = `${topBase + halfH}px`;
       winEl.style.width = `${halfW}px`;
       winEl.style.height = `${availH - halfH}px`;
       break;
     case 'bottom-right':
       winEl.style.left = `${halfW}px`;
-      winEl.style.top = `${halfH}px`;
+      winEl.style.top = `${topBase + halfH}px`;
       winEl.style.width = `${availW - halfW}px`;
       winEl.style.height = `${availH - halfH}px`;
       break;
@@ -3140,14 +3508,16 @@ function autoTileOpenWindows() {
 
 function cascadeOpenWindows() {
   sfx.playClick();
+  const topBase = systemRegistry.taskbarPosition === 'top' ? getTaskbarHeightPx() : 0;
   let i = 0;
   openApps.forEach((data) => {
     if (data.windowEl.style.display !== 'none') {
       data.windowEl.classList.remove('maximized');
-      data.windowEl.style.left = `${180 + i * 32}px`;
-      data.windowEl.style.top = `${32 + i * 28}px`;
-      data.windowEl.style.width = '500px';
-      data.windowEl.style.height = '380px';
+      data.windowEl.style.left = `${140 + (i % 6) * 32}px`;
+      data.windowEl.style.top = `${topBase + 24 + (i % 5) * 28}px`;
+      data.windowEl.style.width = '540px';
+      data.windowEl.style.height = '400px';
+      clampWindowToViewport(data.windowEl, true);
       bringToFront(data.windowEl);
       i++;
     }
@@ -3168,7 +3538,8 @@ windows.forEach((winEl) => {
       snapTargetWindow = winEl;
       const rect = maxBtn.getBoundingClientRect();
       const leftPos = Math.min(window.innerWidth - 260, Math.max(8, rect.right - 220));
-      const topPos = Math.min(window.innerHeight - 160, rect.bottom + 4);
+      const minTop = systemRegistry.taskbarPosition === 'top' ? getTaskbarHeightPx() + 4 : 4;
+      const topPos = Math.max(minTop, Math.min(window.innerHeight - 160, rect.bottom + 4));
       snapFlyout.style.left = `${leftPos}px`;
       snapFlyout.style.top = `${topPos}px`;
       snapFlyout.style.display = 'block';
@@ -3203,9 +3574,6 @@ snapFlyout?.querySelectorAll('.snap-zone').forEach((btn) => {
 });
 
 // --- 2. TASK VIEW & VIRTUAL DESKTOPS 95 ---
-let currentVirtualDesktop = 1;
-const appDesktopMap = new Map<string, number>();
-
 function updateVirtualDesktopCounts() {
   [1, 2, 3].forEach((d) => {
     let count = 0;
@@ -3228,8 +3596,10 @@ function switchVirtualDesktop(deskNum: number) {
   });
 
   currentVirtualDesktop = deskNum;
-  const deskLabel = document.getElementById('taskbar-desk-label');
-  if (deskLabel) deskLabel.textContent = `Desk ${deskNum}`;
+  const deskBadge = document.getElementById('taskbar-desk-badge');
+  if (deskBadge) deskBadge.textContent = String(deskNum);
+  const taskViewBtn = document.getElementById('taskbar-taskview-btn');
+  if (taskViewBtn) taskViewBtn.title = `Task View & Virtual Desktops (Desktop ${deskNum})`;
 
   document.querySelectorAll('.vdesk-card').forEach((card) => {
     card.classList.toggle('active', Number((card as HTMLElement).dataset.desk) === deskNum);
@@ -3237,15 +3607,33 @@ function switchVirtualDesktop(deskNum: number) {
 
   openApps.forEach((data, appName) => {
     const appDesk = appDesktopMap.get(appName) || 1;
-    if (appDesk === deskNum) {
-      data.windowEl.style.display = 'flex';
-      data.taskbarButton.style.display = 'flex';
-    } else {
-      data.windowEl.style.display = 'none';
-      data.taskbarButton.style.display = 'none';
-    }
+    data.windowEl.style.display = appDesk === deskNum && !minimizedApps.has(appName) ? 'flex' : 'none';
   });
 
+  if (activeWindow) {
+    const activeDesk = appDesktopMap.get(activeWindow.id) || 1;
+    if (activeDesk !== deskNum || minimizedApps.has(activeWindow.id)) {
+      activeWindow.classList.remove('active');
+      activeWindow = null;
+    }
+  }
+  if (!activeWindow) {
+    let topWin: HTMLDivElement | null = null;
+    let maxZ = -1;
+    openApps.forEach((data, name) => {
+      const appDesk = appDesktopMap.get(name) || 1;
+      if (appDesk === deskNum && !minimizedApps.has(name) && data.windowEl.style.display !== 'none') {
+        const z = parseInt(data.windowEl.style.zIndex || '0', 10);
+        if (z > maxZ) {
+          maxZ = z;
+          topWin = data.windowEl;
+        }
+      }
+    });
+    if (topWin) bringToFront(topWin);
+  }
+
+  syncTaskbarDock();
   updateVirtualDesktopCounts();
 }
 
@@ -3270,6 +3658,7 @@ document.querySelectorAll('.vdesk-card').forEach((card) => {
   card.addEventListener('click', () => {
     const desk = Number((card as HTMLElement).dataset.desk || '1');
     switchVirtualDesktop(desk);
+    if (taskviewOverlay) taskviewOverlay.style.display = 'none';
   });
 });
 
@@ -3321,10 +3710,10 @@ weatherCitySelect?.addEventListener('change', () => {
   const [city, temp, desc] = weatherCitySelect.value.split('|');
   const tempEl = document.getElementById('widget-temp-val');
   const descEl = document.getElementById('widget-weather-desc');
-  const taskbarWidgetsBtn = document.querySelector('#taskbar-widgets-btn span');
+  const taskbarWidgetsBtn = document.getElementById('taskbar-widgets-btn');
   if (tempEl) tempEl.textContent = temp;
   if (descEl) descEl.textContent = `${city} · ${desc}`;
-  if (taskbarWidgetsBtn) taskbarWidgetsBtn.textContent = temp;
+  if (taskbarWidgetsBtn) taskbarWidgetsBtn.title = `Widgets Board — ${city}: ${temp} (${desc})`;
 });
 
 // Focus Session 95 Pomodoro Timer
@@ -3436,7 +3825,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
   { label: '🗂️ REGEDIT.EXE (Live Windows 95 Registry Editor)', kind: 'System Utility', action: () => openApp('regedit') },
   { label: '📊 System Resource Monitor (SYSMON.EXE)', kind: 'System Utility', action: () => openApp('sysMonitor') },
-  { label: '🌐 Multi-Engine Web Browser (Netscape / IE 3.0 / CyberChrome)', kind: 'Application', action: () => openApp('chrome') },
+  { label: '🌐 Google Chrome / Multi-Engine Browser (Chrome · Netscape · IE 3.0)', kind: 'Application', action: () => openApp('chrome') },
   { label: '💻 My Gemtop (C:\\ & D:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
   { label: '💬 Gemini AIM (1995 Instant Messenger)', kind: 'Application', action: () => openApp('gemini') },
   { label: '📝 GemNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
@@ -3447,6 +3836,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
   { label: '🔧 Award CMOS BIOS Setup Utility', kind: 'Firmware', action: () => openCmosBiosSetup() },
   { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
+  { label: '🏷️ Toggle Taskbar App Labels (Icon-Only vs Win95 Text)', kind: 'Taskbar Style', action: () => toggleTaskbarLabels() },
   { label: '🎯 Toggle Centered Taskbar (Windows 11 Mode)', kind: 'Win11 Feature', action: () => toggleCenteredTaskbar() },
   { label: '⊞ Auto-Tile All Open Windows (Snap Grid)', kind: 'Win11 Feature', action: () => autoTileOpenWindows() },
   { label: '🌙 Toggle Night Light 95 (Warm CRT Filter)', kind: 'Win11 Feature', action: () => toggleNightLight95() },
@@ -3622,6 +4012,7 @@ document.querySelectorAll('.copilot-action-chip').forEach((chip) => {
       toggleCenteredTaskbar();
       appendCopilotMessage('bot', 'Toggled Centered Taskbar mode!');
     } else if (sys === 'theme') {
+      currentThemeIndex = Math.max(0, THEMES.indexOf(systemRegistry.themePreset as any));
       currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
       applyTheme(THEMES[currentThemeIndex]);
       appendCopilotMessage('bot', `Switched theme to ${THEMES[currentThemeIndex].toUpperCase()}!`);
@@ -3633,6 +4024,14 @@ document.querySelectorAll('.copilot-action-chip').forEach((chip) => {
 });
 
 // --- 6. QUICK SETTINGS & ACTION CENTER 95 ---
+function toggleTaskbarLabels() {
+  sfx.playClick();
+  systemRegistry.taskbarShowLabels = !systemRegistry.taskbarShowLabels;
+  applySystemRegistryToOS();
+  openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
+  renderMasterSettingsCurrentTab();
+}
+
 function toggleCenteredTaskbar() {
   sfx.playClick();
   systemRegistry.taskbarCentered = !systemRegistry.taskbarCentered;
@@ -3671,6 +4070,7 @@ document.getElementById('qs-tile-dialup')?.addEventListener('click', (e) => {
 });
 
 document.getElementById('qs-tile-center-taskbar')?.addEventListener('click', toggleCenteredTaskbar);
+document.getElementById('qs-tile-labels')?.addEventListener('click', toggleTaskbarLabels);
 document.getElementById('qs-tile-nightlight')?.addEventListener('click', toggleNightLight95);
 
 document.getElementById('qs-tile-crt')?.addEventListener('click', () => {
@@ -3683,6 +4083,21 @@ document.getElementById('qs-tile-crt')?.addEventListener('click', () => {
 document.getElementById('qs-tile-audio')?.addEventListener('click', (e) => {
   document.getElementById('tray-sound-btn')?.click();
   (e.currentTarget as HTMLElement).classList.toggle('active', sfx.enabled);
+});
+
+document.getElementById('qs-tile-top-dock')?.addEventListener('click', () => {
+  sfx.playClick();
+  systemRegistry.taskbarPosition = systemRegistry.taskbarPosition === 'top' ? 'bottom' : 'top';
+  applySystemRegistryToOS();
+  openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
+  renderMasterSettingsCurrentTab();
+});
+
+document.getElementById('qs-tile-autohide')?.addEventListener('click', () => {
+  sfx.playClick();
+  systemRegistry.taskbarAutoHide = !systemRegistry.taskbarAutoHide;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 });
 
 document.getElementById('qs-tile-tilewin')?.addEventListener('click', () => {
@@ -3744,6 +4159,10 @@ registerOsBridge({
   showOsDialog,
   rebootGemini95,
   updateClock,
+  syncTaskbarDock,
+  clampOpenWindows: () => {
+    openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
+  },
   getGeminiInstance: async (context: string) => {
     const ok = await initializeGeminiIfNeeded(context);
     return ok ? geminiInstance : null;
@@ -3770,13 +4189,18 @@ registerOsBridge({
   sfx,
 });
 
+hydrateSvgIcons();
 initCmosBiosController();
 initOsReinstallerController();
 initFdiskController();
 initPwaAndHostOsController();
 applySystemRegistryToOS(true);
+syncTaskbarDock();
 resetIdleTimer();
 
+window.addEventListener('resize', () => {
+  openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
+});
 window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
 window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });
 
