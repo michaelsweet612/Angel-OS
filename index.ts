@@ -21,11 +21,24 @@ import {
   openOsReinstallScreen,
   packageCatalog,
   registerOsBridge,
+  renderAbilityToInstallUI,
   renderMasterSettingsCurrentTab,
   resetIdleTimer,
   syncBrowserChromeToEngine,
   systemRegistry,
 } from './osExtendedApps';
+import {
+  downloadBootableIsoImage,
+  downloadPortableHostApp,
+  dropSetupExeToVfs,
+  executeVfsSetupExe,
+  initFdiskController,
+  initPwaAndHostOsController,
+  isPrimaryBootable,
+  openFdiskScreen,
+  partitionTable,
+  triggerNativePwaInstall,
+} from './osDualInstall';
 
 // --- Web Audio API Retro Windows 95 Sound Blaster 16 DSP Engine ---
 class RetroSoundEngine {
@@ -362,16 +375,19 @@ document.getElementById('os-toast-close')?.addEventListener('click', () => {
   if (toast) toast.style.display = 'none';
 });
 
-// --- Virtual File System (C:\) ---
+// --- Virtual File System (C:\ and Secondary Logical Drive D:\) ---
 interface VfsItem {
   name: string;
-  type: 'folder' | 'text' | 'image' | 'app';
+  type: 'folder' | 'text' | 'image' | 'app' | 'installer_exe';
   parent: string;
   content?: string;
   appTarget?: string;
+  pkgId?: string;
+  sizeMB?: number;
 }
 
 const virtualFileSystem: VfsItem[] = [
+  { name: 'Downloads', type: 'folder', parent: 'C:\\' },
   { name: 'Documents', type: 'folder', parent: 'C:\\' },
   { name: 'Pictures', type: 'folder', parent: 'C:\\' },
   { name: 'System95', type: 'folder', parent: 'C:\\' },
@@ -381,18 +397,51 @@ const virtualFileSystem: VfsItem[] = [
     parent: 'C:\\',
     content:
       '=== WELCOME TO GEMINI 95 (BUILD 1995.1000X) ===\n\n' +
-      'What is new in this 1000x Edition:\n' +
-      '1. Netscape 95: Type ANY website domain or click ANY link inside a generated 1996 page to surf an infinite AI-generated 90s web!\n' +
-      '2. GemPaint Studio: Airbrush spray, flood-fill bucket, shapes, undo, Save to C:\\Pictures, and live Clippy art critiques.\n' +
-      '3. GemPlayer 95: Built-in 16-bit FM Chiptune Synthesizer with live spectrum analyzer + YouTube CRT TV.\n' +
-      '4. MS-DOS Prompt: Run classic DOS commands, toggle Matrix rain, or ask the AI DOS Kernel anything.\n' +
-      '5. Display & Themes: Switch between Teal, Hot Dog Stand, Cyberpunk 1995, Vaporwave, and Phosphor Matrix!',
+      'Two Ways to Install Software & the Operating System:\n' +
+      '1. .EXE Setup Files & Portable App:\n' +
+      '   - Open C:\\Downloads in My Gemtop (or surf http://www.tucows-95-downloads.com in the Browser) to run standalone *_SETUP.EXE installers!\n' +
+      '   - Or download Gemini95_Portable_App.html / .BAT straight to your real PC.\n' +
+      '2. Physical Operating System Install:\n' +
+      '   - Run FDISK.EXE to partition Primary C:\\ & Logical D:\\, format system tracks, export a real x86 El Torito Bootable .ISO, or install Gemini 95 onto your device as a Standalone Offline PWA!',
   },
   {
     name: 'secret_photo.jpg',
     type: 'image',
     parent: 'C:\\',
     content: 'https://storage.googleapis.com/gemini-95-icons/%40ammaar%2B%40olacombe.png',
+  },
+  // Pre-seeded standalone .EXE installers inside C:\Downloads ready to double-click/click!
+  {
+    name: 'MSIE30_SETUP.EXE',
+    type: 'installer_exe',
+    parent: 'C:\\Downloads',
+    pkgId: 'browser_ie3',
+    sizeMB: 11.8,
+    content: 'MZ Win32 Self-Extracting Installer — Microsoft Internet Explorer 3.0 (Plus! 95)',
+  },
+  {
+    name: 'CYBERCHROME_SETUP.EXE',
+    type: 'installer_exe',
+    parent: 'C:\\Downloads',
+    pkgId: 'browser_cyberchrome',
+    sizeMB: 18.6,
+    content: 'MZ Win32 Self-Extracting Installer — CyberChrome 95 Turbo',
+  },
+  {
+    name: 'SYSMON95_SETUP.EXE',
+    type: 'installer_exe',
+    parent: 'C:\\Downloads',
+    pkgId: 'sys_monitor',
+    sizeMB: 1.9,
+    content: 'MZ Win32 Self-Extracting Installer — System Resource Monitor (SYSMON.EXE)',
+  },
+  {
+    name: 'GEMINI95_OS_SETUP.EXE',
+    type: 'installer_exe',
+    parent: 'C:\\Downloads',
+    pkgId: 'os_setup',
+    sizeMB: 68.4,
+    content: 'MZ Win32 Self-Extracting Full OS Recovery & Upgrade Executable',
   },
   {
     name: 'y2k_bunker_plan.txt',
@@ -445,6 +494,25 @@ const virtualFileSystem: VfsItem[] = [
     type: 'app',
     parent: 'C:\\System95',
     appTarget: 'regedit',
+  },
+  // Secondary Logical Drive D:\ (Managed by FDISK.EXE)
+  { name: 'Installers', type: 'folder', parent: 'D:\\' },
+  {
+    name: 'D_DRIVE_ARCHIVE.TXT',
+    type: 'text',
+    parent: 'D:\\',
+    content:
+      '=== SECONDARY LOGICAL DOS DRIVE D:\\ (DATA_ARCHIVE) ===\n\n' +
+      'This 500 MB extended partition is managed by MS-DOS FDISK.EXE!\n' +
+      'You can resize, delete, or recreate Drive D:\\ anytime inside FDISK.',
+  },
+  {
+    name: 'NETSCAPE95_SETUP.EXE',
+    type: 'installer_exe',
+    parent: 'D:\\Installers',
+    pkgId: 'browser_netscape',
+    sizeMB: 14.2,
+    content: 'MZ Win32 Self-Extracting Installer — Netscape Navigator 95 Gold',
   },
 ];
 
@@ -785,6 +853,8 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     if (!initializedApps.has('abilityToInstall')) {
       initializedApps.add('abilityToInstall');
       initAbilityToInstallApp(windowElement);
+    } else {
+      renderAbilityToInstallUI();
     }
   } else if (appName === 'controlPanel') {
     if (!initializedApps.has('controlPanel')) {
@@ -933,8 +1003,14 @@ function renderExplorerFolder(pathStr: string) {
       imgSrc = 'https://win98icons.alexmeub.com/icons/png/paint_file-0.png';
     } else if (item.type === 'app') {
       imgSrc = 'https://win98icons.alexmeub.com/icons/png/console_prompt-0.png';
+    } else if (item.type === 'installer_exe') {
+      imgSrc = 'https://win98icons.alexmeub.com/icons/png/appwizard-4.png';
     }
     iconDiv.innerHTML = `<img src="${imgSrc}" alt="${item.name}" referrerpolicy="no-referrer" /><span>${item.name}</span>`;
+    iconDiv.title =
+      item.type === 'installer_exe'
+        ? `${item.name} (${(item.sizeMB || 4.2).toFixed(1)} MB Win32 Self-Extracting .EXE Installer — Click to Run)`
+        : item.name;
     iconDiv.addEventListener('click', () => {
       sfx.playClick();
       if (item.type === 'folder') {
@@ -946,6 +1022,8 @@ function renderExplorerFolder(pathStr: string) {
         openImageFileInViewer(item.name, item.content || '');
       } else if (item.type === 'app' && item.appTarget) {
         openApp(item.appTarget);
+      } else if (item.type === 'installer_exe') {
+        executeVfsSetupExe(item.name, item.pkgId, item.parent);
       }
     });
     view.appendChild(iconDiv);
@@ -982,16 +1060,31 @@ function initMyComputer(windowElement: HTMLDivElement): void {
 
   windowElement.querySelector('#explorer-up-btn')?.addEventListener('click', () => {
     sfx.playClick();
-    if (currentExplorerPath === 'C:\\') return;
+    if (currentExplorerPath === 'C:\\' || currentExplorerPath === 'D:\\') return;
+    const drivePrefix = currentExplorerPath.startsWith('D:\\') ? 'D:\\' : 'C:\\';
     const parts = currentExplorerPath.replace(/\\$/, '').split('\\');
     parts.pop();
-    const parent = parts.length <= 1 ? 'C:\\' : parts.join('\\');
+    const parent = parts.length <= 1 ? drivePrefix : parts.join('\\');
     renderExplorerFolder(parent);
   });
 
   windowElement.querySelector('#explorer-root-btn')?.addEventListener('click', () => {
     sfx.playClick();
     renderExplorerFolder('C:\\');
+  });
+
+  windowElement.querySelector('#explorer-drive-d-btn')?.addEventListener('click', () => {
+    sfx.playClick();
+    if (!partitionTable.logicalD.exists || !systemRegistry.enableSecondaryDriveD) {
+      showOsDialog('Logical Drive D:\\ is currently unallocated or unmounted. Open FDISK.EXE to create Drive D:\\!', 'Drive D:\\ Not Ready');
+      return;
+    }
+    renderExplorerFolder('D:\\');
+  });
+
+  windowElement.querySelector('#explorer-downloads-btn')?.addEventListener('click', () => {
+    sfx.playClick();
+    renderExplorerFolder('C:\\Downloads');
   });
 
   windowElement.querySelector('#explorer-new-note-btn')?.addEventListener('click', () => {
@@ -1018,6 +1111,21 @@ window.addEventListener('message', (event: MessageEvent) => {
     const target = data.area === 'session' ? window.sessionStorage : window.localStorage;
     const prefix = data.area === 'session' ? HOST_SS_PREFIX : HOST_LS_PREFIX;
     applyNamespacedStorageOp(target, prefix, String(data.op || ''), data.key, data.value);
+    return;
+  }
+
+  if (data && data.__gemini95DownloadExe === true && typeof data.pkgId === 'string') {
+    const dropped = dropSetupExeToVfs(data.pkgId);
+    if (dropped) {
+      if (data.runNow) {
+        executeVfsSetupExe(dropped.fileName, data.pkgId, dropped.folder);
+      } else {
+        showOsDialog(
+          `Downloaded "${dropped.fileName}" to ${dropped.folder}! Open My Gemtop -> Downloads (or type ${dropped.fileName} in MS-DOS) to run the .EXE installer.`,
+          'Tucows 95 .EXE Download Complete',
+        );
+      }
+    }
     return;
   }
 
@@ -2276,10 +2384,13 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     if (upper === 'HELP') {
       appendLine(
         'Available Built-In Commands:\n' +
-          '  DIR       List files in C:\\ Virtual File System\n' +
-          '  SYSINFO   Show live CPU, RAM, Audio & Modem hardware specs\n' +
-          '  INSTALL   Launch Ability to Install (INSTALL.EXE Wizard)\n' +
+          '  DIR       List files in C:\\ & D:\\ Virtual File System\n' +
+          '  FDISK     Launch MS-DOS Fixed Disk Partitioner (FDISK.EXE)\n' +
+          '  ISO       Build & download bootable x86 CD-ROM (GEMINI95_BOOTCD.ISO)\n' +
+          '  INSTALL   Launch Ability to Install (Dual-Mode .EXE + Physical OS)\n' +
           '  SETUP     Launch Full Blue-Screen OS Reinstaller (SETUP.EXE)\n' +
+          '  *.EXE     Type any .EXE filename (e.g. MSIE30_SETUP.EXE) to run it!\n' +
+          '  SYSINFO   Show live CPU, RAM, Disk Partitions & Audio specs\n' +
           '  SETTINGS  Open 8-Tab Master Settings & Control Panel\n' +
           '  REGEDIT   Open Live Registry Editor (REGEDIT.EXE)\n' +
           '  BIOS      Enter Award CMOS BIOS Setup Utility\n' +
@@ -2287,7 +2398,6 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
           '  COLOR     Cycle Green / Amber / White CRT phosphor\n' +
           '  CLS       Clear terminal screen\n' +
           '  CHIME     Play Windows 95 Startup Synth Chime\n' +
-          '  OPEN <app> Launch app (BROWSER, INSTALL, SETTINGS, REGEDIT, PAINT, NOTES, AIM)\n' +
           '  * Or type ANY question/prompt to query the Gemini 95 AI DOS Kernel!',
       );
       return;
@@ -2297,12 +2407,27 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       return;
     }
     if (upper === 'DIR') {
-      appendLine(` Volume in drive C is GEMINI_95 (${systemRegistry.fileSystemFormat})\n Directory of C:\\\n`);
+      appendLine(` Volume in drive C is ${partitionTable.primaryC.label} (${systemRegistry.fileSystemFormat} · ${partitionTable.primaryC.sizeMB} MB)\n Directory of C:\\ & C:\\Downloads\n`);
       virtualFileSystem.forEach((f) => {
-        const tag = f.type === 'folder' ? '<DIR>     ' : '     4,096';
-        appendLine(`  ${f.name.padEnd(20)} ${tag}  ${f.parent}`);
+        const tag =
+          f.type === 'folder'
+            ? '<DIR>       '
+            : f.type === 'installer_exe'
+              ? `${((f.sizeMB || 4.2) * 1024).toFixed(0).padStart(9)} KB`
+              : '     4,096 B';
+        appendLine(`  ${f.name.padEnd(24)} ${tag}  ${f.parent}`);
       });
-      appendLine(`        ${virtualFileSystem.length} file(s)    1,995,000,000 bytes free`);
+      appendLine(`        ${virtualFileSystem.length} item(s)`);
+      return;
+    }
+    if (upper === 'FDISK' || upper === 'FDISK.EXE' || upper === 'FDISK /MBR') {
+      openFdiskScreen();
+      appendLine('Launching MS-DOS Fixed Disk Setup Program (FDISK.EXE)...');
+      return;
+    }
+    if (upper === 'ISO' || upper === 'MAKEISO') {
+      downloadBootableIsoImage();
+      appendLine('Building El Torito x86 Bootable CD-ROM (.ISO) image...');
       return;
     }
     if (upper === 'SYSINFO' || upper === 'VER') {
@@ -2310,8 +2435,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         `OS:         Remix Gemini 95 (4.00.950 B · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} + Gemini-4-Hydrogen\n` +
           `Memory:     ${(systemRegistry.installedRamMB * 1024).toLocaleString()}K Extended RAM (${systemRegistry.virtualSwapMB}MB Swap)\n` +
-          `Audio:      Sound Blaster 16 DSP (${systemRegistry.dacBitDepth}-bit DAC, Vol ${systemRegistry.masterVolume}%)\n` +
-          `Modem:      U.S. Robotics ${systemRegistry.modemBaudRate.toLocaleString()} bps · Browser: ${systemRegistry.defaultBrowserEngine.toUpperCase()}`,
+          `Disk 0:     Primary C: ${partitionTable.primaryC.sizeMB}MB · Logical D: ${partitionTable.logicalD.exists ? partitionTable.logicalD.sizeMB + 'MB' : 'None'}\n` +
+          `Audio:      Sound Blaster 16 DSP (${systemRegistry.dacBitDepth}-bit DAC, Vol ${systemRegistry.masterVolume}%)`,
       );
       return;
     }
@@ -2320,7 +2445,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine('Launching C:\\System95\\INSTALL.EXE (Ability to Install)...');
       return;
     }
-    if (upper === 'SETUP' || upper === 'SETUP.EXE' || upper === 'FORMAT C:') {
+    if (upper === 'SETUP' || upper === 'SETUP.EXE' || upper === 'FORMAT C:' || upper === 'FORMAT C: /S') {
       openOsReinstallScreen();
       appendLine('Launching Gemini 95 OS Setup & Reinstallation Utility...');
       return;
@@ -2339,6 +2464,32 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       openCmosBiosSetup();
       appendLine('Entering Award CMOS BIOS Setup Utility...');
       return;
+    }
+    // Execute any matching *_SETUP.EXE or package .EXE typed in MS-DOS!
+    if (upper.endsWith('.EXE')) {
+      const bareExe = upper.split('\\').pop() || upper;
+      const vfsExe = virtualFileSystem.find(
+        (f) => f.type === 'installer_exe' && f.name.toUpperCase() === bareExe,
+      );
+      if (vfsExe) {
+        executeVfsSetupExe(vfsExe.name, vfsExe.pkgId, vfsExe.parent);
+        appendLine(`Executing Win32 Self-Extracting Installer ${vfsExe.parent}\\${vfsExe.name}...`);
+        return;
+      }
+      const catalogMatch = packageCatalog.find(
+        (p) => p.setupExeFileName.toUpperCase() === bareExe || p.exeName.toUpperCase() === bareExe,
+      );
+      if (catalogMatch) {
+        if (catalogMatch.setupExeFileName.toUpperCase() === bareExe || !catalogMatch.installed) {
+          const dropped = dropSetupExeToVfs(catalogMatch.pkgId);
+          executeVfsSetupExe(dropped?.fileName || catalogMatch.setupExeFileName, catalogMatch.pkgId, dropped?.folder);
+          appendLine(`Unpacking ${catalogMatch.setupExeFileName}...`);
+        } else {
+          openApp(catalogMatch.appWindowId);
+          appendLine(`Starting ${catalogMatch.exeName}...`);
+        }
+        return;
+      }
     }
     if (upper === 'MATRIX') {
       toggleMatrixEffect();
@@ -2736,6 +2887,16 @@ function startBootWithAudio() {
     openOsReinstallScreen();
     return;
   }
+  if (!isPrimaryBootable()) {
+    sfx.playChordError();
+    if (biosStatusLine) {
+      biosStatusLine.style.color = '#ff5555';
+      biosStatusLine.textContent =
+        '⚠ DISK BOOT FAILURE / MISSING OPERATING SYSTEM — PRESS [F9] FOR FDISK OR [F8] FOR OS SETUP CD-ROM';
+    }
+    return;
+  }
+  if (biosStatusLine) biosStatusLine.style.color = '';
   bootState = 'post_running';
   clearBootTimers();
 
@@ -2790,7 +2951,10 @@ function rebootGemini95() {
   bootState = 'bios';
   applySystemRegistryToOS(true);
   if (biosStatusLine) {
-    biosStatusLine.textContent = 'SYSTEM READY — CLICK BELOW OR PRESS [ENTER] TO POWER ON, OR [DEL] FOR CMOS SETUP';
+    biosStatusLine.style.color = isPrimaryBootable() ? '' : '#ff5555';
+    biosStatusLine.textContent = isPrimaryBootable()
+      ? 'SYSTEM READY — CLICK BELOW OR PRESS [ENTER] TO POWER ON, [DEL] CMOS, OR [F9] FDISK'
+      : '⚠ MISSING OPERATING SYSTEM ON C:\\ — PRESS [F9] FOR FDISK OR [F8] FOR OS SETUP CD-ROM';
   }
   if (bootBiosStage) bootBiosStage.style.display = 'flex';
   if (bootSplashStage) bootSplashStage.style.display = 'none';
@@ -2807,6 +2971,10 @@ bootPowerBtn?.addEventListener('click', (e) => {
 
 bootSkipBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
+  if (!isPrimaryBootable()) {
+    startBootWithAudio();
+    return;
+  }
   finishBootToDesktop();
 });
 
@@ -2822,18 +2990,31 @@ document.getElementById('start-reboot-os')?.addEventListener('click', () => {
 window.addEventListener('keydown', (e) => {
   const cmosOpen = document.getElementById('cmos-bios-screen')?.style.display === 'flex';
   const setupOpen = document.getElementById('os-reinstall-screen')?.style.display === 'flex';
-  if (cmosOpen || setupOpen) return;
+  const fdiskOpen = document.getElementById('fdisk-screen')?.style.display === 'flex';
+  if (fdiskOpen && e.key === 'Escape') {
+    e.preventDefault();
+    document.getElementById('fdisk-exit-btn')?.click();
+    return;
+  }
+  if (cmosOpen || setupOpen || fdiskOpen) return;
 
   if (bootState === 'bios') {
     if (e.key === 'Delete' || e.key === 'F2') {
       e.preventDefault();
       openCmosBiosSetup();
+    } else if (e.key === 'F8') {
+      e.preventDefault();
+      openOsReinstallScreen();
+    } else if (e.key === 'F9') {
+      e.preventDefault();
+      openFdiskScreen();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       startBootWithAudio();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      finishBootToDesktop();
+      if (isPrimaryBootable()) finishBootToDesktop();
+      else startBootWithAudio();
     }
   } else if (bootState === 'splash' && e.key === 'Escape') {
     e.preventDefault();
@@ -3247,12 +3428,16 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
-  { label: '💿 Ability to Install (InstallShield 95 & OS Reinstaller)', kind: 'System Installer', action: () => openApp('abilityToInstall', true) },
+  { label: '💿 Ability to Install (.EXE Installers & Physical OS Setup)', kind: 'Dual Installer', action: () => openApp('abilityToInstall', true) },
+  { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen() },
+  { label: '📲 Install Gemini 95 onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
+  { label: '💿 Export Bootable x86 CD-ROM Image (GEMINI95_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
+  { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
   { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
   { label: '🗂️ REGEDIT.EXE (Live Windows 95 Registry Editor)', kind: 'System Utility', action: () => openApp('regedit') },
   { label: '📊 System Resource Monitor (SYSMON.EXE)', kind: 'System Utility', action: () => openApp('sysMonitor') },
   { label: '🌐 Multi-Engine Web Browser (Netscape / IE 3.0 / CyberChrome)', kind: 'Application', action: () => openApp('chrome') },
-  { label: '💻 My Gemtop (C:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
+  { label: '💻 My Gemtop (C:\\ & D:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
   { label: '💬 Gemini AIM (1995 Instant Messenger)', kind: 'Application', action: () => openApp('gemini') },
   { label: '📝 GemNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
   { label: '🎨 GemPaint 95 (Pixel Studio & AI Critic)', kind: 'Application', action: () => openApp('paint') },
@@ -3291,12 +3476,16 @@ function renderSearchResults(query: string) {
   matchingFiles.forEach((file) => {
     const row = document.createElement('div');
     row.className = 'search-result-item';
-    row.innerHTML = `<span>📄 ${file.parent}\\${file.name}</span><span class="search-result-kind">C:\\ File</span>`;
+    const iconGlyph = file.type === 'installer_exe' ? '📦' : '📄';
+    const kindLabel = file.type === 'installer_exe' ? '.EXE Installer' : `${file.parent.slice(0, 3)} File`;
+    row.innerHTML = `<span>${iconGlyph} ${file.parent}${file.parent.endsWith('\\') ? '' : '\\'}${file.name}</span><span class="search-result-kind">${kindLabel}</span>`;
     row.addEventListener('click', () => {
       sfx.playClick();
       if (searchFlyout) searchFlyout.style.display = 'none';
-      if (file.type === 'text') openTextFileInNotepad(file.name, file.content || '');
+      if (file.type === 'installer_exe') executeVfsSetupExe(file.name, file.pkgId, file.parent);
+      else if (file.type === 'text') openTextFileInNotepad(file.name, file.content || '');
       else if (file.type === 'image') openImageFileInViewer(file.name, file.content || '');
+      else if (file.type === 'app' && file.appTarget) openApp(file.appTarget);
     });
     searchResults.appendChild(row);
   });
@@ -3548,7 +3737,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ==================== BOOTSTRAP OS BRIDGE, BIOS, REINSTALLER & LIVE REGISTRY ====================
+// ==================== BOOTSTRAP OS BRIDGE, BIOS, FDISK, PWA, REINSTALLER & LIVE REGISTRY ====================
 registerOsBridge({
   openApp,
   closeApp,
@@ -3560,8 +3749,18 @@ registerOsBridge({
     return ok ? geminiInstance : null;
   },
   injectShimIntoHtml: (rawHtml: string) => injectShimIntoHtml(rawHtml, buildHostStorageAndNavigationShimScript()),
-  addVfsFile: (name, type, parent, content, appTarget) => {
-    virtualFileSystem.push({ name, type, parent, content, appTarget });
+  addVfsFile: (name, type, parent, content, appTarget, pkgId, sizeMB) => {
+    virtualFileSystem.push({ name, type, parent, content, appTarget, pkgId, sizeMB });
+  },
+  removeVfsFile: (name, parent) => {
+    const idx = virtualFileSystem.findIndex(
+      (f) => f.parent === parent && f.name.toUpperCase() === name.toUpperCase(),
+    );
+    if (idx !== -1) virtualFileSystem.splice(idx, 1);
+  },
+  openExplorerAt: (folderPath: string) => {
+    currentExplorerPath = folderPath;
+    openApp('myComputer', true).then(() => renderExplorerFolder(folderPath));
   },
   getVfsFiles: () => virtualFileSystem,
   resetVfsToFactory,
@@ -3573,8 +3772,11 @@ registerOsBridge({
 
 initCmosBiosController();
 initOsReinstallerController();
+initFdiskController();
+initPwaAndHostOsController();
 applySystemRegistryToOS(true);
 resetIdleTimer();
 
 window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
 window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });
+

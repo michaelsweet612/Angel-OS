@@ -13,6 +13,13 @@
       property="og:description"
       content="Explore a retro OS that brings back nostalgic memories with an AI twist."
     />
+    <meta name="theme-color" content="#000080" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Gemini 95" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -76,7 +83,10 @@
               ⚙️ CMOS BIOS Setup [DEL]
             </button>
             <button id="boot-os-setup-btn" class="boot-skip-btn" style="color: #00ffff; border-color: #00ffff">
-              💿 Boot CD-ROM (OS Setup)
+              💿 Boot CD-ROM (OS Setup) [F8]
+            </button>
+            <button id="boot-fdisk-btn" class="boot-skip-btn" style="color: #86efac; border-color: #86efac">
+              🔧 MS-DOS FDISK [F9]
             </button>
             <button id="boot-skip-btn" class="boot-skip-btn">
               Skip Boot (Silent)
@@ -85,7 +95,7 @@
         </div>
 
         <div class="bios-footer">
-          <span>Press <b>ENTER</b> to Boot · <b>DEL</b> for CMOS BIOS Setup · <b>ESC</b> to Skip</span>
+          <span>Press <b>ENTER</b> Boot · <b>DEL</b> CMOS BIOS · <b>F8</b> Setup CD · <b>F9</b> FDISK · <b>ESC</b> Skip</span>
           <span>11/17/95-i430FX-2A59CG09C-00</span>
         </div>
       </div>
@@ -228,6 +238,7 @@
           </select>
         </div>
         <div class="os-setup-btn-row">
+          <button id="os-setup-fdisk-btn" class="win95-btn">🔧 Partition Disk (FDISK.EXE)</button>
           <button id="os-setup-begin-btn" class="win95-btn"><b>▶ Begin OS Installation ➔</b></button>
           <button id="os-setup-cancel-btn" class="win95-btn">Cancel &amp; Return to Desktop</button>
         </div>
@@ -273,6 +284,139 @@
           <button class="win95-btn" id="ishield-back-btn">&lt; Back</button>
           <button class="win95-btn" id="ishield-next-btn"><b>Next &gt;</b></button>
           <button class="win95-btn" id="ishield-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MS-DOS FDISK.EXE FIXED DISK SETUP PROGRAM (Bare-Metal Partitioner) -->
+    <div id="fdisk-screen" class="fdisk-screen" style="display: none">
+      <div class="fdisk-frame">
+        <div class="fdisk-header">
+          <div>Microsoft(R) Windows 95 — Fixed Disk Setup Program (FDISK.EXE v7.00)</div>
+          <div style="font-size: 0.76rem; color: #00ffff">Current Fixed Disk Drive: 1 — QUANTUM FIREBALL IDE (1,995 MB Total · 968 Cyl · 64 Heads)</div>
+        </div>
+
+        <div class="fdisk-status-strip">
+          <span id="fdisk-mbr-status" class="tabular-nums">✓ MBR 0x55AA VALID · ACTIVE BOOT PARTITION C: READY</span>
+          <span class="tabular-nums">LBA MODE: ON</span>
+        </div>
+
+        <div class="fdisk-disk-bar" id="fdisk-disk-bar">
+          <!-- Visual Partition Allocation Bar -->
+        </div>
+
+        <table class="fdisk-table tabular-nums">
+          <thead>
+            <tr>
+              <th>Partition</th>
+              <th>Status</th>
+              <th>Type</th>
+              <th>Volume Label</th>
+              <th>MBytes</th>
+              <th>System</th>
+              <th>Usage</th>
+            </tr>
+          </thead>
+          <tbody id="fdisk-partition-tbody"></tbody>
+        </table>
+
+        <div class="fdisk-controls-grid">
+          <div class="fdisk-ctrl-box">
+            <div class="fdisk-ctrl-title">1. Primary DOS Partition (C:\)</div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.76rem; margin-bottom: 6px">
+              <label for="fdisk-c-size-input">Size (MB):</label>
+              <input type="number" id="fdisk-c-size-input" min="400" max="1995" value="1495" class="fdisk-num-input tabular-nums" />
+              <span>/ 1995 MB</span>
+            </div>
+            <div class="fdisk-btn-wrap">
+              <button class="cmos-action-btn" id="fdisk-create-c-btn">[1] Create / Resize C:</button>
+              <button class="cmos-action-btn" id="fdisk-toggle-active-btn">[2] Toggle Active (A)</button>
+              <button class="cmos-action-btn" id="fdisk-format-c-btn" style="background: #86efac">[F] FORMAT C: /S</button>
+              <button class="cmos-action-btn" id="fdisk-delete-c-btn" style="color: #880000">[3] Delete C:</button>
+            </div>
+          </div>
+
+          <div class="fdisk-ctrl-box">
+            <div class="fdisk-ctrl-title">2. Logical Drive (D:\) &amp; Master Boot Record</div>
+            <div style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 6px">
+              Allocate remaining unpartitioned cylinders to Secondary Drive D:\ or repair/test MBR 0x55AA:
+            </div>
+            <div class="fdisk-btn-wrap">
+              <button class="cmos-action-btn" id="fdisk-create-d-btn">[4] Create Logical D:</button>
+              <button class="cmos-action-btn" id="fdisk-delete-d-btn">[5] Delete D:</button>
+              <button class="cmos-action-btn" id="fdisk-mbr-btn">[M] Write FDISK /MBR</button>
+              <button class="cmos-action-btn" id="fdisk-wipe-mbr-btn" style="color: #880000">[X] Zero MBR (Test Halt)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="fdisk-console-log tabular-nums" id="fdisk-console-log">
+          FDISK Ready. Choose an action above to partition or format Fixed Disk 1, or launch OS Setup.
+        </div>
+
+        <div class="fdisk-footer">
+          <button class="cmos-action-btn primary" id="fdisk-launch-setup-btn">💿 Save &amp; Launch OS Setup (SETUP.EXE)</button>
+          <button class="cmos-action-btn" id="fdisk-exit-btn">ESC: Save Partition Table &amp; Exit FDISK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIN32 SELF-EXTRACTING .EXE CABINET VERIFIER MODAL (Method 1) -->
+    <div id="sfx-exe-modal" class="installshield-backdrop" style="display: none">
+      <div class="sfx-exe-window">
+        <div class="window-titlebar">
+          <span class="window-title" id="sfx-modal-title">Win32 Self-Extracting Executable (.EXE)</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="sfx-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="sfx-exe-body">
+          <div class="sfx-exe-top">
+            <div class="sfx-exe-icon">📦</div>
+            <div class="sfx-exe-meta tabular-nums">
+              <div><b>Executable:</b> <span id="sfx-exe-filename">C:\Downloads\MSIE30_SETUP.EXE</span></div>
+              <div><b>Publisher:</b> <span id="sfx-exe-publisher">Microsoft Corp.</span></div>
+              <div><b>PE Binary:</b> <span id="sfx-exe-size">11.8 MB · MZ 0x5A4D / PE32</span></div>
+              <div><b>Temp Unpack:</b> <code id="sfx-exe-path">C:\WINDOWS\TEMP\_ISTMP0.DIR\</code></div>
+            </div>
+          </div>
+          <div id="sfx-extract-progress-wrap" style="display: none; margin-top: 8px">
+            <div id="sfx-extract-status" style="font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; margin-bottom: 4px">
+              Unpacking LZX Cabinet Stream...
+            </div>
+            <div class="installshield-bar-outer" style="height: 16px">
+              <div class="installshield-bar-fill" id="sfx-extract-bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="sfx-exe-footer">
+            <button class="win95-btn" id="sfx-run-btn"><b>▶ Extract &amp; Run .EXE Setup</b></button>
+            <button class="win95-btn" id="sfx-cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NATIVE PWA / IOS SAFARI / DESKTOP OS INSTALL GUIDE MODAL (Method 2) -->
+    <div id="pwa-ios-modal" class="installshield-backdrop" style="display: none">
+      <div class="sfx-exe-window" style="width: 460px">
+        <div class="window-titlebar">
+          <span class="window-title">📲 Install Gemini 95 onto Your Real Device</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="pwa-ios-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="sfx-exe-body">
+          <div id="pwa-guide-body" style="font-size: 0.78rem; line-height: 1.45; color: #000">
+            <p style="margin: 0 0 8px 0"><b>Install Gemini 95 as a Standalone Fullscreen OS App:</b></p>
+            <ol style="margin: 0 0 10px 18px; padding: 0">
+              <li>On <b>iPhone / iPad (Safari)</b>: Tap the <b>Share (↑)</b> button in the toolbar, then tap <b>"Add to Home Screen"</b>.</li>
+              <li>On <b>Desktop Chrome / Edge</b>: Open this app in its own browser tab and click the <b>Install Gemini 95 (🖥️)</b> icon in the address bar.</li>
+            </ol>
+          </div>
+          <div class="sfx-exe-footer">
+            <button class="win95-btn" id="pwa-modal-portable-btn">💻 Download Portable App (.HTML) Now</button>
+            <button class="win95-btn" id="pwa-ios-ok-btn"><b>OK</b></button>
+          </div>
         </div>
       </div>
     </div>
@@ -411,9 +555,9 @@
           <button id="sticky-close" title="Dismiss">✕</button>
         </div>
         <div class="sticky-body">
-          <p>• <b>Ability to Install</b>: Install, uninstall &amp; reinstall apps (including <b>Netscape / IE 3.0 / CyberChrome</b>) or run a full <b>OS Reinstall</b>!</p>
-          <p>• <b>Settings &amp; Control</b>: 8 ultra-detailed tabs + live <b>REGEDIT.EXE</b> &amp; <b>CMOS BIOS</b> controlling every pixel, bevel, sound &amp; CPU flag.</p>
-          <p>• <b>Multi-Engine Browser</b>: Multi-tab surfing with both <b>AI Web</b> &amp; <b>Live Web Iframe</b> modes!</p>
+          <p>• <b>2 Ways to Install</b>: Run <b>.EXE Setup Files</b> in <code>C:\Downloads</code> (+ download Portable PC App) OR run a <b>Physical OS Install</b> (<code>FDISK.EXE</code>, Bootable <code>.ISO</code> &amp; Native PWA)!</p>
+          <p>• <b>Settings &amp; Control</b>: 8 ultra-detailed tabs + live <b>REGEDIT.EXE</b> &amp; <b>CMOS BIOS</b> controlling every pixel, disk flag &amp; DSP parameter.</p>
+          <p>• <b>Multi-Engine Browser</b>: Surf <b>Tucows .EXE Depot</b>, AI Web &amp; Live URLs!</p>
         </div>
       </div>
 
@@ -431,7 +575,9 @@
         </div>
         <div class="explorer-toolbar">
           <button class="win95-btn" id="explorer-up-btn">⬆ Up</button>
-          <button class="win95-btn" id="explorer-root-btn">💻 C:\</button>
+          <button class="win95-btn" id="explorer-root-btn">💾 C:\</button>
+          <button class="win95-btn" id="explorer-drive-d-btn" title="Secondary Logical Drive D:\">💿 D:\</button>
+          <button class="win95-btn" id="explorer-downloads-btn" title="Open C:\Downloads (.EXE Setup Files)">📥 Downloads</button>
           <button class="win95-btn" id="explorer-new-note-btn">📄 New Note</button>
           <div class="explorer-address">
             <span>Address:</span>
@@ -498,6 +644,7 @@
             <span class="bookmarks-label">Bookmarks:</span>
             <div class="browser-bookmarks-items" id="browser-bookmarks-items"></div>
             <div class="browser-tools-right">
+              <button class="bookmark-chip" id="browser-exe-depot-btn" title="Open Tucows 95 .EXE Shareware Download Depot" style="background: #ffffcc; font-weight: 700">📥 Get .EXE</button>
               <button class="bookmark-chip" id="browser-add-bookmark-btn" title="Bookmark Current Page">⭐ +Save</button>
               <button class="bookmark-chip" id="browser-source-btn" title="Inspect / Live-Edit HTML Source & Save to C:\">📄 Source</button>
               <button class="bookmark-chip" id="browser-settings-btn" title="Open Browser & Modem Settings">⚙️ Opts</button>
@@ -831,6 +978,7 @@
           <div class="dos-toolbar">
             <button class="win95-btn dos-quick-cmd" data-cmd="HELP">HELP</button>
             <button class="win95-btn dos-quick-cmd" data-cmd="DIR">DIR</button>
+            <button class="win95-btn dos-quick-cmd" data-cmd="FDISK">FDISK</button>
             <button class="win95-btn dos-quick-cmd" data-cmd="SYSINFO">SYSINFO</button>
             <button class="win95-btn dos-quick-cmd" data-cmd="MATRIX">MATRIX</button>
             <button class="win95-btn dos-quick-cmd" data-cmd="COLOR">PHOSPHOR</button>
@@ -885,10 +1033,10 @@
         </div>
       </div>
 
-      <!-- 12. ABILITY TO INSTALL (Software Package Manager, Browser Reinstaller & OS Setup) -->
-      <div class="window resizable" id="abilityToInstall" style="width: 680px; height: 490px">
+      <!-- 12. ABILITY TO INSTALL (Dual-Path: .EXE Setup Files + Portable App vs Physical OS FDISK / ISO / PWA) -->
+      <div class="window resizable" id="abilityToInstall" style="width: 730px; height: 525px">
         <div class="window-titlebar">
-          <span class="window-title">💿 Ability to Install — Software Setup &amp; OS Reinstaller (INSTALL.EXE)</span>
+          <span class="window-title">💿 Ability to Install — Dual-Mode (.EXE Installers &amp; Physical OS Setup)</span>
           <div class="window-controls">
             <div class="window-minimize window-control-button" title="Minimize">−</div>
             <div class="window-maximize window-control-button" title="Maximize">□</div>
@@ -896,37 +1044,58 @@
           </div>
         </div>
         <div class="window-content ability-install-wrapper">
-          <div class="ability-top-banner">
-            <div>
-              <div class="ability-banner-title">InstallShield® Package Manager &amp; OS Recovery Center</div>
-              <div class="ability-banner-sub">Install new software, swap or reinstall Web Browsers, uninstall apps, or reinstall the entire OS.</div>
-            </div>
-            <button class="win95-btn ability-os-reinstall-btn" id="ability-launch-os-setup-btn">
-              💿 Reinstall Entire OS (SETUP.EXE)
+          <!-- Dual-Path Mode Switcher -->
+          <div class="ability-dual-mode-tabs">
+            <button class="ability-mode-tab active" id="ability-tab-exe" data-imode="exe">
+              📦 <b>Way 1: .EXE File Installers</b> <span>(Run .EXE in C:\ + Download Portable App)</span>
+            </button>
+            <button class="ability-mode-tab" id="ability-tab-os" data-imode="os">
+              💿 <b>Way 2: Physical OS Install</b> <span>(FDISK Partitioner · Bootable .ISO · Native PWA)</span>
             </button>
           </div>
 
-          <div class="ability-filter-bar">
-            <button class="win95-btn ability-cat-btn active" data-cat="all">All Packages</button>
-            <button class="win95-btn ability-cat-btn" data-cat="browser">🌐 Web Browsers (3)</button>
-            <button class="win95-btn ability-cat-btn" data-cat="core">📝 Core Apps</button>
-            <button class="win95-btn ability-cat-btn" data-cat="multimedia">🎮 Multimedia &amp; Games</button>
-            <button class="win95-btn ability-cat-btn" data-cat="system">🛠️ System Tools</button>
-            <span class="ability-disk-meter tabular-nums" id="ability-disk-meter">C:\ Used: 92.3 MB / 1,995 MB</span>
+          <!-- WAY 1 PANE: .EXE SETUP FILES & PORTABLE PC APP -->
+          <div id="ability-pane-exe" class="ability-mode-pane">
+            <div class="ability-exe-portable-bar">
+              <div>
+                <b>💻 Real PC Portable App:</b> Download Gemini 95 as a standalone desktop file carrying your live Registry &amp; apps:
+              </div>
+              <div style="display: flex; gap: 5px; flex-wrap: wrap">
+                <button class="win95-btn" id="ability-dl-portable-html-btn" style="background: #e0f2fe; font-weight: 700">⬇ Portable App (.HTML)</button>
+                <button class="win95-btn" id="ability-dl-portable-bat-btn">⬇ Win32 Launcher (.BAT)</button>
+                <button class="win95-btn" id="ability-open-downloads-btn">📂 Open C:\Downloads</button>
+              </div>
+            </div>
+
+            <div class="ability-filter-bar">
+              <button class="win95-btn ability-cat-btn active" data-cat="all">All .EXEs</button>
+              <button class="win95-btn ability-cat-btn" data-cat="browser">🌐 Browsers (3)</button>
+              <button class="win95-btn ability-cat-btn" data-cat="core">📝 Core Apps</button>
+              <button class="win95-btn ability-cat-btn" data-cat="multimedia">🎮 Games/Media</button>
+              <button class="win95-btn ability-cat-btn" data-cat="system">🛠️ System</button>
+              <span class="ability-disk-meter tabular-nums" id="ability-disk-meter">C:\ Used: 92.3 MB / 1,495 MB</span>
+            </div>
+
+            <div class="ability-split-pane">
+              <div class="ability-pkg-list" id="ability-pkg-list">
+                <!-- Populated dynamically from Package Catalog -->
+              </div>
+              <div class="ability-pkg-inspector" id="ability-pkg-inspector">
+                <!-- Populated dynamically for selected package -->
+              </div>
+            </div>
           </div>
 
-          <div class="ability-split-pane">
-            <div class="ability-pkg-list" id="ability-pkg-list">
-              <!-- Populated dynamically from Package Catalog -->
-            </div>
-            <div class="ability-pkg-inspector" id="ability-pkg-inspector">
-              <!-- Populated dynamically for selected package -->
+          <!-- WAY 2 PANE: PHYSICAL OPERATING SYSTEM INSTALL (BARE-METAL FDISK + ISO + PWA) -->
+          <div id="ability-pane-os" class="ability-mode-pane" style="display: none">
+            <div class="ability-physical-os-deck" id="ability-physical-os-deck">
+              <!-- Populated dynamically with live FDISK Partition Table, FORMAT C: /S, Bootable .ISO & PWA status -->
             </div>
           </div>
 
           <div class="window-statusbar">
-            <span id="ability-status-line">Select any package to Install, Reinstall via InstallShield 95, Repair, or Uninstall.</span>
-            <span>CD-ROM: D:\SETUP95</span>
+            <span id="ability-status-line">Choose Way 1 (.EXE Setup Files &amp; Portable App) or Way 2 (Physical OS FDISK, .ISO &amp; Native PWA).</span>
+            <span>CD-ROM: E:\SETUP95</span>
           </div>
         </div>
       </div>
@@ -1050,6 +1219,8 @@
           <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt</div>
           <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
           <div class="start-menu-divider"></div>
+          <div class="start-menu-item" id="start-pwa-install">📲 <b>Install as Physical OS (PWA)...</b></div>
+          <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
           <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
           <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
           <div class="start-menu-item" id="start-reboot-os">🔄 Reboot / CMOS BIOS...</div>
@@ -1307,11 +1478,15 @@
         </div>
         <div class="taskbar-divider"></div>
         <div id="taskbar-apps"></div>
+        <button class="win95-btn taskbar-install-os-btn" id="pwa-taskbar-install-btn" title="Install Gemini 95 as a Native Standalone OS App">
+          📲 <span>Install OS</span>
+        </button>
         <button class="win95-btn taskbar-copilot-btn" id="taskbar-copilot-btn" title="Toggle Windows Copilot 95 Sidebar">
           ✨ <span>Copilot 95</span>
         </button>
         <!-- System Tray -->
         <div id="system-tray" class="system-tray" title="Click to open Quick Settings 95">
+          <span id="tray-offline-badge" class="tray-offline-badge" style="display: none" title="Running Offline via Service Worker Cache">⚡ OFFLINE</span>
           <button class="tray-icon-btn" id="tray-qs-btn" title="Quick Settings Flyout">📶</button>
           <button class="tray-icon-btn" id="tray-crt-btn" title="Toggle CRT Scanlines">📺</button>
           <button class="tray-icon-btn" id="tray-sound-btn" title="Toggle Retro SFX">🔊</button>

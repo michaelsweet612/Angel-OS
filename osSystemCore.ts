@@ -85,6 +85,16 @@ export interface SystemRegistry {
   screensaverStyle: 'starfield' | 'matrix';
   fileSystemFormat: 'FAT16' | 'FAT32';
 
+  // --- Tab 7: Dual-Path Install (.EXE Policy, FDISK Disk & Host OS Mode) ---
+  sfxVerifyPrompt: boolean;
+  autoDeleteExeAfterInstall: boolean;
+  defaultExeDownloadDir: 'C:\\Downloads' | 'C:\\' | 'D:\\Installers';
+  primaryPartitionSizeMB: number; // 400 - 1995 MB
+  enableSecondaryDriveD: boolean;
+  strictMbrBootCheck: boolean;
+  isoVolumeLabel: string;
+  autoFullscreenStandalone: boolean;
+
   // --- Tab 8 / CMOS BIOS Settings (HKLM\Hardware\BIOS) ---
   biosQuickPost: boolean;
   biosBootOrder: 'C_A_CDROM' | 'A_C_CDROM' | 'CDROM_C_A';
@@ -163,10 +173,59 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   screensaverStyle: 'starfield',
   fileSystemFormat: 'FAT16',
 
+  sfxVerifyPrompt: true,
+  autoDeleteExeAfterInstall: false,
+  defaultExeDownloadDir: 'C:\\Downloads',
+  primaryPartitionSizeMB: 1495,
+  enableSecondaryDriveD: true,
+  strictMbrBootCheck: true,
+  isoVolumeLabel: 'GEMINI95_OS',
+  autoFullscreenStandalone: false,
+
   biosQuickPost: true,
   biosBootOrder: 'C_A_CDROM',
   biosBootAudio: true,
   biosNumLockOn: true,
+};
+
+export interface PartitionTableState {
+  totalDiskMB: number;
+  mbrSignatureValid: boolean;
+  primaryC: {
+    exists: boolean;
+    active: boolean;
+    formatted: boolean;
+    fileSystem: 'FAT16' | 'FAT32';
+    sizeMB: number;
+    label: string;
+  };
+  logicalD: {
+    exists: boolean;
+    formatted: boolean;
+    fileSystem: 'FAT16' | 'FAT32';
+    sizeMB: number;
+    label: string;
+  };
+}
+
+export const DEFAULT_PARTITION_TABLE: PartitionTableState = {
+  totalDiskMB: 1995,
+  mbrSignatureValid: true,
+  primaryC: {
+    exists: true,
+    active: true,
+    formatted: true,
+    fileSystem: 'FAT16',
+    sizeMB: 1495,
+    label: 'GEMINI_95',
+  },
+  logicalD: {
+    exists: true,
+    formatted: true,
+    fileSystem: 'FAT16',
+    sizeMB: 500,
+    label: 'DATA_ARCHIVE',
+  },
 };
 
 export interface SoftwarePackage {
@@ -178,6 +237,7 @@ export interface SoftwarePackage {
   sizeMB: number;
   installDir: string;
   exeName: string;
+  setupExeFileName: string;
   appWindowId: string; // Maps to DOM window id
   browserEngine?: BrowserEngineId;
   iconHtml: string;
@@ -198,6 +258,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 14.2,
     installDir: 'C:\\Program Files\\Netscape\\Navigator',
     exeName: 'NETSCAPE.EXE',
+    setupExeFileName: 'NETSCAPE95_SETUP.EXE',
     appWindowId: 'chrome',
     browserEngine: 'netscape',
     iconHtml: '🌐',
@@ -216,6 +277,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 11.8,
     installDir: 'C:\\Program Files\\Plus!\\Microsoft Internet',
     exeName: 'IEXPLORE.EXE',
+    setupExeFileName: 'MSIE30_SETUP.EXE',
     appWindowId: 'chrome',
     browserEngine: 'ie3',
     iconHtml: '📘',
@@ -234,6 +296,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 18.6,
     installDir: 'C:\\Program Files\\CyberChrome',
     exeName: 'CHROME95.EXE',
+    setupExeFileName: 'CYBERCHROME_SETUP.EXE',
     appWindowId: 'chrome',
     browserEngine: 'cyberchrome',
     iconHtml: '⚡',
@@ -252,6 +315,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 2.4,
     installDir: 'C:\\System95',
     exeName: 'REGEDIT.EXE',
+    setupExeFileName: 'REGEDIT95_SETUP.EXE',
     appWindowId: 'regedit',
     iconHtml: '🗂️',
     description: 'Direct hierarchical HKEY_CURRENT_USER & HKEY_LOCAL_MACHINE editor wired live to the OS.',
@@ -269,6 +333,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 3.1,
     installDir: 'C:\\System95',
     exeName: 'SYSMON.EXE',
+    setupExeFileName: 'SYSMON95_SETUP.EXE',
     appWindowId: 'sysMonitor',
     iconHtml: '📊',
     description: 'Live real-time oscillating kernel CPU, RAM allocation, swap file, and modem throughput plotter.',
@@ -286,6 +351,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 4.5,
     installDir: 'C:\\Program Files\\Accessories',
     exeName: 'GEMNOTES.EXE',
+    setupExeFileName: 'GEMNOTES_SETUP.EXE',
     appWindowId: 'notepad',
     iconHtml: '📝',
     description: 'Retro text & zine editor with C:\\ file saving, ASCII art generator, and streaming story writer.',
@@ -303,6 +369,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 6.8,
     installDir: 'C:\\Program Files\\Accessories',
     exeName: 'GEMPAINT.EXE',
+    setupExeFileName: 'GEMPAINT_SETUP.EXE',
     appWindowId: 'paint',
     iconHtml: '🎨',
     description: '16-color MS Paint 95 studio with flood-fill, spray airbrush, shapes, undo, and Clippy art critiques.',
@@ -320,6 +387,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 7.4,
     installDir: 'C:\\Program Files\\AIM95',
     exeName: 'AIM95.EXE',
+    setupExeFileName: 'AIM95_SETUP.EXE',
     appWindowId: 'gemini',
     iconHtml: '💬',
     description: 'Multi-persona 1995 instant messenger featuring SmarterChild_95, ZeroCool_1337, and Win95_Guru.',
@@ -337,6 +405,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 2.9,
     installDir: 'C:\\Program Files\\Games',
     exeName: 'WINMINE.EXE',
+    setupExeFileName: 'GEMSWEEPER_SETUP.EXE',
     appWindowId: 'minesweeper',
     iconHtml: '💣',
     description: 'Classic Minesweeper with Beginner/Medium/Expert grids, chord-clicking, and AI tactical hints.',
@@ -354,6 +423,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 12.5,
     installDir: 'C:\\Program Files\\Multimedia',
     exeName: 'MPLAYER.EXE',
+    setupExeFileName: 'GEMPLAYER_SETUP.EXE',
     appWindowId: 'mediaPlayer',
     iconHtml: '🎹',
     description: 'Built-in 4-track FM Chiptune Synthesizer with spectrum visualizer and YouTube Retro CRT TV.',
@@ -371,6 +441,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     sizeMB: 42.0,
     installDir: 'C:\\GAMES\\DOOM2',
     exeName: 'DOOM2.EXE',
+    setupExeFileName: 'DOOM2_SETUP.EXE',
     appWindowId: 'doom',
     iconHtml: '👹',
     description: 'Classic 1994 MS-DOS first-person action powered by DOSBox protected-mode emulation.',
@@ -384,6 +455,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
 const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v2';
 const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v2';
 const BOOKMARKS_STORAGE_KEY = '__gemini95_browser_bookmarks_v2';
+const PARTITIONS_STORAGE_KEY = '__gemini95_partition_table_v1';
 
 export interface BrowserBookmark {
   title: string;
@@ -392,13 +464,43 @@ export interface BrowserBookmark {
 }
 
 export const DEFAULT_BOOKMARKS: BrowserBookmark[] = [
+  { title: '📥 .EXE Shareware Depot', url: 'http://www.tucows-95-downloads.com', mode: 'ai' },
   { title: '🛍️ CyberMall 96', url: 'https://www.geocities.com/cybermall1996', mode: 'ai' },
   { title: '👽 Area 51 Truth', url: 'https://www.area51-truth-1995.org', mode: 'ai' },
   { title: '🍕 PizzaNet 95', url: 'https://www.pizzanet-delivery.com', mode: 'ai' },
   { title: '📚 Wikipedia (Live)', url: 'https://en.m.wikipedia.org/wiki/Windows_95', mode: 'live' },
-  { title: '🖥️ Win95 History (Live)', url: 'https://en.m.wikipedia.org/wiki/Netscape_Navigator', mode: 'live' },
   { title: '🐣 Tamagotchi Club', url: 'https://www.virtual-tamagotchi-club.jp', mode: 'ai' },
 ];
+
+export function loadPartitionTable(): PartitionTableState {
+  try {
+    const raw = window.localStorage.getItem(PARTITIONS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_PARTITION_TABLE,
+        ...parsed,
+        primaryC: { ...DEFAULT_PARTITION_TABLE.primaryC, ...(parsed.primaryC || {}) },
+        logicalD: { ...DEFAULT_PARTITION_TABLE.logicalD, ...(parsed.logicalD || {}) },
+      };
+    }
+  } catch (e) {
+    console.warn('Partition table fallback:', e);
+  }
+  return {
+    ...DEFAULT_PARTITION_TABLE,
+    primaryC: { ...DEFAULT_PARTITION_TABLE.primaryC },
+    logicalD: { ...DEFAULT_PARTITION_TABLE.logicalD },
+  };
+}
+
+export function savePartitionTable(pt: PartitionTableState): void {
+  try {
+    window.localStorage.setItem(PARTITIONS_STORAGE_KEY, JSON.stringify(pt));
+  } catch (e) {
+    console.warn('Partition table save error:', e);
+  }
+}
 
 export function loadSystemRegistry(): SystemRegistry {
   try {
@@ -544,6 +646,16 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\CentralProcessor', name: 'TurboBoost', key: 'cpuTurboBoost', regType: 'REG_DWORD', description: 'Front-panel hardware Turbo button state' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'PhysicalMemoryMB', key: 'installedRamMB', regType: 'REG_DWORD', description: 'Installed SIMM/EDO RAM in MB (16-256)' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'PagingFileMB', key: 'virtualSwapMB', regType: 'REG_DWORD', description: 'WIN386.SWP virtual memory swap size in MB' },
+
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Setup\\ExePolicy', name: 'VerifyMZHeaderPrompt', key: 'sfxVerifyPrompt', regType: 'REG_DWORD', description: '1 = Show Win32 SFX MZ dialog before running .EXE' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Setup\\ExePolicy', name: 'AutoCleanExeAfterSetup', key: 'autoDeleteExeAfterInstall', regType: 'REG_DWORD', description: '1 = Delete .EXE from Downloads after setup finishes' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Setup\\ExePolicy', name: 'DefaultDownloadFolder', key: 'defaultExeDownloadDir', regType: 'REG_SZ', description: 'Target folder for downloaded .EXE installers' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Setup\\ExePolicy', name: 'AutoFullscreenOSMode', key: 'autoFullscreenStandalone', regType: 'REG_DWORD', description: '1 = Auto-enter fullscreen in standalone PWA OS mode' },
+
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'PrimaryPartitionMB', key: 'primaryPartitionSizeMB', regType: 'REG_DWORD', description: 'Primary DOS C:\\ size in MB (400-1995)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'MountLogicalDriveD', key: 'enableSecondaryDriveD', regType: 'REG_DWORD', description: '1 = Mount secondary D:\\ partition in Explorer' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'StrictMBRBootGuard', key: 'strictMbrBootCheck', regType: 'REG_DWORD', description: '1 = Halt BIOS POST if C:\\ or MBR is missing' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'BootISOVolumeLabel', key: 'isoVolumeLabel', regType: 'REG_SZ', description: 'ISO-9660 volume label for exported bootable ISO' },
 
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'QuickPOST', key: 'biosQuickPost', regType: 'REG_DWORD', description: 'Fast RAM test during power-on boot' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'BootSequence', key: 'biosBootOrder', regType: 'REG_SZ', description: 'Boot priority (C_A_CDROM|A_C_CDROM|CDROM_C_A)' },

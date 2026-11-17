@@ -17,6 +17,21 @@ import {
   SoftwarePackage,
   SystemRegistry,
 } from './osSystemCore';
+import {
+  buildSharewareDepotHtml,
+  downloadBootableIsoImage,
+  downloadPortableHostApp,
+  dropSetupExeToVfs,
+  executeVfsSetupExe,
+  getPwaHostState,
+  isPrimaryBootable,
+  openFdiskScreen,
+  partitionTable,
+  repairBootablePrimaryPartition,
+  syncPartitionTableWithRegistry,
+  toggleHardwareFullscreen,
+  triggerNativePwaInstall,
+} from './osDualInstall';
 
 export interface OsBridgeCallbacks {
   openApp: (appName: string, bypassPkgCheck?: boolean) => Promise<void>;
@@ -26,8 +41,26 @@ export interface OsBridgeCallbacks {
   updateClock: () => void;
   getGeminiInstance: (context: string) => Promise<any | null>;
   injectShimIntoHtml: (rawHtml: string) => string;
-  addVfsFile: (name: string, type: 'folder' | 'text' | 'image' | 'app', parent: string, content?: string, appTarget?: string) => void;
-  getVfsFiles: () => Array<{ name: string; type: string; parent: string; content?: string; appTarget?: string }>;
+  addVfsFile: (
+    name: string,
+    type: 'folder' | 'text' | 'image' | 'app' | 'installer_exe',
+    parent: string,
+    content?: string,
+    appTarget?: string,
+    pkgId?: string,
+    sizeMB?: number,
+  ) => void;
+  removeVfsFile: (name: string, parent: string) => void;
+  openExplorerAt: (folderPath: string) => void;
+  getVfsFiles: () => Array<{
+    name: string;
+    type: string;
+    parent: string;
+    content?: string;
+    appTarget?: string;
+    pkgId?: string;
+    sizeMB?: number;
+  }>;
   resetVfsToFactory: () => void;
   refreshExplorerIfOpen: () => void;
   sfx: {
@@ -55,6 +88,7 @@ export let browserBookmarks: BrowserBookmark[] = loadBrowserBookmarks();
 
 let bridgeRef: OsBridgeCallbacks | null = null;
 let currentSettingsTab = 'display';
+let currentInstallerMode: 'exe' | 'os' = 'exe';
 let currentInstallerCategory: 'all' | 'browser' | 'core' | 'multimedia' | 'system' = 'all';
 let selectedInstallerPkgId = 'browser_netscape';
 let activeRegeditSubkey = 'HKEY_CURRENT_USER\\Control Panel\\Colors';
@@ -62,6 +96,10 @@ let selectedRegDescriptor: RegistryEntryDescriptor | null = null;
 
 export function registerOsBridge(cb: OsBridgeCallbacks) {
   bridgeRef = cb;
+}
+
+export function getOsBridge(): OsBridgeCallbacks | null {
+  return bridgeRef;
 }
 
 export function getInstalledBrowsers(): SoftwarePackage[] {
@@ -270,11 +308,20 @@ export function applySystemRegistryToOS(skipSave = false): void {
   const biosFs = document.getElementById('bios-fs-label');
   if (biosFs) biosFs.textContent = systemRegistry.fileSystemFormat;
 
+  syncPartitionTableWithRegistry();
+
+  const driveDBtn = document.getElementById('explorer-drive-d-btn');
+  if (driveDBtn) {
+    driveDBtn.style.display =
+      partitionTable.logicalD.exists && systemRegistry.enableSecondaryDriveD ? 'inline-flex' : 'none';
+  }
+
   const explorerSpace = document.getElementById('explorer-status-space');
   if (explorerSpace) {
+    const cCap = partitionTable.primaryC.exists ? partitionTable.primaryC.sizeMB : systemRegistry.primaryPartitionSizeMB;
     const usedMb = packageCatalog.reduce((acc, p) => acc + (p.installed ? p.sizeMB : 0), 24.5);
-    const freeMb = Math.max(120, Math.round(1995 - usedMb));
-    explorerSpace.textContent = `Free Space: ${freeMb.toLocaleString()} MB (${systemRegistry.fileSystemFormat})`;
+    const freeMb = Math.max(40, Math.round(cCap - usedMb));
+    explorerSpace.textContent = `Free Space: ${freeMb.toLocaleString()} MB / ${cCap.toLocaleString()} MB (${systemRegistry.fileSystemFormat})`;
   }
 
   // 7. Synchronize Installed Package Icons & Browser Engine Branding
@@ -326,8 +373,9 @@ export function syncInstalledShortcutsToDesktop(): void {
   // Disk space meter in Ability to Install
   const diskMeter = document.getElementById('ability-disk-meter');
   if (diskMeter) {
+    const cCap = partitionTable.primaryC.exists ? partitionTable.primaryC.sizeMB : systemRegistry.primaryPartitionSizeMB;
     const used = packageCatalog.reduce((sum, p) => sum + (p.installed ? p.sizeMB : 0), 24.5);
-    diskMeter.textContent = `C:\\ Used: ${used.toFixed(1)} MB / 1,995 MB (${systemRegistry.fileSystemFormat})`;
+    diskMeter.textContent = `C:\\ Used: ${used.toFixed(1)} / ${cCap} MB (${systemRegistry.fileSystemFormat})`;
   }
 }
 
@@ -518,6 +566,7 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
   const modeAiBtn = windowElement.querySelector('#browser-mode-ai') as HTMLButtonElement;
   const modeLiveBtn = windowElement.querySelector('#browser-mode-live') as HTMLButtonElement;
   const bookmarksContainer = windowElement.querySelector('#browser-bookmarks-items') as HTMLDivElement;
+  const exeDepotBtn = windowElement.querySelector('#browser-exe-depot-btn') as HTMLButtonElement | null;
   const addBookmarkBtn = windowElement.querySelector('#browser-add-bookmark-btn') as HTMLButtonElement;
   const sourceBtn = windowElement.querySelector('#browser-source-btn') as HTMLButtonElement;
   const settingsBtn = windowElement.querySelector('#browser-settings-btn') as HTMLButtonElement;
@@ -672,6 +721,24 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
       renderTabsBar();
       displayTabContent(tab);
       if (statusText) statusText.textContent = 'Loaded Engine Start Portal.';
+      return;
+    }
+
+    // Built-in 1995 Tucows / WinSite .EXE Shareware Depot!
+    if (url.toLowerCase().includes('tucows-95-downloads') || url.toLowerCase() === 'about:downloads') {
+      const depotUrl = 'http://www.tucows-95-downloads.com';
+      tab.url = depotUrl;
+      tab.title = 'Tucows .EXE Depot';
+      tab.mode = 'ai';
+      tab.cachedHtml = buildSharewareDepotHtml();
+      if (pushHistory) {
+        tab.history.splice(tab.historyIdx + 1);
+        tab.history.push(depotUrl);
+        tab.historyIdx = tab.history.length - 1;
+      }
+      renderTabsBar();
+      displayTabContent(tab);
+      if (statusText) statusText.textContent = 'Connected to Tucows 95 Win32 .EXE Shareware Mirror — Click Save .EXE or Run .EXE!';
       return;
     }
 
@@ -949,6 +1016,11 @@ Requirements:
     if (sourceDrawer) sourceDrawer.style.display = 'none';
   });
 
+  exeDepotBtn?.addEventListener('click', () => {
+    bridgeRef?.sfx.playClick();
+    navigateTab('http://www.tucows-95-downloads.com', true, 'ai');
+  });
+
   settingsBtn?.addEventListener('click', () => {
     openMasterSettingsTab('browser');
   });
@@ -962,10 +1034,23 @@ Requirements:
   }
 }
 
-// ==================== ABILITY TO INSTALL & INSTALLSHIELD 95 WIZARD ====================
+// ==================== ABILITY TO INSTALL (DUAL-PATH: .EXE FILES + PHYSICAL OS SETUP) ====================
+export function switchInstallerMode(mode: 'exe' | 'os'): void {
+  currentInstallerMode = mode;
+  document.getElementById('ability-tab-exe')?.classList.toggle('active', mode === 'exe');
+  document.getElementById('ability-tab-os')?.classList.toggle('active', mode === 'os');
+  const paneExe = document.getElementById('ability-pane-exe');
+  const paneOs = document.getElementById('ability-pane-os');
+  if (paneExe) paneExe.style.display = mode === 'exe' ? 'flex' : 'none';
+  if (paneOs) paneOs.style.display = mode === 'os' ? 'flex' : 'none';
+  renderAbilityToInstallUI();
+}
+
 export function openAbilityToInstallCategory(cat: 'all' | 'browser' | 'core' | 'multimedia' | 'system' = 'all') {
   currentInstallerCategory = cat;
+  currentInstallerMode = 'exe';
   bridgeRef?.openApp('abilityToInstall', true).then(() => {
+    switchInstallerMode('exe');
     document.querySelectorAll('.ability-cat-btn').forEach((b) => {
       b.classList.toggle('active', (b as HTMLElement).dataset.cat === cat);
     });
@@ -973,7 +1058,82 @@ export function openAbilityToInstallCategory(cat: 'all' | 'browser' | 'core' | '
   });
 }
 
+function renderPhysicalOsDeckUI(): void {
+  const deck = document.getElementById('ability-physical-os-deck');
+  if (!deck) return;
+
+  const pwa = getPwaHostState();
+  const bootOk = isPrimaryBootable();
+  const cDesc = partitionTable.primaryC.exists
+    ? `${partitionTable.primaryC.sizeMB} MB · ${partitionTable.primaryC.formatted ? partitionTable.primaryC.fileSystem : 'UNFORMATTED'}${partitionTable.primaryC.active ? ' · ACTIVE' : ' · INACTIVE'}`
+    : 'DELETED (UNALLOCATED)';
+  const dDesc =
+    partitionTable.logicalD.exists && systemRegistry.enableSecondaryDriveD
+      ? `${partitionTable.logicalD.sizeMB} MB · ${partitionTable.logicalD.fileSystem} (Mounted)`
+      : 'Unmounted / None';
+
+  deck.innerHTML = `
+    <div class="phys-os-card">
+      <div class="phys-os-card-hdr">🔧 A. Inside Gemini 95 — Bare-Metal Disk &amp; OS Setup</div>
+      <p style="margin:0;line-height:1.4;">
+        Partition &amp; format simulated IDE Fixed Disk 0 with <b>MS-DOS FDISK.EXE</b>, test Master Boot Record (<code>0x55AA</code>) bootability, or run a clean/repair <b>SETUP.EXE</b> OS installation.
+      </p>
+      <div class="phys-os-kv tabular-nums">
+        DISK 0 : QUANTUM FIREBALL 1,995 MB IDE<br/>
+        PRI C: : ${cDesc}<br/>
+        LOG D: : ${dDesc}<br/>
+        MBR    : ${bootOk ? '0x55AA BOOTABLE OK' : '⚠ HALT ON NEXT REBOOT'}
+      </div>
+      <div class="phys-os-actions">
+        <button class="win95-btn" id="phys-btn-fdisk" style="height:27px;font-weight:700;">🔧 Launch MS-DOS FDISK.EXE Partitioner</button>
+        <button class="win95-btn" id="phys-btn-os-setup" style="height:27px;background:#ffffcc;font-weight:700;">💿 Boot CD-ROM OS Installer (SETUP.EXE)</button>
+        <button class="win95-btn" id="phys-btn-drop-os-exe" style="height:25px;">📥 Drop GEMINI95_OS_SETUP.EXE to C:\\Downloads</button>
+      </div>
+    </div>
+
+    <div class="phys-os-card">
+      <div class="phys-os-card-hdr">📲 B. Onto Your Real Device — Native PWA &amp; Bootable .ISO</div>
+      <p style="margin:0;line-height:1.4;">
+        Install Gemini 95 directly onto your real computer or phone as a <b>Standalone Offline-Capable OS App (PWA)</b>, lock hardware fullscreen, or export a real <b>x86 El Torito Bootable .ISO</b>!
+      </p>
+      <div class="phys-os-kv tabular-nums">
+        PWA SHELL  : ${pwa.isInstalledStandalone ? 'INSTALLED (STANDALONE OS)' : pwa.canPromptInstall ? 'READY FOR 1-CLICK INSTALL' : 'BROWSER / IFRAME MODE'}<br/>
+        SW CACHE   : ${pwa.isOffline ? '⚡ OFFLINE CACHE ACTIVE' : 'ONLINE · WORKBOX READY'}<br/>
+        ISO VOLUME : ${(systemRegistry.isoVolumeLabel || 'GEMINI95_OS').toUpperCase()}_BOOTCD.ISO
+      </div>
+      <div class="phys-os-actions">
+        <button class="win95-btn" id="phys-btn-pwa-install" style="height:27px;background:#dcfce7;font-weight:700;">
+          ${pwa.isInstalledStandalone ? '✓ Installed as Native OS (View Info)' : '📲 Install Gemini 95 as Native OS App (PWA)'}
+        </button>
+        <button class="win95-btn" id="phys-btn-fullscreen" style="height:26px;">
+          ${pwa.isFullscreen ? '❐ Exit Fullscreen Hardware Lock' : '⛶ Enter Fullscreen Hardware Lock (F11)'}
+        </button>
+        <button class="win95-btn" id="phys-btn-export-iso" style="height:27px;background:#e0f2fe;font-weight:700;">
+          💿 Download Bootable x86 CD-ROM (.ISO)
+        </button>
+      </div>
+    </div>
+  `;
+
+  deck.querySelector('#phys-btn-fdisk')?.addEventListener('click', () => openFdiskScreen());
+  deck.querySelector('#phys-btn-os-setup')?.addEventListener('click', () => openOsReinstallScreen());
+  deck.querySelector('#phys-btn-drop-os-exe')?.addEventListener('click', () => {
+    const res = dropSetupExeToVfs('os_setup');
+    if (res) {
+      bridgeRef?.showOsDialog(
+        `Saved "${res.fileName}" into ${res.folder}! Double-click it in My Gemtop Explorer or run it in MS-DOS anytime.`,
+        'OS Setup .EXE Created',
+      );
+    }
+  });
+  deck.querySelector('#phys-btn-pwa-install')?.addEventListener('click', () => triggerNativePwaInstall());
+  deck.querySelector('#phys-btn-fullscreen')?.addEventListener('click', () => toggleHardwareFullscreen());
+  deck.querySelector('#phys-btn-export-iso')?.addEventListener('click', () => downloadBootableIsoImage());
+}
+
 export function renderAbilityToInstallUI(): void {
+  renderPhysicalOsDeckUI();
+
   const listEl = document.getElementById('ability-pkg-list');
   const inspectorEl = document.getElementById('ability-pkg-inspector');
   if (!listEl || !inspectorEl) return;
@@ -983,23 +1143,26 @@ export function renderAbilityToInstallUI(): void {
     selectedInstallerPkgId = filtered[0].pkgId;
   }
 
+  const vfsExes = (bridgeRef?.getVfsFiles() || []).filter((f) => f.type === 'installer_exe');
+
   listEl.innerHTML = '';
   filtered.forEach((pkg) => {
     const row = document.createElement('div');
     row.className = `ability-pkg-row${pkg.pkgId === selectedInstallerPkgId ? ' selected' : ''}`;
-    const statusText = pkg.installed ? '● INSTALLED' : '○ NOT INSTALLED';
+    const hasExeOnDisk = vfsExes.some((f) => f.name.toUpperCase() === pkg.setupExeFileName.toUpperCase());
+    const statusText = pkg.installed ? '● INSTALLED' : hasExeOnDisk ? '📦 .EXE ON C:\\' : '○ NOT INSTALLED';
     const statusColor = pkg.installed
       ? pkg.pkgId === selectedInstallerPkgId
         ? '#86efac'
         : '#006600'
       : pkg.pkgId === selectedInstallerPkgId
-        ? '#fca5a5'
+        ? '#fde047'
         : '#884400';
 
     row.innerHTML = `
       <div>
         <b>${pkg.iconHtml} ${pkg.name}</b>
-        <div style="font-size:0.68rem;opacity:0.8;">v${pkg.version} · ${pkg.sizeMB.toFixed(1)} MB · ${pkg.exeName}</div>
+        <div style="font-size:0.67rem;opacity:0.85;">${pkg.setupExeFileName} · ${pkg.sizeMB.toFixed(1)} MB</div>
       </div>
       <span class="ability-pkg-status-tag" style="color:${statusColor}">${statusText}</span>
     `;
@@ -1018,43 +1181,57 @@ export function renderAbilityToInstallUI(): void {
   }
 
   const isDefaultEngine = sel.browserEngine && sel.browserEngine === systemRegistry.defaultBrowserEngine && sel.installed;
+  const targetExeDir = systemRegistry.defaultExeDownloadDir || 'C:\\Downloads';
+  const exeOnDisk = vfsExes.find((f) => f.name.toUpperCase() === sel.setupExeFileName.toUpperCase());
 
   inspectorEl.innerHTML = `
     <div>
-      <div style="font-size:0.95rem;font-weight:700;color:#000080;margin-bottom:4px;">
+      <div style="font-size:0.93rem;font-weight:700;color:#000080;margin-bottom:4px;">
         ${sel.iconHtml} ${sel.name}
       </div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:0.69rem;color:#333;margin-bottom:8px;">
-        Version ${sel.version} · Publisher: ${sel.publisher}<br/>
-        Target Path: <b>${sel.installDir}\\${sel.exeName}</b><br/>
-        Disk Footprint: <b>${sel.sizeMB.toFixed(1)} MB</b> · Status: <b>${sel.installed ? 'Installed on C:\\' : 'Uninstalled (Available on CD-ROM)'}</b>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#333;margin-bottom:6px;line-height:1.4;">
+        Setup Binary: <b>${sel.setupExeFileName}</b> (${sel.sizeMB.toFixed(1)} MB · MZ PE32)<br/>
+        Install Path: <b>${sel.installDir}\\${sel.exeName}</b><br/>
+        .EXE Status : <b>${exeOnDisk ? `Saved in ${exeOnDisk.parent}\\${exeOnDisk.name}` : `Not yet saved to ${targetExeDir}`}</b>
         ${isDefaultEngine ? '<br/><span style="color:#006600;font-weight:bold;">★ Active Default OS Browser Engine</span>' : ''}
       </div>
-      <p style="margin:6px 0;line-height:1.4;">${sel.description}</p>
+      <p style="margin:4px 0 8px 0;line-height:1.38;font-size:0.74rem;">${sel.description}</p>
     </div>
     <div class="ability-inspector-actions">
+      <button class="win95-btn" id="pkg-act-run-exe" style="background:#ffffcc;font-weight:700;">
+        📦 ${exeOnDisk ? 'Run' : 'Drop &amp; Run'} ${sel.setupExeFileName}
+      </button>
+      <button class="win95-btn" id="pkg-act-save-exe">
+        📥 Save .EXE to ${targetExeDir}
+      </button>
       ${
-        !sel.installed
-          ? `<button class="win95-btn" id="pkg-act-install"><b>💿 Install via InstallShield...</b></button>`
-          : `
+        sel.installed
+          ? `
             <button class="win95-btn" id="pkg-act-launch"><b>▶ Launch</b></button>
-            <button class="win95-btn" id="pkg-act-reinstall">🔄 Reinstall / Setup...</button>
             ${
               sel.browserEngine && sel.browserEngine !== systemRegistry.defaultBrowserEngine
-                ? `<button class="win95-btn" id="pkg-act-setdefault">⭐ Set Default Browser</button>`
+                ? `<button class="win95-btn" id="pkg-act-setdefault">⭐ Set Default</button>`
                 : ''
             }
             ${sel.canUninstall ? `<button class="win95-btn" id="pkg-act-uninstall" style="color:#880000;">🗑️ Uninstall</button>` : ''}
           `
+          : ''
       }
     </div>
   `;
 
-  inspectorEl.querySelector('#pkg-act-install')?.addEventListener('click', () => {
-    openInstallShieldWizard(sel, 'install');
+  inspectorEl.querySelector('#pkg-act-run-exe')?.addEventListener('click', () => {
+    const saved = exeOnDisk ? { fileName: exeOnDisk.name, folder: exeOnDisk.parent } : dropSetupExeToVfs(sel.pkgId);
+    executeVfsSetupExe(saved?.fileName || sel.setupExeFileName, sel.pkgId, saved?.folder || targetExeDir);
   });
-  inspectorEl.querySelector('#pkg-act-reinstall')?.addEventListener('click', () => {
-    openInstallShieldWizard(sel, 'reinstall');
+  inspectorEl.querySelector('#pkg-act-save-exe')?.addEventListener('click', () => {
+    const res = dropSetupExeToVfs(sel.pkgId);
+    if (res) {
+      const statusLine = document.getElementById('ability-status-line');
+      if (statusLine) {
+        statusLine.textContent = `Saved ${res.fileName} to ${res.folder}! Click "Open C:\\Downloads" above to run it from Explorer.`;
+      }
+    }
   });
   inspectorEl.querySelector('#pkg-act-launch')?.addEventListener('click', () => {
     if (sel.browserEngine) {
@@ -1341,6 +1518,14 @@ export function openInstallShieldWizard(pkg: SoftwarePackage, mode: 'install' | 
 }
 
 export function initAbilityToInstallApp(windowElement: HTMLDivElement): void {
+  windowElement.querySelectorAll('.ability-mode-tab').forEach((tabBtn) => {
+    tabBtn.addEventListener('click', () => {
+      bridgeRef?.sfx.playClick();
+      const mode = ((tabBtn as HTMLElement).dataset.imode as 'exe' | 'os') || 'exe';
+      switchInstallerMode(mode);
+    });
+  });
+
   windowElement.querySelectorAll('.ability-cat-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       bridgeRef?.sfx.playClick();
@@ -1351,12 +1536,18 @@ export function initAbilityToInstallApp(windowElement: HTMLDivElement): void {
     });
   });
 
-  windowElement.querySelector('#ability-launch-os-setup-btn')?.addEventListener('click', () => {
-    bridgeRef?.sfx.playWindowOpen();
-    openOsReinstallScreen();
+  windowElement.querySelector('#ability-dl-portable-html-btn')?.addEventListener('click', () => {
+    downloadPortableHostApp('html');
+  });
+  windowElement.querySelector('#ability-dl-portable-bat-btn')?.addEventListener('click', () => {
+    downloadPortableHostApp('bat');
+  });
+  windowElement.querySelector('#ability-open-downloads-btn')?.addEventListener('click', () => {
+    bridgeRef?.sfx.playClick();
+    bridgeRef?.openExplorerAt(systemRegistry.defaultExeDownloadDir || 'C:\\Downloads');
   });
 
-  renderAbilityToInstallUI();
+  switchInstallerMode(currentInstallerMode);
 }
 
 // ==================== FULL BLUE-SCREEN OS REINSTALLER (SETUP.EXE) ====================
@@ -1462,6 +1653,9 @@ export function initOsReinstallerController(): void {
         if (systemRegistry.biosBootOrder === 'CDROM_C_A') {
           systemRegistry.biosBootOrder = 'C_A_CDROM';
         }
+
+        // Ensure Primary Partition C:\ & MBR 0x55AA are formatted and bootable after OS Setup!
+        repairBootablePrimaryPartition();
 
         savePackageCatalog(packageCatalog);
         applySystemRegistryToOS();
@@ -2101,8 +2295,57 @@ export function renderMasterSettingsCurrentTab(): void {
     const installedCount = packageCatalog.filter((p) => p.installed).length;
     container.innerHTML = `
       <fieldset class="settings-fieldset">
+        <legend>Dual-Path Installation Policy (.EXE Verifier, FDISK Disk &amp; Host OS PWA / ISO)</legend>
+        <div class="settings-grid-2col">
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Win32 SFX .EXE Header Prompt</span>
+            <input type="checkbox" id="st-exe-sfx" ${r.sfxVerifyPrompt ? 'checked' : ''} />
+          </label>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Auto-Delete .EXE After Install</span>
+            <input type="checkbox" id="st-exe-autodel" ${r.autoDeleteExeAfterInstall ? 'checked' : ''} />
+          </label>
+          <div class="settings-row">
+            <label>Default .EXE Folder:</label>
+            <select id="st-exe-dir" class="win95-select">
+              <option value="C:\\Downloads" ${r.defaultExeDownloadDir === 'C:\\Downloads' ? 'selected' : ''}>C:\\Downloads</option>
+              <option value="C:\\" ${r.defaultExeDownloadDir === 'C:\\' ? 'selected' : ''}>C:\\ (Root)</option>
+              <option value="D:\\Installers" ${r.defaultExeDownloadDir === 'D:\\Installers' ? 'selected' : ''}>D:\\Installers</option>
+            </select>
+          </div>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Auto-Fullscreen Installed PWA</span>
+            <input type="checkbox" id="st-pwa-fs" ${r.autoFullscreenStandalone ? 'checked' : ''} />
+          </label>
+          <div class="settings-row">
+            <label>Primary C:\\ (MB):</label>
+            <input type="range" id="st-c-mb" min="400" max="1995" step="5" value="${r.primaryPartitionSizeMB}" style="width:95px;" />
+            <span id="st-c-mb-v" class="tabular-nums" style="font-size:0.7rem;">${r.primaryPartitionSizeMB}M</span>
+          </div>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Mount Logical Drive D:\\</span>
+            <input type="checkbox" id="st-drv-d" ${r.enableSecondaryDriveD ? 'checked' : ''} />
+          </label>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Strict BIOS MBR 0x55AA Check</span>
+            <input type="checkbox" id="st-strict-mbr" ${r.strictMbrBootCheck ? 'checked' : ''} />
+          </label>
+          <div class="settings-row">
+            <label>Boot .ISO Label:</label>
+            <input type="text" id="st-iso-lbl" class="win95-text-input" value="${r.isoVolumeLabel.replace(/"/g, '')}" style="width:120px;" />
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button class="win95-btn" id="st-act-fdisk">🔧 MS-DOS FDISK.EXE</button>
+          <button class="win95-btn" id="st-act-iso" style="background:#e0f2fe;font-weight:700;">💿 Export Bootable .ISO</button>
+          <button class="win95-btn" id="st-act-portable">💻 Download Portable App (.HTML)</button>
+          <button class="win95-btn" id="st-act-pwa" style="background:#dcfce7;font-weight:700;">📲 Install Native OS (PWA)</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="settings-fieldset">
         <legend>Add/Remove Programs &amp; Full OS Reinstallation (APPWIZ.CPL)</legend>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
           <span style="font-size:0.75rem;"><b>${installedCount} / ${packageCatalog.length}</b> software packages installed on C:\\</span>
           <div style="display:flex;gap:6px;">
             <button class="win95-btn" id="st-sw-open-installer"><b>💿 Open Ability to Install</b></button>
@@ -2110,22 +2353,23 @@ export function renderMasterSettingsCurrentTab(): void {
           </div>
         </div>
         <table class="irq-table">
-          <thead><tr><th>Package</th><th>Category</th><th>Status</th><th>Quick Action</th></tr></thead>
+          <thead><tr><th>Package</th><th>Setup .EXE</th><th>Status</th><th>Quick Action</th></tr></thead>
           <tbody>
             ${packageCatalog
               .map(
                 (p) => `
               <tr>
                 <td><b>${p.iconHtml} ${p.name}</b></td>
-                <td>${p.category.toUpperCase()}</td>
+                <td style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;">${p.setupExeFileName}</td>
                 <td style="color:${p.installed ? '#006600' : '#883300'};font-weight:700;">${p.installed ? 'INSTALLED' : 'UNINSTALLED'}</td>
                 <td>
                   <button class="win95-btn st-quick-pkg-btn" data-pkg="${p.pkgId}" data-act="${p.installed ? 'reinstall' : 'install'}" style="height:19px;font-size:0.67rem;">
                     ${p.installed ? '↻ Reinstall' : '💿 Install'}
                   </button>
+                  <button class="win95-btn st-quick-pkg-btn" data-pkg="${p.pkgId}" data-act="dropexe" style="height:19px;font-size:0.67rem;">📥 .EXE</button>
                   ${
                     p.installed && p.canUninstall
-                      ? `<button class="win95-btn st-quick-pkg-btn" data-pkg="${p.pkgId}" data-act="uninstall" style="height:19px;font-size:0.67rem;color:#880000;">✕ Remove</button>`
+                      ? `<button class="win95-btn st-quick-pkg-btn" data-pkg="${p.pkgId}" data-act="uninstall" style="height:19px;font-size:0.67rem;color:#880000;">✕</button>`
                       : ''
                   }
                 </td>
@@ -2146,6 +2390,28 @@ export function renderMasterSettingsCurrentTab(): void {
       </fieldset>
     `;
 
+    bindCheck('st-exe-sfx', (c) => (r.sfxVerifyPrompt = c));
+    bindCheck('st-exe-autodel', (c) => (r.autoDeleteExeAfterInstall = c));
+    bindSelect('st-exe-dir', (v) => (r.defaultExeDownloadDir = v as any));
+    bindCheck('st-pwa-fs', (c) => (r.autoFullscreenStandalone = c));
+    bindSlider('st-c-mb', 'st-c-mb-v', 'M', (n) => {
+      r.primaryPartitionSizeMB = n;
+      if (partitionTable.primaryC.exists) {
+        partitionTable.primaryC.sizeMB = n;
+      }
+    });
+    bindCheck('st-drv-d', (c) => (r.enableSecondaryDriveD = c));
+    bindCheck('st-strict-mbr', (c) => (r.strictMbrBootCheck = c));
+    container.querySelector('#st-iso-lbl')?.addEventListener('input', (e) => {
+      r.isoVolumeLabel = (e.target as HTMLInputElement).value.trim() || 'GEMINI95_OS';
+      applySystemRegistryToOS();
+    });
+
+    container.querySelector('#st-act-fdisk')?.addEventListener('click', () => openFdiskScreen());
+    container.querySelector('#st-act-iso')?.addEventListener('click', () => downloadBootableIsoImage());
+    container.querySelector('#st-act-portable')?.addEventListener('click', () => downloadPortableHostApp('html'));
+    container.querySelector('#st-act-pwa')?.addEventListener('click', () => triggerNativePwaInstall());
+
     container.querySelector('#st-sw-open-installer')?.addEventListener('click', () => openAbilityToInstallCategory('all'));
     container.querySelector('#st-sw-os-reinstall')?.addEventListener('click', () => openOsReinstallScreen());
     container.querySelectorAll('.st-quick-pkg-btn').forEach((btn) => {
@@ -2154,8 +2420,14 @@ export function renderMasterSettingsCurrentTab(): void {
         const act = (btn as HTMLElement).dataset.act;
         const pkg = packageCatalog.find((x) => x.pkgId === pkgId);
         if (!pkg) return;
-        if (act === 'uninstall') uninstallSoftwarePackage(pkg);
-        else openInstallShieldWizard(pkg, act === 'reinstall' ? 'reinstall' : 'install');
+        if (act === 'dropexe') {
+          const saved = dropSetupExeToVfs(pkg.pkgId);
+          if (saved) bridgeRef?.showOsDialog(`Dropped ${saved.fileName} into ${saved.folder}!`, '.EXE Saved');
+        } else if (act === 'uninstall') {
+          uninstallSoftwarePackage(pkg);
+        } else {
+          openInstallShieldWizard(pkg, act === 'reinstall' ? 'reinstall' : 'install');
+        }
       });
     });
     container.querySelector('#st-export-json-btn')?.addEventListener('click', () => {
