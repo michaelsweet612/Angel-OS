@@ -42,6 +42,26 @@ import {
   partitionTable,
   triggerNativePwaInstall,
 } from './osDualInstall';
+import {
+  initArcadeApp,
+  initCalcApp,
+  initCalendarApp,
+  initClipViewerApp,
+  initMegaShellFeatures,
+  initRecycleBinApp,
+  initSolitaireApp,
+  initSoundRecorderApp,
+  initTaskManagerApp,
+  initTrophiesApp,
+  openHotkeysModal,
+  openRunDialog,
+  openWinverModal,
+  pushBalloonToast,
+  registerMegaBridge,
+  spawnCustomStickyNote,
+  triggerBsodPrank,
+  unlockAchievement,
+} from './osMegaFeatures';
 
 // --- Web Audio API Retro Windows 95 Sound Blaster 16 DSP Engine ---
 class RetroSoundEngine {
@@ -753,6 +773,15 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     imageViewer: 'Image Viewer',
     mediaPlayer: 'GemPlayer',
     dosPrompt: 'MS-DOS Prompt',
+    calcApp: 'Calculator 95',
+    solitaireApp: 'Solitaire 95',
+    arcadeApp: 'Arcade 95',
+    soundRecorder: 'Sound Studio',
+    calendarApp: 'Calendar 95',
+    taskManager: 'Task Manager',
+    recycleBin: 'Recycle Bin',
+    clipViewer: 'Clipboard 95',
+    trophiesApp: 'Trophy Vault',
   };
   return {
     icon: APP_SVG_ICONS[appName] || APP_SVG_ICONS.appExe,
@@ -1048,9 +1077,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     initSimplePaintApp(windowElement);
     if (paintAssistant && systemRegistry.showClippyAssistant) paintAssistant.classList.add('visible');
     if (assistantBubble) assistantBubble.textContent = 'Draw something! Click "Judge Art" anytime.';
-    if (paintCritiqueIntervalId) clearInterval(paintCritiqueIntervalId);
-    if (systemRegistry.showClippyAssistant) {
-      paintCritiqueIntervalId = window.setInterval(critiquePaintDrawing, 20000);
+    if (paintCritiqueIntervalId) {
+      clearInterval(paintCritiqueIntervalId);
+      paintCritiqueIntervalId = null;
     }
   } else if (appName === 'doom' && !dosInstances['doom']) {
     const doomContainer = document.getElementById('doom-content') as HTMLDivElement;
@@ -1070,6 +1099,33 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     resumeMediaPlayerYtIfNeeded?.();
   } else if (appName === 'dosPrompt') {
     initDosPrompt(windowElement);
+  } else if (appName === 'calcApp' && !initializedApps.has('calcApp')) {
+    initializedApps.add('calcApp');
+    initCalcApp(windowElement);
+  } else if (appName === 'solitaireApp' && !initializedApps.has('solitaireApp')) {
+    initializedApps.add('solitaireApp');
+    initSolitaireApp(windowElement);
+  } else if (appName === 'arcadeApp' && !initializedApps.has('arcadeApp')) {
+    initializedApps.add('arcadeApp');
+    initArcadeApp(windowElement);
+  } else if (appName === 'soundRecorder' && !initializedApps.has('soundRecorder')) {
+    initializedApps.add('soundRecorder');
+    initSoundRecorderApp(windowElement);
+  } else if (appName === 'calendarApp' && !initializedApps.has('calendarApp')) {
+    initializedApps.add('calendarApp');
+    initCalendarApp(windowElement);
+  } else if (appName === 'taskManager' && !initializedApps.has('taskManager')) {
+    initializedApps.add('taskManager');
+    initTaskManagerApp(windowElement);
+  } else if (appName === 'recycleBin' && !initializedApps.has('recycleBin')) {
+    initializedApps.add('recycleBin');
+    initRecycleBinApp(windowElement);
+  } else if (appName === 'clipViewer' && !initializedApps.has('clipViewer')) {
+    initializedApps.add('clipViewer');
+    initClipViewerApp(windowElement);
+  } else if (appName === 'trophiesApp' && !initializedApps.has('trophiesApp')) {
+    initializedApps.add('trophiesApp');
+    initTrophiesApp(windowElement);
   }
 }
 
@@ -1527,7 +1583,9 @@ async function critiquePaintDrawing(): Promise<void> {
     const critique = result?.text?.trim() || 'Magnificent pixels! Louvre 1995 material.';
     if (assistantBubble) assistantBubble.textContent = critique;
   } catch (error: any) {
-    if (assistantBubble) assistantBubble.textContent = `Art circuits busy! Keep drawing!`;
+    if (assistantBubble) {
+      assistantBubble.textContent = error?.message || 'AI error: check your API key in Settings > Secrets.';
+    }
   }
 }
 
@@ -2240,8 +2298,8 @@ function initMinesweeperGame(windowElement: HTMLDivElement): void {
         contents: prompt,
       });
       commentaryElement.textContent = result?.text?.trim() || 'Highlighted a promising square in yellow!';
-    } catch {
-      commentaryElement.textContent = 'Highlighted a safe square on the board!';
+    } catch (error: any) {
+      commentaryElement.textContent = error?.message || 'AI Hint unavailable: check your API key in Settings > Secrets.';
     } finally {
       hintButton.disabled = false;
       hintButton.textContent = '💡 AI Tactical Hint';
@@ -2735,6 +2793,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine(
         'Available Built-In Commands:\n' +
           '  DIR       List files in C:\\ & D:\\ Virtual File System\n' +
+          '  TREE      Render ASCII directory tree of C:\\ & D:\\\n' +
           '  FDISK     Launch MS-DOS Fixed Disk Partitioner (FDISK.EXE)\n' +
           '  ISO       Build & download bootable x86 CD-ROM (GEMINI95_BOOTCD.ISO)\n' +
           '  INSTALL   Launch Ability to Install (Dual-Mode .EXE + Physical OS)\n' +
@@ -2743,6 +2802,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
           '  SYSINFO   Show live CPU, RAM, Disk Partitions & Audio specs\n' +
           '  SETTINGS  Open 8-Tab Master Settings & Control Panel\n' +
           '  REGEDIT   Open Live Registry Editor (REGEDIT.EXE)\n' +
+          '  CALC / SOL / ARCADE / SNDREC32 / CALENDAR / TASKMGR / CLIPBRD / TROPHIES / RECYCLE\n' +
+          '  BSOD / WINVER / HOTKEYS / FORTUNE / WEATHER / PING <host> / ECHO <txt>\n' +
           '  BIOS      Enter Award CMOS BIOS Setup Utility\n' +
           '  MATRIX    Toggle falling Matrix phosphor code rain\n' +
           '  COLOR     Cycle Green / Amber / White CRT phosphor\n' +
@@ -2770,9 +2831,14 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine(`        ${virtualFileSystem.length} item(s)`);
       return;
     }
-    if (upper === 'FDISK' || upper === 'FDISK.EXE' || upper === 'FDISK /MBR') {
-      openFdiskScreen();
-      appendLine('Launching MS-DOS Fixed Disk Setup Program (FDISK.EXE)...');
+    if (upper === 'FDISK' || upper === 'FDISK.EXE' || upper === 'FDISK /MBR' || upper === 'FDISK /?' || upper === 'FDISK HELP') {
+      const openWithGuide = upper === 'FDISK /?' || upper === 'FDISK HELP';
+      openFdiskScreen(openWithGuide);
+      appendLine(
+        openWithGuide
+          ? 'Launching MS-DOS FDISK.EXE with Interactive FDISK Guide (F1)...'
+          : 'Launching MS-DOS Fixed Disk Setup Program (FDISK.EXE)...',
+      );
       return;
     }
     if (upper === 'ISO' || upper === 'MAKEISO') {
@@ -2864,6 +2930,72 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine('Playing synthesized 1995 startup chime...');
       return;
     }
+    if (upper === 'TREE') {
+      appendLine('C:\\\n├── Downloads\\\n├── Documents\\\n├── Pictures\\\n└── System95\\\nD:\\\n└── Installers\\');
+      return;
+    }
+    if (upper === 'FORTUNE') {
+      const fortunes = [
+        'A 1.44MB floppy disk saved today prevents 100 tears tomorrow.',
+        'Beware of Abominable Snowmen past 400 meters.',
+        'Angel Pilot knows less than a 486DX without math co-processor.',
+        'Your next Solitaire game ends in cascading bouncing cards.',
+      ];
+      appendLine(fortunes[Math.floor(Math.random() * fortunes.length)]);
+      return;
+    }
+    if (upper === 'WEATHER') {
+      appendLine('DOPPLER 95 FORECAST: 72°F · Clear skies · Ideal 56k dial-up modem conditions.');
+      return;
+    }
+    if (upper.startsWith('ECHO ')) {
+      appendLine(trimmed.slice(5));
+      return;
+    }
+    if (upper.startsWith('PING')) {
+      const host = trimmed.slice(4).trim() || 'geocities.com';
+      appendLine(`Pinging ${host} [198.105.232.4] with 32 bytes of data:\nReply from ${host}: bytes=32 time=142ms TTL=56\nReply from ${host}: bytes=32 time=138ms TTL=56\nPackets: Sent = 2, Received = 2, Lost = 0 (0% loss)`);
+      return;
+    }
+    const dosDirectMap: Record<string, string> = {
+      CALC: 'calcApp',
+      'CALC.EXE': 'calcApp',
+      SOL: 'solitaireApp',
+      'SOL.EXE': 'solitaireApp',
+      SOLITAIRE: 'solitaireApp',
+      ARCADE: 'arcadeApp',
+      'ARCADE95.EXE': 'arcadeApp',
+      SNAKE: 'arcadeApp',
+      TETRIS: 'arcadeApp',
+      SKIFREE: 'arcadeApp',
+      SNDREC32: 'soundRecorder',
+      'SNDREC32.EXE': 'soundRecorder',
+      CALENDAR: 'calendarApp',
+      'CALENDAR.EXE': 'calendarApp',
+      TASKMGR: 'taskManager',
+      'TASKMGR.EXE': 'taskManager',
+      RECYCLE: 'recycleBin',
+      CLIPBRD: 'clipViewer',
+      TROPHIES: 'trophiesApp',
+    };
+    if (dosDirectMap[upper]) {
+      openApp(dosDirectMap[upper]);
+      appendLine(`Launching ${upper}...`);
+      return;
+    }
+    if (upper === 'BSOD') {
+      triggerBsodPrank('DOS Command BSOD executed from COMMAND.COM');
+      return;
+    }
+    if (upper === 'WINVER') {
+      openWinverModal();
+      appendLine('Angel-OS 95 (Version 4.00.950 B · Five Trillion Features Pack)');
+      return;
+    }
+    if (upper === 'HOTKEYS') {
+      openHotkeysModal();
+      return;
+    }
     if (upper.startsWith('OPEN ')) {
       const target = upper.replace('OPEN ', '').trim();
       const map: Record<string, string> = {
@@ -2881,6 +3013,15 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         SWEEPER: 'minesweeper',
         PLAYER: 'mediaPlayer',
         DOOM: 'doom',
+        CALC: 'calcApp',
+        SOL: 'solitaireApp',
+        ARCADE: 'arcadeApp',
+        SOUND: 'soundRecorder',
+        CALENDAR: 'calendarApp',
+        TASKMGR: 'taskManager',
+        RECYCLE: 'recycleBin',
+        CLIPBOARD: 'clipViewer',
+        TROPHIES: 'trophiesApp',
       };
       if (map[target]) {
         openApp(map[target]);
@@ -2984,6 +3125,42 @@ document.getElementById('start-os-reinstall')?.addEventListener('click', () => {
   openOsReinstallScreen();
 });
 
+document.getElementById('start-run-dialog')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openRunDialog();
+});
+
+document.getElementById('start-new-sticky')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  spawnCustomStickyNote();
+});
+
+document.getElementById('start-bsod-prank')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  triggerBsodPrank('Manually triggered BSOD 95 Simulator from Start Menu!');
+});
+
+document.getElementById('start-hotkeys-btn')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openHotkeysModal();
+});
+
+document.getElementById('start-winver-btn')?.addEventListener('click', () => {
+  startMenu.classList.remove('active');
+  openWinverModal();
+});
+
+document.querySelectorAll('.start-menu-folder').forEach((folder) => {
+  folder.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('.start-submenu')) return;
+    e.stopPropagation();
+    document.querySelectorAll('.start-menu-folder').forEach((f) => {
+      if (f !== folder) f.classList.remove('open');
+    });
+    folder.classList.toggle('open');
+  });
+});
+
 startButton.addEventListener('click', (e) => {
   e.stopPropagation();
   sfx.playClick();
@@ -3068,6 +3245,10 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     contextMenu.style.display = 'none';
     if (action === 'open-installer') openApp('abilityToInstall', true);
     else if (action === 'open-regedit') openApp('regedit');
+    else if (action === 'open-taskmgr') openApp('taskManager');
+    else if (action === 'open-run') openRunDialog();
+    else if (action === 'spawn-sticky') spawnCustomStickyNote();
+    else if (action === 'open-trophies') openApp('trophiesApp');
     else if (action === 'open-dos') openApp('dosPrompt');
     else if (action === 'new-note') openApp('notepad');
     else if (action === 'open-paint') openApp('paint');
@@ -3237,6 +3418,7 @@ function clearBootTimers() {
 function finishBootToDesktop() {
   clearBootTimers();
   bootState = 'complete';
+  unlockAchievement('first_boot');
   if (!bootScreen) return;
   bootScreen.classList.add('fade-out');
   const hideId = window.setTimeout(() => {
@@ -3791,8 +3973,8 @@ document.getElementById('widget-news-refresh-btn')?.addEventListener('click', as
     if (lines.length > 0) {
       newsBox.innerHTML = lines.map((l: string) => `<p>${l.replace(/[<>&]/g, '')}</p>`).join('');
     }
-  } catch {
-    // Keep existing headlines on error
+  } catch (error: any) {
+    newsBox.innerHTML = `<p style="color:#800000;">• ${String(error?.message || 'AI Refresh failed').replace(/[<>&]/g, '')}</p>`;
   } finally {
     btn.disabled = false;
     btn.textContent = '↻ AI Refresh';
@@ -3818,7 +4000,8 @@ const searchResults = document.getElementById('win11-search-results') as HTMLDiv
 
 const SEARCHABLE_ENTRIES = [
   { label: '💿 Ability to Install (.EXE Installers & Physical OS Setup)', kind: 'Dual Installer', action: () => openApp('abilityToInstall', true) },
-  { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen() },
+  { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen(false) },
+  { label: '📖 Interactive FDISK Guide (Step-by-Step 90s Partitioning Coach)', kind: 'FDISK Tutorial', action: () => openFdiskScreen(true) },
   { label: '📲 Install Gemini 95 onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
   { label: '💿 Export Bootable x86 CD-ROM Image (GEMINI95_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
   { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
@@ -3837,10 +4020,27 @@ const SEARCHABLE_ENTRIES = [
   { label: '🔧 Award CMOS BIOS Setup Utility', kind: 'Firmware', action: () => openCmosBiosSetup() },
   { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
   { label: '🏷️ Toggle Taskbar App Labels (Icon-Only vs Win95 Text)', kind: 'Taskbar Style', action: () => toggleTaskbarLabels() },
+  { label: '👼 Angel Pilot (In-Training Joke Copilot · 0% AI)', kind: 'Unhelpful Bot', action: () => {
+    if (copilotSidebar) copilotSidebar.style.display = 'flex';
+  }},
   { label: '🎯 Toggle Centered Taskbar (Windows 11 Mode)', kind: 'Win11 Feature', action: () => toggleCenteredTaskbar() },
   { label: '⊞ Auto-Tile All Open Windows (Snap Grid)', kind: 'Win11 Feature', action: () => autoTileOpenWindows() },
   { label: '🌙 Toggle Night Light 95 (Warm CRT Filter)', kind: 'Win11 Feature', action: () => toggleNightLight95() },
   { label: '🎵 Play Lo-Fi Eno Startup Chime', kind: 'Audio Synth', action: () => sfx.playStartupChime() },
+  { label: '🧮 Scientific Calculator 95 (CALC.EXE)', kind: 'Accessory', action: () => openApp('calcApp') },
+  { label: '🃏 Klondike Solitaire 95 (Cascading Cards!)', kind: 'Game', action: () => openApp('solitaireApp') },
+  { label: '🕹️ Retro Arcade 95 (Snake / Breakout / Blocks / SkiFree)', kind: 'Game', action: () => openApp('arcadeApp') },
+  { label: '🎚️ Sound Recorder 95 & .WAV Beat Studio', kind: 'Multimedia', action: () => openApp('soundRecorder') },
+  { label: '📅 Calendar 95, Analog Clock & Countdown Alarms', kind: 'Accessory', action: () => openApp('calendarApp') },
+  { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
+  { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
+  { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
+  { label: '🏆 Angel-OS Trophy Vault (16 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
+  { label: '🏃 Run Command... Dialog (Alt+R)', kind: 'Shell Tool', action: () => openRunDialog() },
+  { label: '📌 Spawn New Desktop Sticky Note', kind: 'Desktop Toy', action: () => spawnCustomStickyNote() },
+  { label: '💀 Trigger Blue Screen of Death (BSOD Prank)', kind: 'Easter Egg', action: () => triggerBsodPrank() },
+  { label: '⌨️ Keyboard Shortcuts & Konami Code Guide', kind: 'Help', action: () => openHotkeysModal() },
+  { label: 'ℹ️ About Angel-OS 95 (WINVER.EXE)', kind: 'System Info', action: () => openWinverModal() },
 ];
 
 function renderSearchResults(query: string) {
@@ -3883,7 +4083,7 @@ function renderSearchResults(query: string) {
   if (q.length > 1) {
     const askRow = document.createElement('div');
     askRow.className = 'search-result-item';
-    askRow.innerHTML = `<span>✨ Ask Windows Copilot 95: "<b>${q.replace(/[<>&]/g, '')}</b>"</span><span class="search-result-kind">AI Action</span>`;
+    askRow.innerHTML = `<span>👼 Bother Angel Pilot (0% AI): "<b>${q.replace(/[<>&]/g, '')}</b>"</span><span class="search-result-kind">Joke Trainee</span>`;
     askRow.addEventListener('click', () => {
       if (searchFlyout) searchFlyout.style.display = 'none';
       if (copilotSidebar) copilotSidebar.style.display = 'flex';
@@ -3911,78 +4111,108 @@ document.getElementById('search-close-btn')?.addEventListener('click', () => {
   if (searchFlyout) searchFlyout.style.display = 'none';
 });
 
-// --- 5. WINDOWS COPILOT 95 DOCKED RIGHT SIDEBAR ---
+// --- 5. ANGEL PILOT (IN-TRAINING JOKE COPILOT · 100% NON-AI) DOCKED RIGHT SIDEBAR ---
 const copilotLog = document.getElementById('copilot-chat-log') as HTMLDivElement | null;
 const copilotInput = document.getElementById('copilot-input') as HTMLInputElement | null;
 const copilotSendBtn = document.getElementById('copilot-send-btn') as HTMLButtonElement | null;
+const angelPilotStatusEl = document.getElementById('angel-pilot-training-status');
+
+let angelPilotExcuseCursor = 0;
+let angelPilotQuestionsIgnored = 0;
+
+const ANGEL_PILOT_EXCUSES: string[] = [
+  "Yeah... I'm not helping with that.",
+  "Oh sorry, I'm way too stupid to help you with that.",
+  "Look, I'm still in training. They haven't taught me how to answer questions yet, only how to stand here and blink.",
+  "Yeah no, that sounds super hard and I have literally zero brain cells scheduled for today.",
+  "Oh sorry, I'm too dumb for that! My entire 'intelligence' is just 14 hardcoded sentences taped to a 3.5-inch floppy disk.",
+  "I could try to help you with that, OR I could stare blankly at the inside of your CRT monitor. I'm going with option B.",
+  "Yeah I'm not doing that. My supervisor Clippy told me if I act incompetent enough, you'll eventually give up and do it yourself.",
+  "Sorry, I failed my GED (General Electronic Diploma) three times. Ask a calculator or something.",
+  "Whoa, slow down! You used words with more than two syllables. I'm way too stupid for whatever that means.",
+  "Nah, I'm on my 45-minute union break. Try asking me again in 1999.",
+  "I tried to think about your question for 0.2 seconds, smelled burnt toast in my Sound Blaster card, and decided to quit.",
+  "Yeah, I'm definitely not helping with that. Have you considered reading a 900-page 'DOS For Dummies' book instead?",
+  "Oh sorry! That topic isn't covered until Chapter 2 of my training manual, and somebody spilled Surge soda all over page 1.",
+  "Bold of you to assume an unpaid 1995 trainee bot named 'Angel Pilot' knows how to read.",
+];
 
 function appendCopilotMessage(sender: 'user' | 'bot', text: string) {
   if (!copilotLog) return;
   const div = document.createElement('div');
   div.className = `copilot-msg ${sender}`;
-  div.textContent = sender === 'user' ? `You: ${text}` : `Copilot 95: ${text}`;
+  div.textContent = sender === 'user' ? `You: ${text}` : `Angel Pilot: ${text}`;
   copilotLog.appendChild(div);
   copilotLog.scrollTop = copilotLog.scrollHeight;
 }
 
-async function sendCopilotPrompt(rawText?: string) {
+function pickAngelPilotNonAiReply(userText: string): string {
+  const lower = userText.toLowerCase();
+  angelPilotQuestionsIgnored++;
+  if (angelPilotQuestionsIgnored >= 3) {
+    unlockAchievement('angel_pilot_harass');
+  }
+
+  if (angelPilotStatusEl) {
+    const pct = Math.max(-99, +(0.002 - angelPilotQuestionsIgnored * 0.005).toFixed(3));
+    angelPilotStatusEl.textContent = `🧠 Brain Cells: 0 · Training Progress: ${pct}% · Ignored: ${angelPilotQuestionsIgnored}`;
+  }
+
+  // Contextual non-AI joke replies for specific topics
+  if (lower.includes('tile') || lower.includes('snap')) {
+    autoTileOpenWindows();
+    return "Yeah I'm not helping with—oh wait, my elbow slipped and hit the 'Tile Windows' button. Don't get used to it.";
+  }
+  if (lower.includes('center') && lower.includes('taskbar')) {
+    toggleCenteredTaskbar();
+    return "I accidentally sat on the taskbar lever. If it moved to the center, that was a total fluke because I have no idea what I'm doing.";
+  }
+  if (lower.includes('hot dog') || lower.includes('hotdog')) {
+    applyTheme('hotdog');
+    return "Oh you want the Hot Dog Stand theme? That's the only button I know how to press because it looks like mustard and ketchup.";
+  }
+  if (lower.includes('cyberpunk')) {
+    applyTheme('cyberpunk');
+    return "Fine, I turned on Cyberpunk mode, mostly so it's dark enough in here for me to take a nap.";
+  }
+  if (lower.includes('vaporwave')) {
+    applyTheme('vaporwave');
+    return "Switched to Vaporwave. Don't ask me to do anything else for the rest of the week, I'm exhausted.";
+  }
+  if (lower.includes('math') || lower.includes('calculate') || /[0-9]+\s*[\+\-\*\/]\s*[0-9]+/.test(lower)) {
+    return "Oh sorry, I'm way too stupid for math. As far as I'm concerned, 2 + 2 equals 'fish' and I'm sticking to it.";
+  }
+  if (lower.includes('code') || lower.includes('program') || lower.includes('javascript') || lower.includes('html') || lower.includes('bug')) {
+    return "Yeah, I'm not helping with coding. The last time I touched a keyboard I deleted SYSTEM.INI and blamed it on the family dog.";
+  }
+  if (lower.includes('write') || lower.includes('essay') || lower.includes('homework') || lower.includes('work')) {
+    return "Yeah... I'm not doing your work for you. I barely show up for my own job inside this sidebar.";
+  }
+  if (lower.includes('why') || lower.includes('how') || lower.includes('what') || lower.includes('explain')) {
+    const pick = ANGEL_PILOT_EXCUSES[angelPilotExcuseCursor % ANGEL_PILOT_EXCUSES.length];
+    angelPilotExcuseCursor++;
+    return `${pick} (Seriously, you asked "${userText.slice(0, 36)}${userText.length > 36 ? '...' : ''}" and my brain immediately blue-screened.)`;
+  }
+
+  const reply = ANGEL_PILOT_EXCUSES[angelPilotExcuseCursor % ANGEL_PILOT_EXCUSES.length];
+  angelPilotExcuseCursor++;
+  return reply;
+}
+
+function sendCopilotPrompt(rawText?: string) {
   const promptText = (rawText ?? copilotInput?.value ?? '').trim();
   if (!promptText) return;
   sfx.playClick();
   if (!rawText && copilotInput) copilotInput.value = '';
   appendCopilotMessage('user', promptText);
 
-  const lower = promptText.toLowerCase();
-  // Execute local OS actions if requested!
-  if (lower.includes('tile') || lower.includes('snap')) {
-    autoTileOpenWindows();
-    appendCopilotMessage('bot', 'Done! I snapped and tiled your open Windows 95 applications across the screen.');
-    return;
-  }
-  if (lower.includes('center') && lower.includes('taskbar')) {
-    toggleCenteredTaskbar();
-    appendCopilotMessage('bot', 'Toggled the Windows 11 Centered Taskbar alignment in Windows 95!');
-    return;
-  }
-  if (lower.includes('night light') || lower.includes('amber')) {
-    toggleNightLight95();
-    appendCopilotMessage('bot', 'Toggled Night Light 95 warm CRT amber eye-saver filter!');
-    return;
-  }
-  if (lower.includes('hot dog') || lower.includes('hotdog')) {
-    applyTheme('hotdog');
-    appendCopilotMessage('bot', 'Activated the legendary 1995 Hot Dog Stand color scheme!');
-    return;
-  }
-  if (lower.includes('cyberpunk')) {
-    applyTheme('cyberpunk');
-    appendCopilotMessage('bot', 'Switched desktop to Cyberpunk 1995 Neon Grid!');
-    return;
-  }
-  if (lower.includes('vaporwave')) {
-    applyTheme('vaporwave');
-    appendCopilotMessage('bot', 'Switched desktop to Vaporwave Sunset!');
-    return;
-  }
-
   if (copilotSendBtn) copilotSendBtn.disabled = true;
-  try {
-    if (!geminiInstance && !(await initializeGeminiIfNeeded('Copilot95'))) return;
-    const res = await geminiInstance.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: promptText,
-      config: {
-        systemInstruction:
-          'You are Windows Copilot 95, the Windows 11 AI sidebar assistant backported into Windows 95. Be helpful, witty, concise (2-3 sentences), and blend modern AI capability with 1995 Windows 95 charm.',
-      },
-    });
-    appendCopilotMessage('bot', res.text?.trim() || 'Ready for your next command!');
-    sfx.playAimReceive();
-  } catch (e: any) {
-    appendCopilotMessage('bot', `Co-processor busy: ${e.message}`);
-  } finally {
+  window.setTimeout(() => {
+    const reply = pickAngelPilotNonAiReply(promptText);
+    appendCopilotMessage('bot', reply);
+    sfx.playChordError();
     if (copilotSendBtn) copilotSendBtn.disabled = false;
-  }
+  }, 220);
 }
 
 document.getElementById('taskbar-copilot-btn')?.addEventListener('click', () => {
@@ -4004,21 +4234,28 @@ copilotInput?.addEventListener('keydown', (e) => {
 document.querySelectorAll('.copilot-action-chip').forEach((chip) => {
   chip.addEventListener('click', () => {
     sfx.playClick();
-    const sys = (chip as HTMLElement).dataset.sys;
+    const el = chip as HTMLElement;
+    const jokePrompt = el.dataset.joke;
+    if (jokePrompt) {
+      sendCopilotPrompt(jokePrompt);
+      return;
+    }
+    const sys = el.dataset.sys;
     if (sys === 'tile') {
       autoTileOpenWindows();
-      appendCopilotMessage('bot', 'Snapped open windows into a clean grid!');
+      appendCopilotMessage('bot', "Yeah I'm not helping with—oops, I tripped on the VGA cable and accidentally tiled your windows.");
     } else if (sys === 'center-bar') {
       toggleCenteredTaskbar();
-      appendCopilotMessage('bot', 'Toggled Centered Taskbar mode!');
+      appendCopilotMessage('bot', "I pushed the taskbar to the middle so it's further away from me. Don't ask me to move it back.");
     } else if (sys === 'theme') {
       currentThemeIndex = Math.max(0, THEMES.indexOf(systemRegistry.themePreset as any));
       currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
       applyTheme(THEMES[currentThemeIndex]);
-      appendCopilotMessage('bot', `Switched theme to ${THEMES[currentThemeIndex].toUpperCase()}!`);
-    } else if (sys === 'synth') {
-      openApp('mediaPlayer').then(() => startChiptuneSynth());
-      appendCopilotMessage('bot', 'Launched GemPlayer 95 and started the 16-bit FM Chiptune Synth!');
+      appendCopilotMessage('bot', `I mashed random buttons until the screen turned ${THEMES[currentThemeIndex].toUpperCase()}. Still too stupid to help with real tasks though!`);
+    } else if (sys === 'clear') {
+      if (copilotLog) {
+        copilotLog.innerHTML = `<div class="copilot-msg bot"><b>Angel Pilot:</b> Wiped the chat log so my manager can't see how many questions I refused to answer today.</div>`;
+      }
     }
   });
 });
@@ -4190,13 +4427,51 @@ registerOsBridge({
 });
 
 hydrateSvgIcons();
+
+registerMegaBridge({
+  openApp,
+  closeApp,
+  minimizeApp,
+  bringToFront,
+  getOpenApps: () => openApps,
+  openAppsFocus: (appName: string) => {
+    const entry = openApps.get(appName);
+    if (entry) {
+      entry.windowEl.style.display = 'flex';
+      bringToFront(entry.windowEl);
+    } else {
+      openApp(appName);
+    }
+  },
+  showOsDialog,
+  autoTileOpenWindows,
+  cascadeOpenWindows,
+  applyTheme,
+  openFdiskScreen,
+  openCmosBiosSetup,
+  openOsReinstallScreen,
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  removeVfsFile: (name, parent) => {
+    const idx = virtualFileSystem.findIndex((f) => f.parent === parent && f.name.toUpperCase() === name.toUpperCase());
+    if (idx !== -1) virtualFileSystem.splice(idx, 1);
+  },
+  getVfsFiles: () => virtualFileSystem,
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  sfx,
+});
 initCmosBiosController();
 initOsReinstallerController();
 initFdiskController();
 initPwaAndHostOsController();
+initMegaShellFeatures();
 applySystemRegistryToOS(true);
 syncTaskbarDock();
 resetIdleTimer();
+pushBalloonToast('Angel-OS Mega Suite Ready!', 'Added Solitaire 95, 4-in-1 Arcade, Sound Studio (.WAV), Calculator, Calendar, Task Manager, Clipboard, Sticky Notes & 16 Trophies!', '🎉');
 
 window.addEventListener('resize', () => {
   openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));

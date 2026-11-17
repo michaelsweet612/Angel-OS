@@ -1481,10 +1481,27 @@ Requirements:
       if (statusText) statusText.textContent = `Document: Done (${domain} · ${htmlContent.length} bytes)`;
     } catch (err: any) {
       const msg = escapeHtml(String(err?.message || 'Connection failed'));
-      tab.cachedHtml = `<html><body style="font-family:monospace;background:#c0c0c0;padding:20px;"><h2>Browser Connection Error</h2><p>${msg}</p></body></html>`;
+      const safeDomain = escapeHtml(domain);
+      tab.cachedHtml = `<!DOCTYPE html><html><body style="font-family:'MS Sans Serif',Tahoma,sans-serif;background:#008080;padding:24px;color:#000;">
+        <div style="max-width:480px;margin:20px auto;background:#c0c0c0;border:2px outset #fff;box-shadow:4px 4px 0 #000;padding:3px;">
+          <div style="background:#000080;color:#fff;font-weight:bold;padding:4px 8px;font-size:12px;">
+            ⚠️ ${escapeHtml(getBrowserEngineMeta(systemRegistry.defaultBrowserEngine).fullTitle)} — AI Synthesis Error
+          </div>
+          <div style="padding:14px;font-size:12px;line-height:1.5;">
+            <p style="margin:0 0 10px 0;"><b>Could not synthesize "${safeDomain}" via Gemini API:</b></p>
+            <div style="background:#fff;border:2px inset #808080;padding:8px;font-family:monospace;font-size:11px;color:#800000;margin-bottom:12px;">
+              ${msg}
+            </div>
+            <p style="margin:0 0 8px 0;color:#222;">
+              • To use AI Web Synthesis, please check or select a billing-enabled Gemini API key in the <b>Settings &gt; Secrets</b> panel.<br>
+              • You can also switch the browser toolbar above to <b>🌐 Live Web</b> mode or return to <a href="chrome://newtab">chrome://newtab</a>.
+            </p>
+          </div>
+        </div>
+      </body></html>`;
       iframe.removeAttribute('src');
       iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
-      if (statusText) statusText.textContent = 'Error loading document.';
+      if (statusText) statusText.textContent = 'AI synthesis error — check Settings > Secrets API key.';
     } finally {
       loadingEl.style.display = 'none';
     }
@@ -1782,6 +1799,7 @@ function renderPhysicalOsDeckUI(): void {
       </div>
       <div class="phys-os-actions">
         <button class="win95-btn" id="phys-btn-fdisk" style="height:27px;font-weight:700;">🔧 Launch MS-DOS FDISK.EXE Partitioner</button>
+        <button class="win95-btn" id="phys-btn-fdisk-guide" style="height:26px;background:#e0f2fe;font-weight:700;">📖 Interactive FDISK Guide (Step-by-Step)</button>
         <button class="win95-btn" id="phys-btn-os-setup" style="height:27px;background:#ffffcc;font-weight:700;">💿 Boot CD-ROM OS Installer (SETUP.EXE)</button>
         <button class="win95-btn" id="phys-btn-drop-os-exe" style="height:25px;">📥 Drop GEMINI95_OS_SETUP.EXE to C:\\Downloads</button>
       </div>
@@ -1811,7 +1829,8 @@ function renderPhysicalOsDeckUI(): void {
     </div>
   `;
 
-  deck.querySelector('#phys-btn-fdisk')?.addEventListener('click', () => openFdiskScreen());
+  deck.querySelector('#phys-btn-fdisk')?.addEventListener('click', () => openFdiskScreen(false));
+  deck.querySelector('#phys-btn-fdisk-guide')?.addEventListener('click', () => openFdiskScreen(true));
   deck.querySelector('#phys-btn-os-setup')?.addEventListener('click', () => openOsReinstallScreen());
   deck.querySelector('#phys-btn-drop-os-exe')?.addEventListener('click', () => {
     const res = dropSetupExeToVfs('os_setup');

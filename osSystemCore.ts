@@ -528,6 +528,33 @@ export const APP_SVG_ICONS: Record<string, string> = {
   samplePhoto: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="60%" stop-color="#312e81"/><stop offset="100%" stop-color="#db2777"/></linearGradient></defs><rect width="320" height="220" fill="url(#sky)"/><circle cx="160" cy="118" r="44" fill="#facc15"/><rect y="140" width="320" height="80" fill="#1e1b4b"/><path d="M0 160 L320 160 M0 185 L320 185 M160 140 L40 220 M160 140 L160 220 M160 140 L280 220" stroke="#22d3ee" stroke-width="1.5" opacity="0.7"/><text x="160" y="34" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="16" fill="#ffffff">GEMINI 95 ARCHIVE PHOTO</text><text x="160" y="206" text-anchor="middle" font-family="monospace" font-size="12" fill="#a5f3fc">REDMOND · CLASS OF 1995</text></svg>',
   ),
+  calcApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="10" y="6" width="44" height="52" rx="3" fill="#1e3a8a" stroke="#000" stroke-width="2"/><rect x="16" y="12" width="32" height="12" fill="#c8dec8" stroke="#000" stroke-width="1.5"/><rect x="16" y="28" width="8" height="7" fill="#e2e8f0"/><rect x="28" y="28" width="8" height="7" fill="#e2e8f0"/><rect x="40" y="28" width="8" height="7" fill="#93c5fd"/><rect x="16" y="38" width="8" height="7" fill="#e2e8f0"/><rect x="28" y="38" width="8" height="7" fill="#e2e8f0"/><rect x="40" y="38" width="8" height="17" fill="#facc15"/><rect x="16" y="48" width="20" height="7" fill="#e2e8f0"/></svg>',
+  ),
+  solitaireApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="12" width="30" height="42" rx="3" fill="#065f46" stroke="#000" stroke-width="2"/><rect x="24" y="8" width="32" height="44" rx="3" fill="#ffffff" stroke="#000" stroke-width="2"/><path d="M40 20 L31 32 L40 44 L49 32 Z" fill="#dc2626"/><text x="27" y="19" font-family="monospace" font-weight="bold" font-size="10" fill="#dc2626">A</text></svg>',
+  ),
+  arcadeApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="8" width="48" height="48" rx="6" fill="#7c2d12" stroke="#000" stroke-width="2"/><rect x="14" y="14" width="36" height="22" fill="#020617" stroke="#f97316" stroke-width="1.5"/><rect x="20" y="20" width="8" height="4" fill="#22d3ee"/><rect x="34" y="26" width="8" height="4" fill="#facc15"/><circle cx="23" cy="46" r="5" fill="#e2e8f0" stroke="#000" stroke-width="1.5"/><circle cx="42" cy="46" r="4" fill="#ef4444"/><circle cx="50" cy="43" r="3" fill="#22c55e"/></svg>',
+  ),
+  soundRecorder: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="10" width="48" height="44" rx="4" fill="#312e81" stroke="#000" stroke-width="2"/><rect x="13" y="16" width="38" height="22" fill="#001400" stroke="#808080" stroke-width="1.5"/><polyline points="15,27 21,27 25,19 30,35 35,21 40,32 45,27 49,27" fill="none" stroke="#00ff66" stroke-width="2.5"/><circle cx="22" cy="45" r="4.5" fill="#ef4444"/><polygon points="34,40 46,45 34,50" fill="#e2e8f0"/></svg>',
+  ),
+  calendarApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="12" width="48" height="44" rx="3" fill="#ffffff" stroke="#000" stroke-width="2"/><rect x="8" y="12" width="48" height="13" fill="#b91c1c" stroke="#000" stroke-width="2"/><rect x="18" y="7" width="5" height="9" fill="#334155"/><rect x="41" y="7" width="5" height="9" fill="#334155"/><text x="32" y="48" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="22" fill="#0f172a">95</text></svg>',
+  ),
+  taskManager: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="8" y="10" width="48" height="44" rx="2" fill="#0f172a" stroke="#000" stroke-width="2"/><polyline points="13,38 22,38 27,20 33,44 39,26 45,34 51,34" fill="none" stroke="#38bdf8" stroke-width="3.2" stroke-linejoin="round"/><rect x="13" y="14" width="38" height="3" fill="#475569"/></svg>',
+  ),
+  recycleBin: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="14" y="16" width="36" height="5" fill="#94a3b8" stroke="#000" stroke-width="2"/><rect x="24" y="10" width="16" height="6" fill="#cbd5e1" stroke="#000" stroke-width="2"/><polygon points="17,21 47,21 43,54 21,54" fill="#cbd5e1" stroke="#000" stroke-width="2"/><line x1="25" y1="27" x2="26" y2="48" stroke="#475569" stroke-width="2.5"/><line x1="32" y1="27" x2="32" y2="48" stroke="#475569" stroke-width="2.5"/><line x1="39" y1="27" x2="38" y2="48" stroke="#475569" stroke-width="2.5"/></svg>',
+  ),
+  clipViewer: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="14" y="12" width="36" height="44" rx="2" fill="#0369a1" stroke="#000" stroke-width="2"/><rect x="22" y="8" width="20" height="8" rx="2" fill="#facc15" stroke="#000" stroke-width="1.5"/><rect x="19" y="20" width="26" height="30" fill="#ffffff"/><line x1="23" y1="27" x2="41" y2="27" stroke="#334155" stroke-width="2.5"/><line x1="23" y1="35" x2="41" y2="35" stroke="#334155" stroke-width="2.5"/><line x1="23" y1="43" x2="35" y2="43" stroke="#334155" stroke-width="2.5"/></svg>',
+  ),
+  trophiesApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M18 12 H46 V26 C46 36 39 42 32 42 C25 42 18 36 18 26 Z" fill="#eab308" stroke="#000" stroke-width="2"/><path d="M18 16 H11 C11 26 14 30 19 30" fill="none" stroke="#ca8a04" stroke-width="3"/><path d="M46 16 H53 C53 26 50 30 45 30" fill="none" stroke="#ca8a04" stroke-width="3"/><rect x="28" y="42" width="8" height="8" fill="#ca8a04" stroke="#000" stroke-width="1.5"/><rect x="20" y="50" width="24" height="6" fill="#854d0e" stroke="#000" stroke-width="2"/></svg>',
+  ),
 };
 
 const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v3';

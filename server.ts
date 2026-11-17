@@ -144,6 +144,49 @@ function normalizeMessage(msg: any): any {
   return msg;
 }
 
+function formatGeminiError(error: any): {status: number; message: string} {
+  const rawMessage = String(error?.message || error || 'Gemini API request failed');
+  let status = Number(error?.status) || 500;
+  let parsedMessage = rawMessage;
+
+  try {
+    const jsonMatch = rawMessage.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed?.error?.code) {
+        status = Number(parsed.error.code) || status;
+      }
+      if (parsed?.error?.message) {
+        parsedMessage = String(parsed.error.message);
+      }
+    }
+  } catch {
+    // Keep original message string if not JSON
+  }
+
+  if (
+    status === 403 ||
+    status === 400 ||
+    rawMessage.includes('PERMISSION_DENIED') ||
+    rawMessage.includes('API_KEY_INVALID') ||
+    rawMessage.includes('free tier is not available')
+  ) {
+    return {
+      status: status === 500 ? 403 : status,
+      message: `${parsedMessage} Please check or select a valid billing-enabled API key in the AI Studio Settings > Secrets panel.`,
+    };
+  }
+
+  if (status === 429 || rawMessage.includes('RESOURCE_EXHAUSTED')) {
+    return {
+      status: 429,
+      message: `${parsedMessage} Quota exceeded—please check or upgrade your API key in the Settings > Secrets panel.`,
+    };
+  }
+
+  return {status, message: parsedMessage};
+}
+
 async function startServer() {
   const app = express();
   app.set("trust proxy", 2);
@@ -336,10 +379,8 @@ async function startServer() {
       });
       res.json(serializeResponse(response));
     } catch (error: any) {
-      console.error('Error in /api/generate-content:', error);
-      res
-        .status(error?.status || 500)
-        .json({error: error.message || String(error)});
+      const formatted = formatGeminiError(error);
+      res.status(formatted.status).json({error: formatted.message});
     }
   });
 
@@ -363,15 +404,11 @@ async function startServer() {
       }
       res.end();
     } catch (error: any) {
-      console.error('Error in /api/generate-content-stream:', error);
+      const formatted = formatGeminiError(error);
       if (!res.headersSent) {
-        res
-          .status(error?.status || 500)
-          .json({error: error.message || String(error)});
+        res.status(formatted.status).json({error: formatted.message});
       } else {
-        res.write(
-          JSON.stringify({error: error.message || String(error)}) + '\n',
-        );
+        res.write(JSON.stringify({error: formatted.message}) + '\n');
         res.end();
       }
     }
@@ -388,10 +425,8 @@ async function startServer() {
       });
       res.json(response);
     } catch (error: any) {
-      console.error('Error in /api/generate-images:', error);
-      res
-        .status(error?.status || 500)
-        .json({error: error.message || String(error)});
+      const formatted = formatGeminiError(error);
+      res.status(formatted.status).json({error: formatted.message});
     }
   });
 
@@ -424,10 +459,8 @@ async function startServer() {
         history: await chat.getHistory(),
       });
     } catch (error: any) {
-      console.error('Error in /api/chat:', error);
-      res
-        .status(error?.status || 500)
-        .json({error: error.message || String(error)});
+      const formatted = formatGeminiError(error);
+      res.status(formatted.status).json({error: formatted.message});
     }
   });
 
@@ -459,15 +492,11 @@ async function startServer() {
       }
       res.end();
     } catch (error: any) {
-      console.error('Error in /api/chat-stream:', error);
+      const formatted = formatGeminiError(error);
       if (!res.headersSent) {
-        res
-          .status(error?.status || 500)
-          .json({error: error.message || String(error)});
+        res.status(formatted.status).json({error: formatted.message});
       } else {
-        res.write(
-          JSON.stringify({error: error.message || String(error)}) + '\n',
-        );
+        res.write(JSON.stringify({error: formatted.message}) + '\n');
         res.end();
       }
     }

@@ -460,16 +460,293 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
   );
 }
 
-// ==================== METHOD 2A: MS-DOS FDISK.EXE FIXED DISK PARTITIONER ====================
+// ==================== METHOD 2A: MS-DOS FDISK.EXE FIXED DISK PARTITIONER & INTERACTIVE GUIDE ====================
 
 let fdiskFormatInterval: number | null = null;
 
-export function openFdiskScreen(): void {
+interface FdiskGuideStepSpec {
+  stepNumber: number;
+  shortTabLabel: string;
+  kicker: string;
+  title: string;
+  description: string;
+  calloutInstruction: string;
+  targetIds: string[];
+  boxId: string;
+  isComplete: () => boolean;
+  buildAsciiDiagram: () => string;
+}
+
+const fdiskGuideState = {
+  isOpen: false,
+  currentStepIndex: 0,
+  autoAdvance: true,
+};
+
+const FDISK_GUIDE_STEPS: FdiskGuideStepSpec[] = [
+  {
+    stepNumber: 1,
+    shortTabLabel: '1.Pri C:',
+    kicker: 'STEP 1 OF 5 · PRIMARY DOS PARTITION (C:\\)',
+    title: '1. Allocate Primary DOS Partition (Drive C:\\)',
+    description:
+      'Every MS-DOS / Windows 95 hard drive starts as raw unallocated cylinders (968 Cyl, 1,995 MB total). To install an operating system, you must first carve out a Primary DOS Partition (Drive C:\\). Leaving ~500 MB unallocated (by setting C: to 1,495 MB) lets you create a secondary D:\\ archive drive in Step 3.',
+    calloutInstruction:
+      '► ACTION: Set Size (MB) to 1495 (or any size 400–1995 MB) and click the highlighted "[1] Create / Resize C:" button below (or press "⚡ Auto-Run This Step").',
+    targetIds: ['fdisk-c-size-input', 'fdisk-create-c-btn'],
+    boxId: 'fdisk-box-primary',
+    isComplete: () => partitionTable.primaryC.exists,
+    buildAsciiDiagram: () => {
+      const cMB = partitionTable.primaryC.exists ? partitionTable.primaryC.sizeMB : 0;
+      const freeMB = Math.max(0, 1995 - cMB - (partitionTable.logicalD.exists ? partitionTable.logicalD.sizeMB : 0));
+      return [
+        '┌────────────── IDE FIXED DISK 0 (968 CYL) ──────────────┐',
+        cMB > 0
+          ? `│ [C: PRI DOS ${String(cMB).padStart(4)} MB]  [UNALLOCATED: ${String(freeMB).padStart(4)} MB] │`
+          : '│ [░░░░░░░░░░ 1,995 MB UNALLOCATED CYLINDERS ░░░░░░░░░░] │',
+        '└────────────────────────────────────────────────────────┘',
+        `Cyl 0..${cMB > 0 ? Math.round((cMB / 1995) * 968) : 0}: ${cMB > 0 ? 'Allocated to Primary C:\\' : 'Waiting for Partition 1'}`,
+      ].join('\n');
+    },
+  },
+  {
+    stepNumber: 2,
+    shortTabLabel: '2.Active',
+    kicker: 'STEP 2 OF 5 · BIOS BOOTABLE FLAG (0x80)',
+    title: '2. Mark Primary Partition C:\\ as Active (A)',
+    description:
+      'When your PC powers on, the Award BIOS reads the 64-byte partition table in Sector 1 and searches for the single partition marked with boot flag 0x80 ("A" = Active). If no partition is marked Active, the BIOS halts with "Missing operating system".',
+    calloutInstruction:
+      '► ACTION: Ensure Partition 1 (C:) displays "A (Active)" in the table below. Click "[2] Toggle Active (A)" or press "⚡ Auto-Run This Step" to set C:\\ Active.',
+    targetIds: ['fdisk-toggle-active-btn'],
+    boxId: 'fdisk-box-primary',
+    isComplete: () => partitionTable.primaryC.exists && partitionTable.primaryC.active,
+    buildAsciiDiagram: () => {
+      const isAct = partitionTable.primaryC.exists && partitionTable.primaryC.active;
+      return [
+        '┌─────────── MBR PARTITION TABLE (OFFSET 0x1BE) ─────────┐',
+        `│ Entry 1 (C:) │ Boot Flag: ${isAct ? '0x80 [A = ACTIVE]  ' : '0x00 [— = INACTIVE]'} │`,
+        '│ Entry 2 (D:) │ Boot Flag: 0x00 [EXTENDED DOS]          │',
+        '└────────────────────────────────────────────────────────┘',
+        isAct ? '✓ INT 19h BIOS Loader will jump to C:\\ boot sector' : '⚠ WARNING: Flag 0x00 will halt BIOS boot!',
+      ].join('\n');
+    },
+  },
+  {
+    stepNumber: 3,
+    shortTabLabel: '3.Log D:',
+    kicker: 'STEP 3 OF 5 · EXTENDED DOS LOGICAL DRIVE (D:\\)',
+    title: '3. Create Extended Logical Drive D:\\ (Optional Archive)',
+    description:
+      'In 1995, PC builders often split a 2 GB IDE drive into C:\\ for Windows 95 system files and D:\\ (DATA_ARCHIVE) for games and `.EXE` installers so reinstalling Windows on C:\\ never wiped personal archives.',
+    calloutInstruction:
+      '► ACTION: Click the highlighted "[4] Create Logical D:" button below to allocate remaining free cylinders to D:\\ (or press "⚡ Auto-Run This Step").',
+    targetIds: ['fdisk-create-d-btn'],
+    boxId: 'fdisk-box-secondary',
+    isComplete: () =>
+      partitionTable.logicalD.exists ||
+      (partitionTable.primaryC.exists && partitionTable.primaryC.sizeMB >= 1975),
+    buildAsciiDiagram: () => {
+      const cMB = partitionTable.primaryC.exists ? partitionTable.primaryC.sizeMB : 0;
+      const dMB = partitionTable.logicalD.exists ? partitionTable.logicalD.sizeMB : 0;
+      const freeMB = Math.max(0, 1995 - cMB - dMB);
+      return [
+        '┌────────────── EXTENDED PARTITION CONTAINER ────────────┐',
+        `│ Pri C: ${String(cMB).padStart(4)}M │ Ext Logical D: ${String(dMB).padStart(4)}M │ Free: ${String(freeMB).padStart(4)}M │`,
+        '└────────────────────────────────────────────────────────┘',
+        dMB > 0
+          ? `✓ Drive D:\\ (${dMB} MB) mounted in My Gemtop Explorer`
+          : freeMB >= 25
+            ? `► ${freeMB} MB unallocated cylinders ready for Drive D:\\`
+            : '✓ 100% cylinders assigned to C:\\ (Single-Drive Mode)',
+      ].join('\n');
+    },
+  },
+  {
+    stepNumber: 4,
+    shortTabLabel: '4.MBR',
+    kicker: 'STEP 4 OF 5 · MASTER BOOT RECORD (SECTOR 1)',
+    title: '4. Write & Verify Master Boot Record (FDISK /MBR)',
+    description:
+      'Cylinder 0, Head 0, Sector 1 holds the 446-byte x86 Master Boot Record (MBR) bootstrap routine plus the 2-byte magic signature 0x55AA at offset 510. Running "FDISK /MBR" writes a clean bootstrap header so the BIOS recognizes Fixed Disk 1 as bootable.',
+    calloutInstruction:
+      '► ACTION: Click the highlighted "[M] Write FDISK /MBR" button below to write the 0x55AA bootstrap signature (or click "[X] Zero MBR" anytime to test a hardware boot halt).',
+    targetIds: ['fdisk-mbr-btn'],
+    boxId: 'fdisk-box-secondary',
+    isComplete: () => partitionTable.mbrSignatureValid,
+    buildAsciiDiagram: () => {
+      const valid = partitionTable.mbrSignatureValid;
+      return [
+        '┌─────────── CYL 0 · HEAD 0 · SECTOR 1 (512B) ───────────┐',
+        '│ [0x000..0x1BD] 446B x86 Real-Mode Bootstrap Code       │',
+        '│ [0x1BE..0x1FD]  64B 4-Entry Partition Table            │',
+        `│ [0x1FE..0x1FF]   2B Magic Signature: ${valid ? '0x55AA (VALID)  ' : '0x0000 (WIPED!) '} │`,
+        '└────────────────────────────────────────────────────────┘',
+      ].join('\n');
+    },
+  },
+  {
+    stepNumber: 5,
+    shortTabLabel: '5.Format',
+    kicker: 'STEP 5 OF 5 · HIGH-LEVEL FORMAT & SYSTEM TRACKS',
+    title: '5. Format Partition C:\\ & Transfer System (FORMAT C: /S)',
+    description:
+      'Creating a partition only updates the partition table—the disk sectors inside C:\\ are still raw unformatted magnetic media! Running "FORMAT C: /S" writes the FAT16/FAT32 File Allocation Table and transfers IO.SYS, MSDOS.SYS, and COMMAND.COM so C:\\ can boot.',
+    calloutInstruction:
+      '► ACTION: Click the green "[F] FORMAT C: /S" button below to format C:\\ and transfer MS-DOS system tracks, then click "💿 Save & Launch OS Setup (SETUP.EXE)"!',
+    targetIds: ['fdisk-format-c-btn', 'fdisk-launch-setup-btn'],
+    boxId: 'fdisk-box-primary',
+    isComplete: () =>
+      partitionTable.primaryC.exists &&
+      partitionTable.primaryC.formatted &&
+      partitionTable.primaryC.active &&
+      partitionTable.mbrSignatureValid,
+    buildAsciiDiagram: () => {
+      const fmt = partitionTable.primaryC.exists && partitionTable.primaryC.formatted;
+      return [
+        `┌─────────── DRIVE C:\\ (${systemRegistry.fileSystemFormat}) SYSTEM TRACKS ──────────┐`,
+        `│ Boot Record : ${fmt ? '✓ Written (FAT Volume Boot Sector)' : '⏳ Unformatted RAW Sectors        '} │`,
+        `│ System Files: ${fmt ? '✓ IO.SYS · MSDOS.SYS · COMMAND.COM' : '⏳ Waiting for FORMAT C: /S       '} │`,
+        '└────────────────────────────────────────────────────────┘',
+        fmt ? '★ ALL 5 STEPS COMPLETE! Disk 1 is 100% bootable.' : '► Run [F] FORMAT C: /S to complete disk setup.',
+      ].join('\n');
+    },
+  },
+];
+
+function clearFdiskGuideSpotlights(): void {
+  document.querySelectorAll('.fdisk-guide-spotlight').forEach((el) => {
+    el.classList.remove('fdisk-guide-spotlight');
+  });
+  document.querySelectorAll('.fdisk-guide-box-active').forEach((el) => {
+    el.classList.remove('fdisk-guide-box-active');
+  });
+}
+
+function applyFdiskGuideSpotlights(): void {
+  clearFdiskGuideSpotlights();
+  if (!fdiskGuideState.isOpen) return;
+
+  const step = FDISK_GUIDE_STEPS[fdiskGuideState.currentStepIndex] || FDISK_GUIDE_STEPS[0];
+  step.targetIds.forEach((id) => {
+    document.getElementById(id)?.classList.add('fdisk-guide-spotlight');
+  });
+  if (step.boxId) {
+    document.getElementById(step.boxId)?.classList.add('fdisk-guide-box-active');
+  }
+}
+
+export function renderFdiskGuide(): void {
+  const panel = document.getElementById('fdisk-guide-panel');
+  const toggleBtn = document.getElementById('fdisk-guide-toggle-btn');
+  const stepperEl = document.getElementById('fdisk-guide-stepper');
+  const kickerEl = document.getElementById('fdisk-guide-step-kicker');
+  const statusEl = document.getElementById('fdisk-guide-step-status');
+  const titleEl = document.getElementById('fdisk-guide-step-title');
+  const descEl = document.getElementById('fdisk-guide-step-desc');
+  const calloutEl = document.getElementById('fdisk-guide-callout-instruction');
+  const asciiEl = document.getElementById('fdisk-guide-ascii');
+  const prevBtn = document.getElementById('fdisk-guide-prev-btn') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('fdisk-guide-next-btn') as HTMLButtonElement | null;
+  const autoRunBtn = document.getElementById('fdisk-guide-autorun-btn') as HTMLButtonElement | null;
+  const autoAdvBtn = document.getElementById('fdisk-guide-autoadv-btn');
+
+  if (!panel) return;
+
+  panel.style.display = fdiskGuideState.isOpen ? 'flex' : 'none';
+  toggleBtn?.classList.toggle('active', fdiskGuideState.isOpen);
+
+  if (autoAdvBtn) {
+    autoAdvBtn.textContent = fdiskGuideState.autoAdvance ? '[✓] Auto-Advance: ON' : '[ ] Auto-Advance: OFF';
+  }
+
+  if (!fdiskGuideState.isOpen) {
+    clearFdiskGuideSpotlights();
+    return;
+  }
+
+  const step = FDISK_GUIDE_STEPS[fdiskGuideState.currentStepIndex] || FDISK_GUIDE_STEPS[0];
+  const completed = step.isComplete();
+
+  if (stepperEl) {
+    stepperEl.innerHTML = FDISK_GUIDE_STEPS.map((s, idx) => {
+      const done = s.isComplete();
+      const isCur = idx === fdiskGuideState.currentStepIndex;
+      return `
+        <button class="fdisk-guide-step-tab ${isCur ? 'active' : ''} ${done ? 'done' : ''}" data-step-idx="${idx}">
+          <span>${s.shortTabLabel}</span>
+          <span>${done ? '✓' : '○'}</span>
+        </button>
+      `;
+    }).join('');
+
+    stepperEl.querySelectorAll('.fdisk-guide-step-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        getOsBridge()?.sfx.playClick();
+        const idx = Number((btn as HTMLElement).dataset.stepIdx) || 0;
+        fdiskGuideState.currentStepIndex = Math.max(0, Math.min(FDISK_GUIDE_STEPS.length - 1, idx));
+        renderFdiskGuide();
+      });
+    });
+  }
+
+  if (kickerEl) kickerEl.textContent = step.kicker;
+  if (statusEl) {
+    statusEl.textContent = completed ? '[✓ STEP COMPLETED]' : '[► ACTION NEEDED]';
+    statusEl.className = `fdisk-guide-step-status tabular-nums ${completed ? 'done' : 'pending'}`;
+  }
+  if (titleEl) titleEl.textContent = step.title;
+  if (descEl) descEl.textContent = step.description;
+  if (calloutEl) calloutEl.textContent = step.calloutInstruction;
+  if (asciiEl) asciiEl.textContent = step.buildAsciiDiagram();
+
+  if (prevBtn) prevBtn.disabled = fdiskGuideState.currentStepIndex <= 0;
+  if (nextBtn) nextBtn.disabled = fdiskGuideState.currentStepIndex >= FDISK_GUIDE_STEPS.length - 1;
+  if (autoRunBtn) {
+    autoRunBtn.textContent = completed
+      ? `⚡ Re-Run Step ${step.stepNumber}`
+      : `⚡ Auto-Run Step ${step.stepNumber}`;
+  }
+
+  applyFdiskGuideSpotlights();
+}
+
+function notifyFdiskGuideAfterAction(stepIdxTriggered: number): void {
+  if (!fdiskGuideState.isOpen) return;
+  if (
+    fdiskGuideState.autoAdvance &&
+    fdiskGuideState.currentStepIndex === stepIdxTriggered &&
+    FDISK_GUIDE_STEPS[stepIdxTriggered]?.isComplete() &&
+    fdiskGuideState.currentStepIndex < FDISK_GUIDE_STEPS.length - 1
+  ) {
+    fdiskGuideState.currentStepIndex++;
+  }
+  renderFdiskGuide();
+}
+
+export function toggleFdiskGuide(forceOpen?: boolean): void {
+  fdiskGuideState.isOpen = typeof forceOpen === 'boolean' ? forceOpen : !fdiskGuideState.isOpen;
+  if (fdiskGuideState.isOpen) {
+    // Jump to the first incomplete step if any, otherwise Step 1
+    const firstIncomplete = FDISK_GUIDE_STEPS.findIndex((s) => !s.isComplete());
+    if (firstIncomplete !== -1) {
+      fdiskGuideState.currentStepIndex = firstIncomplete;
+    }
+  }
+  renderFdiskGuide();
+}
+
+export function openFdiskScreen(openGuide = false): void {
   const screen = document.getElementById('fdisk-screen');
   if (!screen) return;
   const bridge = getOsBridge();
   bridge?.sfx.playPostBeep();
   screen.style.display = 'flex';
+  if (openGuide || !isPrimaryBootable()) {
+    fdiskGuideState.isOpen = true;
+    const firstIncomplete = FDISK_GUIDE_STEPS.findIndex((s) => !s.isComplete());
+    fdiskGuideState.currentStepIndex = firstIncomplete !== -1 ? firstIncomplete : 0;
+  }
   renderFdiskScreen();
 }
 
@@ -479,6 +756,7 @@ export function closeFdiskScreen(): void {
     clearInterval(fdiskFormatInterval);
     fdiskFormatInterval = null;
   }
+  clearFdiskGuideSpotlights();
   if (screen) screen.style.display = 'none';
   savePartitionTable(partitionTable);
   getOsBridge()?.refreshExplorerIfOpen();
@@ -570,9 +848,11 @@ export function renderFdiskScreen(): void {
     `);
   }
   if (rows.length === 0) {
-    rows.push(`<tr><td colspan="7" style="color:#ff8888;text-align:center;padding:10px;">No partitions defined on Fixed Disk 1 (1,995 MB Unallocated). Create a Primary DOS Partition to install Gemini 95.</td></tr>`);
+    rows.push(`<tr><td colspan="7" style="color:#ff8888;text-align:center;padding:10px;">No partitions defined on Fixed Disk 1 (1,995 MB Unallocated). Click "[F1 / ?] Interactive FDISK Guide" above for a step-by-step walkthrough!</td></tr>`);
   }
   tbodyEl.innerHTML = rows.join('');
+
+  renderFdiskGuide();
 }
 
 function setFdiskConsoleLog(msg: string): void {
@@ -595,7 +875,30 @@ export function initFdiskController(): void {
     openFdiskScreen();
   });
 
-  bind('fdisk-create-c-btn', () => {
+  bind('fdisk-guide-toggle-btn', () => toggleFdiskGuide());
+  bind('fdisk-footer-guide-btn', () => toggleFdiskGuide());
+  bind('fdisk-guide-close-btn', () => toggleFdiskGuide(false));
+
+  bind('fdisk-guide-autoadv-btn', () => {
+    fdiskGuideState.autoAdvance = !fdiskGuideState.autoAdvance;
+    renderFdiskGuide();
+  });
+
+  bind('fdisk-guide-prev-btn', () => {
+    if (fdiskGuideState.currentStepIndex > 0) {
+      fdiskGuideState.currentStepIndex--;
+      renderFdiskGuide();
+    }
+  });
+
+  bind('fdisk-guide-next-btn', () => {
+    if (fdiskGuideState.currentStepIndex < FDISK_GUIDE_STEPS.length - 1) {
+      fdiskGuideState.currentStepIndex++;
+      renderFdiskGuide();
+    }
+  });
+
+  const runCreatePrimaryC = () => {
     const sizeIn = document.getElementById('fdisk-c-size-input') as HTMLInputElement | null;
     const requested = Math.min(1995, Math.max(400, Number(sizeIn?.value) || systemRegistry.primaryPartitionSizeMB || 1495));
     if (partitionTable.logicalD.exists && requested + partitionTable.logicalD.sizeMB > 1995) {
@@ -615,7 +918,10 @@ export function initFdiskController(): void {
     savePartitionTable(partitionTable);
     renderFdiskScreen();
     setFdiskConsoleLog(`Created Primary DOS Partition C: (${requested} MB, Active). Run "FORMAT C: /S" or "Launch OS Setup" to write system tracks!`);
-  });
+    notifyFdiskGuideAfterAction(0);
+  };
+
+  bind('fdisk-create-c-btn', runCreatePrimaryC);
 
   bind('fdisk-delete-c-btn', () => {
     getOsBridge()?.sfx.playChordError();
@@ -627,22 +933,27 @@ export function initFdiskController(): void {
     setFdiskConsoleLog('WARNING: Primary DOS Partition C: deleted! System will halt on next BIOS boot until C: is recreated and formatted.');
   });
 
-  bind('fdisk-toggle-active-btn', () => {
+  const runToggleActiveC = (forceActive?: boolean) => {
     if (!partitionTable.primaryC.exists) {
-      setFdiskConsoleLog('Cannot set Active flag: Primary DOS Partition C: does not exist.');
+      setFdiskConsoleLog('Cannot set Active flag: Primary DOS Partition C: does not exist. Complete Step 1 first!');
       return;
     }
-    partitionTable.primaryC.active = !partitionTable.primaryC.active;
+    partitionTable.primaryC.active = typeof forceActive === 'boolean' ? forceActive : !partitionTable.primaryC.active;
     savePartitionTable(partitionTable);
     renderFdiskScreen();
     setFdiskConsoleLog(
       partitionTable.primaryC.active
-        ? 'Partition 1 (C:) marked ACTIVE (Bootable).'
+        ? 'Partition 1 (C:) marked ACTIVE (0x80 Bootable).'
         : 'Active flag cleared on C:. BIOS MBR will report "Missing operating system" if Strict MBR Check is enabled.',
     );
-  });
+    if (partitionTable.primaryC.active) {
+      notifyFdiskGuideAfterAction(1);
+    }
+  };
 
-  bind('fdisk-create-d-btn', () => {
+  bind('fdisk-toggle-active-btn', () => runToggleActiveC());
+
+  const runCreateLogicalD = () => {
     const usedByC = partitionTable.primaryC.exists ? partitionTable.primaryC.sizeMB : 0;
     const rem = 1995 - usedByC;
     if (rem < 25) {
@@ -661,7 +972,10 @@ export function initFdiskController(): void {
     savePartitionTable(partitionTable);
     renderFdiskScreen();
     setFdiskConsoleLog(`Created & formatted Extended Logical DOS Drive D: (${rem} MB · ${systemRegistry.fileSystemFormat}). Mounted in My Gemtop!`);
-  });
+    notifyFdiskGuideAfterAction(2);
+  };
+
+  bind('fdisk-create-d-btn', runCreateLogicalD);
 
   bind('fdisk-delete-d-btn', () => {
     partitionTable.logicalD.exists = false;
@@ -670,14 +984,17 @@ export function initFdiskController(): void {
     setFdiskConsoleLog('Logical DOS Drive D: removed. Freed space returned to Unallocated pool.');
   });
 
-  bind('fdisk-mbr-btn', () => {
+  const runWriteMbr = () => {
     const bridge = getOsBridge();
     bridge?.sfx.playFloppySeek();
     partitionTable.mbrSignatureValid = true;
     savePartitionTable(partitionTable);
     renderFdiskScreen();
     setFdiskConsoleLog('FDISK /MBR: Wrote clean 446-byte x86 bootstrap code + 0x55AA signature to Cylinder 0, Head 0, Sector 1.');
-  });
+    notifyFdiskGuideAfterAction(3);
+  };
+
+  bind('fdisk-mbr-btn', runWriteMbr);
 
   bind('fdisk-wipe-mbr-btn', () => {
     getOsBridge()?.sfx.playChordError();
@@ -687,7 +1004,7 @@ export function initFdiskController(): void {
     setFdiskConsoleLog('Zeroed MBR boot signature (0x0000). Rebooting now will trigger BIOS "Missing operating system" hardware halt!');
   });
 
-  bind('fdisk-format-c-btn', () => {
+  const runFormatPrimaryC = () => {
     if (!partitionTable.primaryC.exists) {
       setFdiskConsoleLog('FORMAT error: Invalid drive specification (Create Primary Partition C: first).');
       return;
@@ -712,8 +1029,108 @@ export function initFdiskController(): void {
         savePartitionTable(partitionTable);
         renderFdiskScreen();
         setFdiskConsoleLog('Format complete! System transferred (IO.SYS, MSDOS.SYS, COMMAND.COM). Partition C: is bootable.');
+        notifyFdiskGuideAfterAction(4);
       }
     }, 140);
+  };
+
+  bind('fdisk-format-c-btn', runFormatPrimaryC);
+
+  // Auto-Run Current Guide Step Handler
+  bind('fdisk-guide-autorun-btn', () => {
+    const idx = fdiskGuideState.currentStepIndex;
+    if (idx === 0) {
+      const sizeIn = document.getElementById('fdisk-c-size-input') as HTMLInputElement | null;
+      if (sizeIn && (!Number(sizeIn.value) || Number(sizeIn.value) > 1900)) {
+        sizeIn.value = '1495';
+      }
+      runCreatePrimaryC();
+    } else if (idx === 1) {
+      if (!partitionTable.primaryC.exists) runCreatePrimaryC();
+      runToggleActiveC(true);
+    } else if (idx === 2) {
+      if (!partitionTable.primaryC.exists || partitionTable.primaryC.sizeMB > 1950) {
+        const sizeIn = document.getElementById('fdisk-c-size-input') as HTMLInputElement | null;
+        if (sizeIn) sizeIn.value = '1495';
+        partitionTable.primaryC.exists = true;
+        partitionTable.primaryC.sizeMB = 1495;
+        partitionTable.primaryC.active = true;
+      }
+      runCreateLogicalD();
+    } else if (idx === 3) {
+      runWriteMbr();
+    } else if (idx === 4) {
+      if (!partitionTable.primaryC.exists) runCreatePrimaryC();
+      runFormatPrimaryC();
+    }
+  });
+
+  // 1-Click Partition Presets inside FDISK Guide
+  bind('fdisk-preset-dual-btn', () => {
+    getOsBridge()?.sfx.playFloppySeek();
+    const sizeIn = document.getElementById('fdisk-c-size-input') as HTMLInputElement | null;
+    if (sizeIn) sizeIn.value = '1495';
+    partitionTable.mbrSignatureValid = true;
+    partitionTable.primaryC = {
+      exists: true,
+      active: true,
+      formatted: true,
+      fileSystem: systemRegistry.fileSystemFormat,
+      sizeMB: 1495,
+      label: 'GEMINI_95',
+    };
+    partitionTable.logicalD = {
+      exists: true,
+      formatted: true,
+      fileSystem: systemRegistry.fileSystemFormat,
+      sizeMB: 500,
+      label: 'DATA_ARCHIVE',
+    };
+    systemRegistry.primaryPartitionSizeMB = 1495;
+    systemRegistry.enableSecondaryDriveD = true;
+    applySystemRegistryToOS();
+    savePartitionTable(partitionTable);
+    fdiskGuideState.currentStepIndex = 4;
+    renderFdiskScreen();
+    setFdiskConsoleLog('PRESET APPLIED [P1]: Dual-Drive Layout (C: 1,495 MB Active/Formatted + D: 500 MB Formatted + Valid 0x55AA MBR).');
+  });
+
+  bind('fdisk-preset-single-btn', () => {
+    getOsBridge()?.sfx.playFloppySeek();
+    const sizeIn = document.getElementById('fdisk-c-size-input') as HTMLInputElement | null;
+    if (sizeIn) sizeIn.value = '1995';
+    partitionTable.mbrSignatureValid = true;
+    partitionTable.primaryC = {
+      exists: true,
+      active: true,
+      formatted: true,
+      fileSystem: systemRegistry.fileSystemFormat,
+      sizeMB: 1995,
+      label: 'GEMINI_95',
+    };
+    partitionTable.logicalD.exists = false;
+    systemRegistry.primaryPartitionSizeMB = 1995;
+    applySystemRegistryToOS();
+    savePartitionTable(partitionTable);
+    fdiskGuideState.currentStepIndex = 4;
+    renderFdiskScreen();
+    setFdiskConsoleLog('PRESET APPLIED [P2]: Single Maximal Primary C: (1,995 MB Active/Formatted · 100% Fixed Disk 1 + Valid 0x55AA MBR).');
+  });
+
+  bind('fdisk-preset-wipe-btn', () => {
+    getOsBridge()?.sfx.playChordError();
+    const sizeIn = document.getElementById('fdisk-c-size-input') as HTMLInputElement | null;
+    if (sizeIn) sizeIn.value = '1495';
+    partitionTable.primaryC.exists = false;
+    partitionTable.primaryC.active = false;
+    partitionTable.primaryC.formatted = false;
+    partitionTable.logicalD.exists = false;
+    partitionTable.logicalD.formatted = false;
+    partitionTable.mbrSignatureValid = false;
+    savePartitionTable(partitionTable);
+    fdiskGuideState.currentStepIndex = 0;
+    renderFdiskScreen();
+    setFdiskConsoleLog('PRESET APPLIED [P3]: Wiped Fixed Disk 1 to 1,995 MB Unallocated + 0x0000 MBR. Follow Step 1 in the FDISK Guide above!');
   });
 
   bind('fdisk-launch-setup-btn', () => {
@@ -732,6 +1149,17 @@ export function initFdiskController(): void {
 
   bind('fdisk-exit-btn', () => {
     closeFdiskScreen();
+  });
+
+  // F1 keyboard shortcut inside FDISK screen
+  window.addEventListener('keydown', (e) => {
+    const screen = document.getElementById('fdisk-screen');
+    if (!screen || screen.style.display === 'none') return;
+    if (e.key === 'F1') {
+      e.preventDefault();
+      getOsBridge()?.sfx.playClick();
+      toggleFdiskGuide();
+    }
   });
 }
 

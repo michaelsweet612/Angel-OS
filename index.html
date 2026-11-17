@@ -292,13 +292,74 @@
     <div id="fdisk-screen" class="fdisk-screen" style="display: none">
       <div class="fdisk-frame">
         <div class="fdisk-header">
-          <div>Microsoft(R) Windows 95 — Fixed Disk Setup Program (FDISK.EXE v7.00)</div>
+          <div class="fdisk-header-top">
+            <span>Microsoft(R) Windows 95 — Fixed Disk Setup Program (FDISK.EXE v7.00)</span>
+            <button class="cmos-action-btn fdisk-guide-launch-btn" id="fdisk-guide-toggle-btn" title="Toggle step-by-step interactive FDISK partitioning tutorial (Hotkey: F1)">
+              [F1 / ?] Interactive FDISK Guide
+            </button>
+          </div>
           <div style="font-size: 0.76rem; color: #00ffff">Current Fixed Disk Drive: 1 — QUANTUM FIREBALL IDE (1,995 MB Total · 968 Cyl · 64 Heads)</div>
         </div>
 
         <div class="fdisk-status-strip">
           <span id="fdisk-mbr-status" class="tabular-nums">✓ MBR 0x55AA VALID · ACTIVE BOOT PARTITION C: READY</span>
-          <span class="tabular-nums">LBA MODE: ON</span>
+          <span class="tabular-nums">LBA MODE: ON · F1=HELP GUIDE</span>
+        </div>
+
+        <!-- MS-DOS EDIT / NORTON COMMANDER TUI INTERACTIVE FDISK GUIDE OVERLAY -->
+        <div id="fdisk-guide-panel" class="fdisk-guide-panel" style="display: none">
+          <div class="fdisk-guide-titlebar">
+            <span id="fdisk-guide-title">╔═ FDISK.HLP — Interactive Partitioning Coach &amp; MS-DOS Disk Guide ═╗</span>
+            <div class="fdisk-guide-title-actions">
+              <button class="fdisk-guide-mini-btn" id="fdisk-guide-autoadv-btn" title="Automatically advance to the next step when you complete the spotlighted action">
+                [✓] Auto-Advance: ON
+              </button>
+              <button class="fdisk-guide-mini-btn close" id="fdisk-guide-close-btn" title="Close FDISK Help Overlay">[✕ Close F1]</button>
+            </div>
+          </div>
+
+          <div class="fdisk-guide-stepper" id="fdisk-guide-stepper">
+            <!-- Dynamically populated 5 step tabs -->
+          </div>
+
+          <div class="fdisk-guide-body">
+            <div class="fdisk-guide-main-col">
+              <div class="fdisk-guide-step-hdr">
+                <span class="fdisk-guide-step-kicker" id="fdisk-guide-step-kicker">STEP 1 OF 5 · PRIMARY DOS PARTITION</span>
+                <span class="fdisk-guide-step-status tabular-nums" id="fdisk-guide-step-status">[✓ COMPLETED]</span>
+              </div>
+              <div class="fdisk-guide-step-title" id="fdisk-guide-step-title">
+                1. Allocate Primary DOS Partition (Drive C:\)
+              </div>
+              <p class="fdisk-guide-step-desc" id="fdisk-guide-step-desc"></p>
+              <div class="fdisk-guide-callout-instruction" id="fdisk-guide-callout-instruction"></div>
+            </div>
+
+            <div class="fdisk-guide-ascii-col">
+              <div class="fdisk-guide-ascii-hdr">IDE CYLINDER / SECTOR SCHEMATIC</div>
+              <pre class="fdisk-guide-ascii tabular-nums" id="fdisk-guide-ascii"></pre>
+            </div>
+          </div>
+
+          <div class="fdisk-guide-nav-bar">
+            <div class="fdisk-guide-nav-left">
+              <button class="cmos-action-btn" id="fdisk-guide-prev-btn">◀ Prev Step</button>
+              <button class="cmos-action-btn primary" id="fdisk-guide-autorun-btn">⚡ Auto-Run This Step</button>
+              <button class="cmos-action-btn" id="fdisk-guide-next-btn">Next Step ▶</button>
+            </div>
+            <div class="fdisk-guide-presets">
+              <span class="fdisk-guide-preset-lbl">1-Click Presets:</span>
+              <button class="cmos-action-btn" id="fdisk-preset-dual-btn" title="Create 1495MB Active Formatted C: + 500MB Formatted D: + Valid 0x55AA MBR">
+                [P1] Dual C: 1495M + D: 500M
+              </button>
+              <button class="cmos-action-btn" id="fdisk-preset-single-btn" title="Allocate all 1995MB to Primary Active C: + Valid 0x55AA MBR">
+                [P2] Max Single C: 1995M
+              </button>
+              <button class="cmos-action-btn" id="fdisk-preset-wipe-btn" style="color: #880000" title="Wipe partitions to 1995MB Unallocated so you can practice all 5 steps from scratch">
+                [P3] Wipe Disk (Practice Mode)
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="fdisk-disk-bar" id="fdisk-disk-bar">
@@ -321,7 +382,7 @@
         </table>
 
         <div class="fdisk-controls-grid">
-          <div class="fdisk-ctrl-box">
+          <div class="fdisk-ctrl-box" id="fdisk-box-primary">
             <div class="fdisk-ctrl-title">1. Primary DOS Partition (C:\)</div>
             <div style="display: flex; align-items: center; gap: 6px; font-size: 0.76rem; margin-bottom: 6px">
               <label for="fdisk-c-size-input">Size (MB):</label>
@@ -336,7 +397,7 @@
             </div>
           </div>
 
-          <div class="fdisk-ctrl-box">
+          <div class="fdisk-ctrl-box" id="fdisk-box-secondary">
             <div class="fdisk-ctrl-title">2. Logical Drive (D:\) &amp; Master Boot Record</div>
             <div style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 6px">
               Allocate remaining unpartitioned cylinders to Secondary Drive D:\ or repair/test MBR 0x55AA:
@@ -351,10 +412,11 @@
         </div>
 
         <div class="fdisk-console-log tabular-nums" id="fdisk-console-log">
-          FDISK Ready. Choose an action above to partition or format Fixed Disk 1, or launch OS Setup.
+          FDISK Ready. Choose an action above to partition or format Fixed Disk 1, press F1 for the Interactive FDISK Guide, or launch OS Setup.
         </div>
 
         <div class="fdisk-footer">
+          <button class="cmos-action-btn" id="fdisk-footer-guide-btn">📖 [F1] FDISK Partitioning Guide</button>
           <button class="cmos-action-btn primary" id="fdisk-launch-setup-btn">💿 Save &amp; Launch OS Setup (SETUP.EXE)</button>
           <button class="cmos-action-btn" id="fdisk-exit-btn">ESC: Save Partition Table &amp; Exit FDISK</button>
         </div>
@@ -546,7 +608,46 @@
           />
           <span>System Monitor</span>
         </div>
+        <div class="icon" data-app="calcApp">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6)">🧮</div>
+          <span>Calculator 95</span>
+        </div>
+        <div class="icon" data-app="solitaireApp">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #065f46, #10b981)">🃏</div>
+          <span>Solitaire 95</span>
+        </div>
+        <div class="icon" data-app="arcadeApp">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #7c2d12, #f97316)">🕹️</div>
+          <span>Arcade 95</span>
+        </div>
+        <div class="icon" data-app="soundRecorder">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #312e81, #8b5cf6)">🎚️</div>
+          <span>Sound Studio</span>
+        </div>
+        <div class="icon" data-app="calendarApp">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #991b1b, #ef4444)">📅</div>
+          <span>Calendar 95</span>
+        </div>
+        <div class="icon" data-app="taskManager">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #0f172a, #475569)">⚡</div>
+          <span>Task Manager</span>
+        </div>
+        <div class="icon" data-app="clipViewer">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #0369a1, #38bdf8)">📋</div>
+          <span>Clipboard 95</span>
+        </div>
+        <div class="icon" data-app="trophiesApp">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #854d0e, #eab308)">🏆</div>
+          <span>Trophy Vault</span>
+        </div>
+        <div class="icon" data-app="recycleBin">
+          <div class="mega-icon-tile" style="background: linear-gradient(135deg, #334155, #94a3b8)">🗑️</div>
+          <span>Recycle Bin</span>
+        </div>
       </div>
+
+      <!-- Custom Spawned Sticky Notes Layer -->
+      <div id="desktop-stickies-layer"></div>
 
       <!-- Desktop Welcome Sticky Widget -->
       <div class="desktop-sticky-note" id="desktop-welcome">
@@ -555,9 +656,9 @@
           <button id="sticky-close" title="Dismiss">✕</button>
         </div>
         <div class="sticky-body">
-          <p>• <b>2 Ways to Install</b>: Run <b>.EXE Setup Files</b> in <code>C:\Downloads</code> (+ download Portable PC App) OR run a <b>Physical OS Install</b> (<code>FDISK.EXE</code>, Bootable <code>.ISO</code> &amp; Native PWA)!</p>
-          <p>• <b>Settings &amp; Control</b>: 8 ultra-detailed tabs + live <b>REGEDIT.EXE</b> &amp; <b>CMOS BIOS</b> controlling every pixel, disk flag &amp; DSP parameter.</p>
-          <p>• <b>Google Chrome + Classics</b>: Physical tabbed Chrome with Live Web proxy, Search, AI Time-Machine &amp; Tucows <b>.EXE Depot</b>!</p>
+          <p>• <b>2 Ways to Install</b>: Run <b>.EXE Setup Files</b> in <code>C:\Downloads</code> (+ Portable App) OR run a <b>Physical OS Install</b> (<code>FDISK.EXE</code> + Guide, <code>.ISO</code> &amp; PWA)!</p>
+          <p>• <b>Google Chrome + Mega Suite</b>: Tabbed Chrome (Live Web + AI), <b>Solitaire 95</b>, <b>Arcade 95</b>, <b>Sound Studio</b>, <b>Calculator 95</b> &amp; <b>16 Trophies</b>!</p>
+          <p>• <b>Power Hotkeys</b>: Press <code>Alt+R</code> for Run, <code>Ctrl+Shift+Esc</code> for Task Manager, or try the <b>Konami Code</b>!</p>
         </div>
       </div>
 
@@ -1213,16 +1314,366 @@
         </div>
       </div>
 
+      <!-- 15. SCIENTIFIC & PROGRAMMER CALCULATOR 95 (CALC.EXE) -->
+      <div class="window resizable" id="calcApp" style="width: 470px; height: 420px">
+        <div class="window-titlebar">
+          <span class="window-title">🧮 Calculator 95 Pro — CALC.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content calc-wrapper">
+          <div class="calc-topbar">
+            <button class="win95-btn calc-mode-btn" data-mode="std">Standard</button>
+            <button class="win95-btn calc-mode-btn active" data-mode="sci">Scientific</button>
+            <button class="win95-btn calc-mode-btn" data-mode="prog">Programmer</button>
+            <button class="win95-btn" id="calc-copy-btn">📋 Copy</button>
+          </div>
+          <div class="calc-body-split">
+            <div class="calc-main-col">
+              <div class="calc-lcd-box">
+                <div class="calc-expr-row">
+                  <span id="calc-mem-badge" style="visibility:hidden">M</span>
+                  <span id="calc-expr" class="tabular-nums"></span>
+                </div>
+                <input type="text" id="calc-display" class="calc-display tabular-nums" value="0" readonly />
+              </div>
+              <div id="calc-prog-readout" class="calc-prog-readout tabular-nums" style="display:none"></div>
+              <div id="calc-sci-grid" class="calc-sci-grid">
+                <button class="win95-btn calc-btn" data-key="SIN">sin</button>
+                <button class="win95-btn calc-btn" data-key="COS">cos</button>
+                <button class="win95-btn calc-btn" data-key="TAN">tan</button>
+                <button class="win95-btn calc-btn" data-key="SQRT">√x</button>
+                <button class="win95-btn calc-btn" data-key="SQR">x²</button>
+                <button class="win95-btn calc-btn" data-key="LOG">log</button>
+                <button class="win95-btn calc-btn" data-key="LN">ln</button>
+                <button class="win95-btn calc-btn" data-key="^">x^y</button>
+                <button class="win95-btn calc-btn" data-key="FACT">n!</button>
+                <button class="win95-btn calc-btn" data-key="PI">π</button>
+              </div>
+              <div class="calc-keys-grid">
+                <button class="win95-btn calc-btn mem" data-key="MC">MC</button>
+                <button class="win95-btn calc-btn mem" data-key="MR">MR</button>
+                <button class="win95-btn calc-btn mem" data-key="MS">MS</button>
+                <button class="win95-btn calc-btn mem" data-key="M+">M+</button>
+                <button class="win95-btn calc-btn danger" data-key="BACK">⌫</button>
+
+                <button class="win95-btn calc-btn" data-key="7">7</button>
+                <button class="win95-btn calc-btn" data-key="8">8</button>
+                <button class="win95-btn calc-btn" data-key="9">9</button>
+                <button class="win95-btn calc-btn op" data-key="/">÷</button>
+                <button class="win95-btn calc-btn danger" data-key="CE">CE</button>
+
+                <button class="win95-btn calc-btn" data-key="4">4</button>
+                <button class="win95-btn calc-btn" data-key="5">5</button>
+                <button class="win95-btn calc-btn" data-key="6">6</button>
+                <button class="win95-btn calc-btn op" data-key="*">×</button>
+                <button class="win95-btn calc-btn danger" data-key="C">C</button>
+
+                <button class="win95-btn calc-btn" data-key="1">1</button>
+                <button class="win95-btn calc-btn" data-key="2">2</button>
+                <button class="win95-btn calc-btn" data-key="3">3</button>
+                <button class="win95-btn calc-btn op" data-key="-">−</button>
+                <button class="win95-btn calc-btn" data-key="INV">1/x</button>
+
+                <button class="win95-btn calc-btn" data-key="0">0</button>
+                <button class="win95-btn calc-btn" data-key=".">.</button>
+                <button class="win95-btn calc-btn" data-key="NEG">±</button>
+                <button class="win95-btn calc-btn op" data-key="+">+</button>
+                <button class="win95-btn calc-btn eq" data-key="=">=</button>
+              </div>
+            </div>
+            <div class="calc-tape-col">
+              <div class="calc-tape-hdr">
+                <span>Paper Tape</span>
+                <button class="win95-btn" id="calc-clear-tape" style="padding:1px 5px;font-size:0.65rem">Clear</button>
+              </div>
+              <div id="calc-tape" class="calc-tape-list tabular-nums"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 16. KLONDIKE SOLITAIRE 95 (SOL.EXE) -->
+      <div class="window resizable" id="solitaireApp" style="width: 650px; height: 495px">
+        <div class="window-titlebar">
+          <span class="window-title">🃏 Klondike Solitaire 95 — SOL.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content sol-wrapper">
+          <div class="sol-toolbar">
+            <button class="win95-btn" id="sol-new-btn">🃏 New Deal</button>
+            <button class="win95-btn" id="sol-undo-btn">↩ Undo</button>
+            <button class="win95-btn" id="sol-draw-btn">Draw: 1</button>
+            <button class="win95-btn" id="sol-auto-btn">⚡ Auto-Finish</button>
+            <button class="win95-btn" id="sol-cascade-demo-btn" title="Trigger classic Windows 95 bouncing card trail!">✨ Cascade Cards!</button>
+            <div class="sol-hud tabular-nums">
+              <span id="sol-score">Score: 0</span>
+              <span id="sol-moves">Moves: 0</span>
+              <span id="sol-time">Time: 0s</span>
+            </div>
+          </div>
+          <div class="sol-felt-stage">
+            <div id="sol-board" class="sol-board"></div>
+            <canvas id="sol-cascade-canvas" class="sol-cascade-canvas" style="display:none" title="Click anywhere to stop cascading cards"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 17. ARCADE 95 CABINET (ARCADE95.EXE: SNAKE, BREAKOUT, TETRIS, SKIFREE) -->
+      <div class="window resizable" id="arcadeApp" style="width: 500px; height: 500px">
+        <div class="window-titlebar">
+          <span class="window-title">🕹️ Retro Arcade 95 Cabinet — ARCADE95.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content arcade-wrapper">
+          <div class="arcade-tabs-bar">
+            <button class="win95-btn arcade-tab-btn active" data-game="snake">🐍 Snake 95</button>
+            <button class="win95-btn arcade-tab-btn" data-game="breakout">🧱 Breakout</button>
+            <button class="win95-btn arcade-tab-btn" data-game="tetris">🟦 Blocks</button>
+            <button class="win95-btn arcade-tab-btn" data-game="skifree">⛷️ SkiFree 95</button>
+          </div>
+          <div class="arcade-hud-strip tabular-nums">
+            <span id="arcade-score">SCORE: 0</span>
+            <span id="arcade-best">BEST: 0</span>
+            <div style="display:flex;gap:4px">
+              <button class="win95-btn" id="arcade-pause-btn">⏸ Pause</button>
+              <button class="win95-btn" id="arcade-restart-btn">↺ Restart</button>
+            </div>
+          </div>
+          <div class="arcade-screen-wrap">
+            <canvas id="arcade-canvas" width="460" height="340"></canvas>
+          </div>
+          <div class="arcade-controls-footer">
+            <span id="arcade-status" class="arcade-status">Use Arrow Keys / WASD!</span>
+            <div class="arcade-dpad">
+              <button class="win95-btn arcade-dpad-btn" data-dir="left">◀</button>
+              <button class="win95-btn arcade-dpad-btn" data-dir="up">▲</button>
+              <button class="win95-btn arcade-dpad-btn" data-dir="down">▼</button>
+              <button class="win95-btn arcade-dpad-btn" data-dir="right">▶</button>
+              <button class="win95-btn arcade-dpad-btn" data-dir="action">ACT</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 18. SOUND RECORDER 95 & 8-BIT BEAT STUDIO (SNDREC32.EXE) -->
+      <div class="window resizable" id="soundRecorder" style="width: 580px; height: 430px">
+        <div class="window-titlebar">
+          <span class="window-title">🎚️ Sound Recorder 95 &amp; Beat Studio — SNDREC32.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content sndrec-wrapper">
+          <canvas id="sndrec-scope" class="sndrec-scope" width="540" height="72"></canvas>
+          <div class="sndrec-transport">
+            <button class="win95-btn" id="sndrec-play-btn">▶ Play Loop</button>
+            <button class="win95-btn" id="sndrec-stop-btn">⏹ Stop</button>
+            <button class="win95-btn" id="sndrec-reverse-btn">⏪ Reverse</button>
+            <label style="font-size:0.72rem;display:flex;align-items:center;gap:3px">BPM:<input type="number" id="sndrec-bpm" value="120" min="60" max="200" style="width:50px" class="win95-text-input tabular-nums" /></label>
+            <select id="sndrec-speed" class="win95-select">
+              <option value="1">1.0x Normal</option>
+              <option value="0.5">0.5x Half-Speed</option>
+              <option value="2">2.0x Chipmunk</option>
+            </select>
+            <label style="font-size:0.72rem;display:flex;align-items:center;gap:3px"><input type="checkbox" id="sndrec-echo" /> Echo</label>
+            <button class="win95-btn" id="sndrec-export-wav-btn">💾 Export .WAV</button>
+          </div>
+          <div id="sndrec-seq-grid" class="sndrec-seq-grid"></div>
+          <div class="sndrec-pads-row">
+            <button class="win95-btn sndrec-pad-btn" data-freq="110" data-slide="40" data-wave="sine">🥁 Bass Boom</button>
+            <button class="win95-btn sndrec-pad-btn" data-freq="880" data-slide="220" data-wave="sawtooth">🔫 Laser Zap</button>
+            <button class="win95-btn sndrec-pad-btn" data-freq="587" data-slide="987" data-wave="square">🪙 Coin 1UP</button>
+            <button class="win95-btn sndrec-pad-btn" data-freq="330" data-slide="660" data-wave="triangle">🛸 UFO Sweep</button>
+            <button class="win95-btn sndrec-pad-btn" data-freq="160" data-slide="55" data-wave="sawtooth">💥 8-Bit Boom</button>
+          </div>
+          <div class="window-statusbar">
+            <span id="sndrec-status">STOPPED · SNDREC32.EXE Ready</span>
+            <span>PCM 22kHz 16-bit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 19. CALENDAR, CLOCK & ALARMS 95 (CALENDAR.EXE) -->
+      <div class="window resizable" id="calendarApp" style="width: 560px; height: 420px">
+        <div class="window-titlebar">
+          <span class="window-title">📅 Calendar, Analog Clock &amp; Alarms 95 — CALENDAR.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content cal-wrapper">
+          <div class="cal-split">
+            <div class="cal-left">
+              <div class="cal-nav-row">
+                <button class="win95-btn" id="cal-prev-month">◀</button>
+                <b id="cal-month-label">Month Year</b>
+                <button class="win95-btn" id="cal-next-month">▶</button>
+              </div>
+              <div id="cal-days-grid" class="cal-days-grid tabular-nums"></div>
+            </div>
+            <div class="cal-right">
+              <div class="cal-clock-card">
+                <canvas id="cal-analog-clock" width="110" height="110"></canvas>
+                <div class="cal-alarm-box">
+                  <div style="font-weight:700;font-size:0.74rem">⏰ Countdown Alarm</div>
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <input type="number" id="cal-alarm-seconds" value="10" min="1" max="3600" style="width:52px" class="win95-text-input tabular-nums" />
+                    <span style="font-size:0.7rem">sec</span>
+                    <button class="win95-btn" id="cal-alarm-start-btn">Set</button>
+                  </div>
+                  <input type="text" id="cal-alarm-label" value="Coffee Break 1995!" class="win95-text-input" placeholder="Alarm message..." />
+                  <div id="cal-alarm-status" style="font-size:0.7rem;color:#000080">No active alarm.</div>
+                </div>
+              </div>
+              <div class="cal-notes-box">
+                <div id="cal-selected-date-label" style="font-size:0.74rem;font-weight:700">Schedule:</div>
+                <textarea id="cal-note-input" class="cal-note-input" placeholder="Write appointments or Y2K reminders for this date..."></textarea>
+                <button class="win95-btn" id="cal-save-note-btn">💾 Save Day Schedule</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 20. WINDOWS 95 TASK MANAGER (TASKMGR.EXE) -->
+      <div class="window resizable" id="taskManager" style="width: 550px; height: 400px">
+        <div class="window-titlebar">
+          <span class="window-title">⚡ Windows 95 Task Manager — TASKMGR.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content taskmgr-wrapper">
+          <div class="taskmgr-tabs">
+            <button class="win95-btn taskmgr-tab-btn active" data-tab="apps">Applications</button>
+            <button class="win95-btn taskmgr-tab-btn" data-tab="procs">Processes</button>
+            <button class="win95-btn taskmgr-tab-btn" data-tab="perf">Performance</button>
+            <button class="win95-btn" id="taskmgr-new-task-btn" style="margin-left:auto">New Task (Run...)</button>
+            <button class="win95-btn" id="taskmgr-refresh-btn">↻ Refresh</button>
+          </div>
+          <div class="taskmgr-pane" data-pane="apps" style="display:flex">
+            <table class="regedit-table">
+              <thead><tr><th>Task Window</th><th>Status</th><th>RAM</th><th>Action</th></tr></thead>
+              <tbody id="taskmgr-apps-tbody"></tbody>
+            </table>
+          </div>
+          <div class="taskmgr-pane" data-pane="procs" style="display:none">
+            <table class="regedit-table">
+              <thead><tr><th>PID</th><th>Image Name</th><th>Mem Usage</th><th>Description</th><th>Action</th></tr></thead>
+              <tbody id="taskmgr-procs-tbody"></tbody>
+            </table>
+          </div>
+          <div class="taskmgr-pane" data-pane="perf" style="display:none;padding:10px;flex-direction:column;gap:8px">
+            <div style="font-size:0.76rem;font-weight:700">Live Kernel CPU Utilization History</div>
+            <canvas id="taskmgr-perf-canvas" width="500" height="180" style="background:#000;border:2px inset #808080;width:100%"></canvas>
+          </div>
+          <div class="window-statusbar">
+            <span id="taskmgr-stats-line" class="tabular-nums">Processes: 5 · CPU Usage: 14%</span>
+            <span>Ctrl+Shift+Esc</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 21. RECYCLE BIN 95 (RECYCLE.EXE) -->
+      <div class="window resizable" id="recycleBin" style="width: 520px; height: 350px">
+        <div class="window-titlebar">
+          <span class="window-title">🗑️ Recycle Bin — C:\RECYCLED</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content taskmgr-wrapper">
+          <div class="taskmgr-tabs">
+            <button class="win95-btn" id="recycle-restore-all-btn">♻️ Restore All Items</button>
+            <button class="win95-btn" id="recycle-empty-btn" style="color:#800000">🔥 Empty Recycle Bin</button>
+          </div>
+          <div style="flex:1;overflow:auto;background:#fff;border:2px inset #808080;margin:4px">
+            <table class="regedit-table">
+              <thead><tr><th>Deleted File</th><th>Original Location</th><th>Date Deleted</th><th>Restore</th></tr></thead>
+              <tbody id="recycle-list-tbody"></tbody>
+            </table>
+          </div>
+          <div class="window-statusbar">
+            <span id="recycle-status-line">2 deleted object(s)</span>
+            <span>Norton Protected Bin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 22. CLIPBOARD VIEWER & SNIPPING STUDIO 95 (CLIPBRD.EXE) -->
+      <div class="window resizable" id="clipViewer" style="width: 500px; height: 400px">
+        <div class="window-titlebar">
+          <span class="window-title">📋 Clipboard &amp; Snipping Studio 95 — CLIPBRD.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content clip-wrapper">
+          <div class="clip-toolbar">
+            <input type="text" id="clip-manual-input" class="win95-text-input" placeholder="Add quick clip text..." />
+            <button class="win95-btn" id="clip-add-btn">+ Pin Clip</button>
+            <button class="win95-btn" id="clip-snip-paint-btn">✂️ Snip GemPaint</button>
+            <button class="win95-btn" id="clip-clear-btn">Clear</button>
+          </div>
+          <div id="clip-history-list" class="clip-history-list"></div>
+        </div>
+      </div>
+
+      <!-- 23. OS TROPHY VAULT & EASTER EGGS (TROPHIES.EXE) -->
+      <div class="window resizable" id="trophiesApp" style="width: 580px; height: 430px">
+        <div class="window-titlebar">
+          <span class="window-title">🏆 Angel-OS Trophy Vault &amp; Easter Eggs — TROPHIES.EXE</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content trophies-wrapper">
+          <div class="trophies-header-bar">
+            <span id="trophies-summary" class="tabular-nums">Unlocked: 0 / 16</span>
+            <button class="win95-btn" id="trophies-reset-btn" style="color:#800000">Reset Trophies</button>
+          </div>
+          <div id="trophies-grid" class="trophies-grid"></div>
+        </div>
+      </div>
+
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
         <div class="ctx-item" data-action="open-installer">💿 Ability to Install (Software &amp; OS)</div>
         <div class="ctx-item" data-action="open-display">⚙️ Master Settings &amp; Control Panel...</div>
         <div class="ctx-item" data-action="open-regedit">🗂️ Open REGEDIT.EXE</div>
+        <div class="ctx-item" data-action="open-taskmgr">⚡ Task Manager (Ctrl+Shift+Esc)</div>
+        <div class="ctx-item" data-action="open-run">🏃 Run Command... (Alt+R)</div>
         <div class="ctx-divider"></div>
-        <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
-        <div class="ctx-item" data-action="new-note">📝 New Text Document</div>
+        <div class="ctx-item" data-action="spawn-sticky">📌 New Desktop Sticky Note</div>
+        <div class="ctx-item" data-action="new-note">📝 Open GemNotes WordPad</div>
         <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
+        <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
         <div class="ctx-divider"></div>
+        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (16 Secrets)</div>
         <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
         <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
@@ -1236,22 +1687,56 @@
         <div class="start-menu-items">
           <div class="start-menu-item" data-app="abilityToInstall">💿 <b>Ability to Install</b></div>
           <div class="start-menu-item" data-app="controlPanel">⚙️ <b>Settings &amp; Control Panel</b></div>
-          <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT)</div>
+
+          <div class="start-menu-folder">
+            <span>🎮 Games &amp; Arcade</span><span>▸</span>
+            <div class="start-submenu">
+              <div class="start-menu-item" data-app="solitaireApp">🃏 Solitaire 95 (Cascading Cards!)</div>
+              <div class="start-menu-item" data-app="arcadeApp">🕹️ Arcade 95 (Snake/Breakout/Tetris/Ski)</div>
+              <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
+              <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
+              <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (16 Achievements)</div>
+            </div>
+          </div>
+
+          <div class="start-menu-folder">
+            <span>🛠️ Accessories &amp; Media</span><span>▸</span>
+            <div class="start-submenu">
+              <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
+              <div class="start-menu-item" data-app="calendarApp">📅 Calendar, Clock &amp; Alarms</div>
+              <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (.WAV Export)</div>
+              <div class="start-menu-item" data-app="clipViewer">📋 Clipboard &amp; Snipping Studio</div>
+              <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
+              <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
+              <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
+              <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
+            </div>
+          </div>
+
+          <div class="start-menu-folder">
+            <span>🔧 System &amp; Power Tools</span><span>▸</span>
+            <div class="start-submenu">
+              <div class="start-menu-item" data-app="taskManager">⚡ Task Manager (TASKMGR)</div>
+              <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT)</div>
+              <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
+              <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
+              <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt (COMMAND.COM)</div>
+              <div class="start-menu-divider"></div>
+              <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
+              <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
+              <div class="start-menu-item" id="start-bsod-prank">💀 Trigger BSOD 95 Prank</div>
+              <div class="start-menu-item" id="start-hotkeys-btn">⌨️ Keyboard Shortcuts &amp; Secrets</div>
+              <div class="start-menu-item" id="start-winver-btn">ℹ️ About Angel-OS 95 (WINVER)</div>
+            </div>
+          </div>
+
           <div class="start-menu-divider"></div>
           <div class="start-menu-item" data-app="chrome" data-pkg-app="chrome" id="start-menu-browser-item">🟢 Google Chrome (Web Browser)</div>
           <div class="start-menu-item" data-app="myComputer">💻 My Gemtop Explorer</div>
           <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
-          <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
-          <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
-          <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
-          <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
-          <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor" style="display: none">📊 System Resource Monitor</div>
-          <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt</div>
-          <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
           <div class="start-menu-divider"></div>
+          <div class="start-menu-item" id="start-run-dialog">🏃 <b>Run...</b> <span style="margin-left:auto;opacity:0.65;font-size:0.68rem">Alt+R</span></div>
           <div class="start-menu-item" id="start-pwa-install">📲 <b>Install as Physical OS (PWA)...</b></div>
-          <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
-          <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
           <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
           <div class="start-menu-item" id="start-reboot-os">🔄 Reboot / CMOS BIOS...</div>
         </div>
@@ -1410,31 +1895,33 @@
         </div>
       </div>
 
-      <!-- 5. WINDOWS COPILOT 95 DOCKED RIGHT SIDEBAR -->
+      <!-- 5. ANGEL PILOT (IN-TRAINING JOKE COPILOT · 100% NON-AI) DOCKED RIGHT SIDEBAR -->
       <div id="win11-copilot-sidebar" class="win11-copilot-sidebar" style="display: none">
         <div class="window-titlebar">
-          <span class="window-title">✨ Windows Copilot 95 (System Agent)</span>
+          <span class="window-title">👼 Angel Pilot (Training Mode · 0% AI)</span>
           <div class="window-controls">
             <button class="window-control-button" id="copilot-close-btn">✕</button>
           </div>
         </div>
         <div class="copilot-subheader">
-          <span>AI OS Controller · Can tile windows, switch themes &amp; launch apps!</span>
+          <span id="angel-pilot-training-status">🧠 Brain Cells: 0 · Training Progress: 0.002% · 100% Non-AI Excuses</span>
         </div>
         <div class="copilot-quick-actions">
+          <button class="win95-btn copilot-action-chip" data-joke="Can you help me with this?">🙄 "Help me"</button>
+          <button class="win95-btn copilot-action-chip" data-joke="How do I fix my computer?">🥴 "Fix my PC"</button>
+          <button class="win95-btn copilot-action-chip" data-joke="Write my essay for me">📝 "Do my work"</button>
           <button class="win95-btn copilot-action-chip" data-sys="tile">⊞ Tile Windows</button>
-          <button class="win95-btn copilot-action-chip" data-sys="center-bar">🎯 Center Taskbar</button>
           <button class="win95-btn copilot-action-chip" data-sys="theme">🌈 Cycle Theme</button>
-          <button class="win95-btn copilot-action-chip" data-sys="synth">🎹 Play 16-Bit Synth</button>
+          <button class="win95-btn copilot-action-chip" data-sys="clear">🧹 Clear</button>
         </div>
         <div class="copilot-chat-log" id="copilot-chat-log">
           <div class="copilot-msg bot">
-            <b>Copilot 95:</b> Welcome to Windows 10/11 backported to 1995! Ask me anything or tell me to <i>"switch to Cyberpunk theme"</i>, <i>"tile my windows"</i>, or <i>"write a note to C:\"</i>!
+            <b>Angel Pilot:</b> Sup. I'm <b>Angel Pilot</b>, your 100% non-AI-generated trainee copilot. I failed my MS-DOS certification exam four times, so go ahead and ask me something—I'm either not helping with that or way too stupid to figure it out.
           </div>
         </div>
         <div class="copilot-input-row">
-          <input type="text" id="copilot-input" placeholder="Ask Copilot 95 or issue an OS command..." />
-          <button class="win95-btn" id="copilot-send-btn">Send</button>
+          <input type="text" id="copilot-input" placeholder="Ask Angel Pilot (prepare to be disappointed)..." />
+          <button class="win95-btn" id="copilot-send-btn">Ask</button>
         </div>
       </div>
 
@@ -1532,10 +2019,12 @@
               <path d="M5 13h7.2a2.3 2.3 0 0 0 .3-4.58A3.2 3.2 0 0 0 6.2 7.6 2.6 2.6 0 0 0 5 13Z" fill="#f8fafc" stroke="#334155" stroke-width="1.1" stroke-linejoin="round" />
             </svg>
           </button>
-          <button class="win95-btn taskbar-copilot-btn taskbar-icon-btn" id="taskbar-copilot-btn" title="Windows Copilot 95">
+          <button class="win95-btn taskbar-copilot-btn taskbar-icon-btn" id="taskbar-copilot-btn" title="Angel Pilot (In-Training Joke Copilot · 0% AI)">
             <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M8 1.5 L9.7 6.3 L14.5 8 L9.7 9.7 L8 14.5 L6.3 9.7 L1.5 8 L6.3 6.3 Z" fill="#0078d7" stroke="#003c80" stroke-width="0.9" stroke-linejoin="round" />
-              <circle cx="8" cy="8" r="1.6" fill="#ffffff" />
+              <ellipse cx="8" cy="3.2" rx="4.2" ry="1.4" fill="none" stroke="#eab308" stroke-width="1.4" />
+              <circle cx="8" cy="8.8" r="3.6" fill="#fef08a" stroke="#1e293b" stroke-width="1.1" />
+              <path d="M2.2 8.2 Q4.2 6.8 4.8 10.6 Q2.8 10.8 2.2 8.2 Z" fill="#f8fafc" stroke="#334155" stroke-width="0.9" />
+              <path d="M13.8 8.2 Q11.8 6.8 11.2 10.6 Q13.2 10.8 13.8 8.2 Z" fill="#f8fafc" stroke="#334155" stroke-width="0.9" />
             </svg>
           </button>
           <button class="win95-btn taskbar-install-os-btn taskbar-icon-btn" id="pwa-taskbar-install-btn" title="Install Gemini 95 as a Native Standalone OS App">
@@ -1549,7 +2038,14 @@
           <!-- System Tray -->
           <div id="system-tray" class="system-tray">
             <span id="tray-offline-badge" class="tray-offline-badge" style="display: none" title="Running Offline via Service Worker Cache">OFFLINE</span>
-            <button class="tray-icon-btn" id="tray-qs-btn" title="Network & Quick Settings 95">
+            <button class="tray-icon-btn" id="tray-notif-btn" title="Notification History Drawer">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 2.2a3.6 3.6 0 0 0-3.6 3.6v2.7L3.2 10.5h9.6L11.6 8.5V5.8A3.6 3.6 0 0 0 8 2.2Z" fill="#eab308" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round" />
+                <path d="M6.4 11.5a1.6 1.6 0 0 0 3.2 0" fill="none" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" />
+              </svg>
+              <span id="tray-notif-count" class="tray-notif-count" style="display:none">0</span>
+            </button>
+            <button class="tray-icon-btn" id="tray-qs-btn" title="Network &amp; Quick Settings 95">
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <rect x="2" y="10" width="2.4" height="4" fill="#000080" />
                 <rect x="5.5" y="7.5" width="2.4" height="6.5" fill="#000080" />
@@ -1573,12 +2069,107 @@
                 <line class="tray-sound-mute" x1="14.8" y1="5" x2="11" y2="11" stroke="#b91c1c" stroke-width="1.6" stroke-linecap="round" />
               </svg>
             </button>
-            <div id="tray-clock" class="tray-clock" title="Date, Time & Quick Settings 95">
+            <div id="tray-clock" class="tray-clock" title="Date, Time &amp; Quick Settings 95">
               <span class="tray-clock-time">12:00 PM</span>
               <span class="tray-clock-date">8/24/1995</span>
             </div>
           </div>
           <button class="taskbar-peek-btn" id="show-desktop-btn" title="Show Desktop (Minimize All Windows)" aria-label="Show Desktop"></button>
+        </div>
+      </div>
+
+      <!-- NOTIFICATION BALLOON STACK & HISTORY DRAWER -->
+      <div id="os-balloon-stack" class="os-balloon-stack"></div>
+      <div id="notif-drawer" class="notif-drawer" style="display:none">
+        <div class="window-titlebar">
+          <span class="window-title">🔔 Action Center &amp; Notification Log</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="notif-drawer-close">✕</button>
+          </div>
+        </div>
+        <div style="padding:6px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #808080">
+          <span style="font-size:0.72rem;font-weight:700">Recent OS Events &amp; Trophies</span>
+          <button class="win95-btn" id="notif-drawer-clear">Clear All</button>
+        </div>
+        <div id="notif-drawer-list" class="notif-drawer-list"></div>
+      </div>
+
+      <!-- RUN COMMAND DIALOG (Alt+R) -->
+      <div id="run-dialog-modal" class="installshield-backdrop" style="display:none">
+        <div class="sfx-exe-window" style="width:420px">
+          <div class="window-titlebar">
+            <span class="window-title">🏃 Run — Angel-OS 95</span>
+            <div class="window-controls"><button class="window-control-button" id="run-close-btn">✕</button></div>
+          </div>
+          <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:0.76rem;color:#000">Type the name of a program, utility, or command (e.g. <code>calc</code>, <code>sol</code>, <code>arcade</code>, <code>sndrec32</code>, <code>taskmgr</code>, <code>bsod</code>, <code>fdisk</code>):</div>
+            <input type="text" id="run-dialog-input" class="win95-text-input" value="arcade" />
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <button class="win95-btn run-preset-chip" data-cmd="sol">sol</button>
+              <button class="win95-btn run-preset-chip" data-cmd="arcade">arcade</button>
+              <button class="win95-btn run-preset-chip" data-cmd="calc">calc</button>
+              <button class="win95-btn run-preset-chip" data-cmd="sndrec32">sndrec32</button>
+              <button class="win95-btn run-preset-chip" data-cmd="taskmgr">taskmgr</button>
+              <button class="win95-btn run-preset-chip" data-cmd="trophies">trophies</button>
+              <button class="win95-btn run-preset-chip" data-cmd="bsod">bsod</button>
+            </div>
+            <div class="sfx-exe-footer">
+              <button class="win95-btn" id="run-ok-btn"><b>OK</b></button>
+              <button class="win95-btn" id="run-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABOUT ANGEL-OS 95 MODAL (WINVER.EXE) -->
+      <div id="winver-modal" class="installshield-backdrop" style="display:none">
+        <div class="sfx-exe-window" style="width:410px">
+          <div class="window-titlebar">
+            <span class="window-title">ℹ️ About Angel-OS (WINVER.EXE)</span>
+            <div class="window-controls"><button class="window-control-button" id="winver-close-btn">✕</button></div>
+          </div>
+          <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#000">
+            <div style="background:#000080;color:#fff;padding:10px;font-weight:700;font-size:0.95rem">Angel-OS / Remix Gemini 95 Ultra Edition</div>
+            <div><b>Build:</b> 4.00.950 B · Five Trillion Features Pack</div>
+            <div><b>Shell Features:</b> FDISK + Interactive Guide, Multi-Engine Browser, Angel Pilot (0% AI), Klondike Solitaire, 4-in-1 Arcade, 16-bit WAV Studio &amp; Trophy Vault</div>
+            <div><b>Session Uptime:</b> <span id="winver-uptime" class="tabular-nums">0 seconds</span></div>
+            <div class="sfx-exe-footer">
+              <button class="win95-btn" id="winver-ok-btn"><b>OK</b></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEYBOARD SHORTCUTS & SECRETS MODAL -->
+      <div id="hotkeys-modal" class="installshield-backdrop" style="display:none">
+        <div class="sfx-exe-window" style="width:450px">
+          <div class="window-titlebar">
+            <span class="window-title">⌨️ Angel-OS 95 Keyboard Shortcuts &amp; Secrets</span>
+            <div class="window-controls"><button class="window-control-button" id="hotkeys-close-btn">✕</button></div>
+          </div>
+          <div class="sfx-exe-body" style="font-size:0.76rem;color:#000;line-height:1.55">
+            <div><code>Alt + R</code> — Open Win95 <b>Run...</b> Command Launcher</div>
+            <div><code>Ctrl + Shift + Esc</code> — Open <b>Task Manager 95</b></div>
+            <div><code>Alt + T</code> — Auto-Tile all open windows</div>
+            <div><code>Alt + C</code> — Cascade all open windows</div>
+            <div><code>↑ ↑ ↓ ↓ ← → ← → B A</code> — Secret <b>Konami Code</b> Easter Egg!</div>
+            <div><code>F1</code> (inside FDISK) — Interactive 5-Step Partitioning Coach</div>
+            <div class="sfx-exe-footer" style="margin-top:8px">
+              <button class="win95-btn" id="hotkeys-ok-btn"><b>Awesome!</b></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLASSIC 1995 BLUE SCREEN OF DEATH (BSOD PRANK OVERLAY) -->
+      <div id="bsod-prank-overlay" class="bsod-prank-overlay" style="display:none">
+        <div class="bsod-prank-inner">
+          <div class="bsod-badge">Angel-OS 95</div>
+          <p id="bsod-reason-line">A fatal exception 0E has occurred at 0028:C0011E36 in VXD VMM(01) + 00010E36.</p>
+          <p>The current application will be terminated (just kidding, Angel Pilot tripped over a floppy disk).</p>
+          <p>* Press any key or click anywhere to return to Angel-OS 95.</p>
+          <p>* You will NOT lose any unsaved Solitaire games or sticky notes.</p>
+          <div class="bsod-press-any">Press any key to continue _</div>
         </div>
       </div>
 
