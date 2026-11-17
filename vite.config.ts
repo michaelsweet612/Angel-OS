@@ -15,10 +15,19 @@ const disableViteClientWs: Plugin = {
   transform(code, id) {
     if (id.includes('vite/dist/client/client.mjs')) {
       return {
-        code: code.replace(
-          /transport\.connect\(createHMRHandler\(handleMessage\)\);?/g,
-          '/* HMR WebSocket disabled in preview environment */',
-        ),
+        code: code
+          .replace(
+            /await wsTransport\.connect\(handlers\);/g,
+            'return;',
+          )
+          .replace(
+            /await wsTransport\.disconnect\(\);/g,
+            'return;',
+          )
+          .replace(
+            /wsTransport\.send\(data\);/g,
+            'return;',
+          ),
         map: null,
       };
     }
