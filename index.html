@@ -292,13 +292,74 @@
     <div id="fdisk-screen" class="fdisk-screen" style="display: none">
       <div class="fdisk-frame">
         <div class="fdisk-header">
-          <div>Microsoft(R) Windows 95 — Fixed Disk Setup Program (FDISK.EXE v7.00)</div>
+          <div class="fdisk-header-top">
+            <span>Microsoft(R) Windows 95 — Fixed Disk Setup Program (FDISK.EXE v7.00)</span>
+            <button class="cmos-action-btn fdisk-guide-launch-btn" id="fdisk-guide-toggle-btn" title="Toggle step-by-step interactive FDISK partitioning tutorial (Hotkey: F1)">
+              [F1 / ?] Interactive FDISK Guide
+            </button>
+          </div>
           <div style="font-size: 0.76rem; color: #00ffff">Current Fixed Disk Drive: 1 — QUANTUM FIREBALL IDE (1,995 MB Total · 968 Cyl · 64 Heads)</div>
         </div>
 
         <div class="fdisk-status-strip">
           <span id="fdisk-mbr-status" class="tabular-nums">✓ MBR 0x55AA VALID · ACTIVE BOOT PARTITION C: READY</span>
-          <span class="tabular-nums">LBA MODE: ON</span>
+          <span class="tabular-nums">LBA MODE: ON · F1=HELP GUIDE</span>
+        </div>
+
+        <!-- MS-DOS EDIT / NORTON COMMANDER TUI INTERACTIVE FDISK GUIDE OVERLAY -->
+        <div id="fdisk-guide-panel" class="fdisk-guide-panel" style="display: none">
+          <div class="fdisk-guide-titlebar">
+            <span id="fdisk-guide-title">╔═ FDISK.HLP — Interactive Partitioning Coach &amp; MS-DOS Disk Guide ═╗</span>
+            <div class="fdisk-guide-title-actions">
+              <button class="fdisk-guide-mini-btn" id="fdisk-guide-autoadv-btn" title="Automatically advance to the next step when you complete the spotlighted action">
+                [✓] Auto-Advance: ON
+              </button>
+              <button class="fdisk-guide-mini-btn close" id="fdisk-guide-close-btn" title="Close FDISK Help Overlay">[✕ Close F1]</button>
+            </div>
+          </div>
+
+          <div class="fdisk-guide-stepper" id="fdisk-guide-stepper">
+            <!-- Dynamically populated 5 step tabs -->
+          </div>
+
+          <div class="fdisk-guide-body">
+            <div class="fdisk-guide-main-col">
+              <div class="fdisk-guide-step-hdr">
+                <span class="fdisk-guide-step-kicker" id="fdisk-guide-step-kicker">STEP 1 OF 5 · PRIMARY DOS PARTITION</span>
+                <span class="fdisk-guide-step-status tabular-nums" id="fdisk-guide-step-status">[✓ COMPLETED]</span>
+              </div>
+              <div class="fdisk-guide-step-title" id="fdisk-guide-step-title">
+                1. Allocate Primary DOS Partition (Drive C:\)
+              </div>
+              <p class="fdisk-guide-step-desc" id="fdisk-guide-step-desc"></p>
+              <div class="fdisk-guide-callout-instruction" id="fdisk-guide-callout-instruction"></div>
+            </div>
+
+            <div class="fdisk-guide-ascii-col">
+              <div class="fdisk-guide-ascii-hdr">IDE CYLINDER / SECTOR SCHEMATIC</div>
+              <pre class="fdisk-guide-ascii tabular-nums" id="fdisk-guide-ascii"></pre>
+            </div>
+          </div>
+
+          <div class="fdisk-guide-nav-bar">
+            <div class="fdisk-guide-nav-left">
+              <button class="cmos-action-btn" id="fdisk-guide-prev-btn">◀ Prev Step</button>
+              <button class="cmos-action-btn primary" id="fdisk-guide-autorun-btn">⚡ Auto-Run This Step</button>
+              <button class="cmos-action-btn" id="fdisk-guide-next-btn">Next Step ▶</button>
+            </div>
+            <div class="fdisk-guide-presets">
+              <span class="fdisk-guide-preset-lbl">1-Click Presets:</span>
+              <button class="cmos-action-btn" id="fdisk-preset-dual-btn" title="Create 1495MB Active Formatted C: + 500MB Formatted D: + Valid 0x55AA MBR">
+                [P1] Dual C: 1495M + D: 500M
+              </button>
+              <button class="cmos-action-btn" id="fdisk-preset-single-btn" title="Allocate all 1995MB to Primary Active C: + Valid 0x55AA MBR">
+                [P2] Max Single C: 1995M
+              </button>
+              <button class="cmos-action-btn" id="fdisk-preset-wipe-btn" style="color: #880000" title="Wipe partitions to 1995MB Unallocated so you can practice all 5 steps from scratch">
+                [P3] Wipe Disk (Practice Mode)
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="fdisk-disk-bar" id="fdisk-disk-bar">
@@ -321,7 +382,7 @@
         </table>
 
         <div class="fdisk-controls-grid">
-          <div class="fdisk-ctrl-box">
+          <div class="fdisk-ctrl-box" id="fdisk-box-primary">
             <div class="fdisk-ctrl-title">1. Primary DOS Partition (C:\)</div>
             <div style="display: flex; align-items: center; gap: 6px; font-size: 0.76rem; margin-bottom: 6px">
               <label for="fdisk-c-size-input">Size (MB):</label>
@@ -336,7 +397,7 @@
             </div>
           </div>
 
-          <div class="fdisk-ctrl-box">
+          <div class="fdisk-ctrl-box" id="fdisk-box-secondary">
             <div class="fdisk-ctrl-title">2. Logical Drive (D:\) &amp; Master Boot Record</div>
             <div style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 6px">
               Allocate remaining unpartitioned cylinders to Secondary Drive D:\ or repair/test MBR 0x55AA:
@@ -351,10 +412,11 @@
         </div>
 
         <div class="fdisk-console-log tabular-nums" id="fdisk-console-log">
-          FDISK Ready. Choose an action above to partition or format Fixed Disk 1, or launch OS Setup.
+          FDISK Ready. Choose an action above to partition or format Fixed Disk 1, press F1 for the Interactive FDISK Guide, or launch OS Setup.
         </div>
 
         <div class="fdisk-footer">
+          <button class="cmos-action-btn" id="fdisk-footer-guide-btn">📖 [F1] FDISK Partitioning Guide</button>
           <button class="cmos-action-btn primary" id="fdisk-launch-setup-btn">💿 Save &amp; Launch OS Setup (SETUP.EXE)</button>
           <button class="cmos-action-btn" id="fdisk-exit-btn">ESC: Save Partition Table &amp; Exit FDISK</button>
         </div>

@@ -879,9 +879,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     initSimplePaintApp(windowElement);
     if (paintAssistant && systemRegistry.showClippyAssistant) paintAssistant.classList.add('visible');
     if (assistantBubble) assistantBubble.textContent = 'Draw something! Click "Judge Art" anytime.';
-    if (paintCritiqueIntervalId) clearInterval(paintCritiqueIntervalId);
-    if (systemRegistry.showClippyAssistant) {
-      paintCritiqueIntervalId = window.setInterval(critiquePaintDrawing, 20000);
+    if (paintCritiqueIntervalId) {
+      clearInterval(paintCritiqueIntervalId);
+      paintCritiqueIntervalId = null;
     }
   } else if (appName === 'doom' && !dosInstances['doom']) {
     const doomContainer = document.getElementById('doom-content') as HTMLDivElement;
@@ -1269,7 +1269,9 @@ async function critiquePaintDrawing(): Promise<void> {
     const critique = result?.text?.trim() || 'Magnificent pixels! Louvre 1995 material.';
     if (assistantBubble) assistantBubble.textContent = critique;
   } catch (error: any) {
-    if (assistantBubble) assistantBubble.textContent = `Art circuits busy! Keep drawing!`;
+    if (assistantBubble) {
+      assistantBubble.textContent = error?.message || 'AI error: check your API key in Settings > Secrets.';
+    }
   }
 }
 
@@ -1982,8 +1984,8 @@ function initMinesweeperGame(windowElement: HTMLDivElement): void {
         contents: prompt,
       });
       commentaryElement.textContent = result?.text?.trim() || 'Highlighted a promising square in yellow!';
-    } catch {
-      commentaryElement.textContent = 'Highlighted a safe square on the board!';
+    } catch (error: any) {
+      commentaryElement.textContent = error?.message || 'AI Hint unavailable: check your API key in Settings > Secrets.';
     } finally {
       hintButton.disabled = false;
       hintButton.textContent = '💡 AI Tactical Hint';
@@ -2420,9 +2422,14 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       appendLine(`        ${virtualFileSystem.length} item(s)`);
       return;
     }
-    if (upper === 'FDISK' || upper === 'FDISK.EXE' || upper === 'FDISK /MBR') {
-      openFdiskScreen();
-      appendLine('Launching MS-DOS Fixed Disk Setup Program (FDISK.EXE)...');
+    if (upper === 'FDISK' || upper === 'FDISK.EXE' || upper === 'FDISK /MBR' || upper === 'FDISK /?' || upper === 'FDISK HELP') {
+      const openWithGuide = upper === 'FDISK /?' || upper === 'FDISK HELP';
+      openFdiskScreen(openWithGuide);
+      appendLine(
+        openWithGuide
+          ? 'Launching MS-DOS FDISK.EXE with Interactive FDISK Guide (F1)...'
+          : 'Launching MS-DOS Fixed Disk Setup Program (FDISK.EXE)...',
+      );
       return;
     }
     if (upper === 'ISO' || upper === 'MAKEISO') {
@@ -3402,8 +3409,8 @@ document.getElementById('widget-news-refresh-btn')?.addEventListener('click', as
     if (lines.length > 0) {
       newsBox.innerHTML = lines.map((l: string) => `<p>${l.replace(/[<>&]/g, '')}</p>`).join('');
     }
-  } catch {
-    // Keep existing headlines on error
+  } catch (error: any) {
+    newsBox.innerHTML = `<p style="color:#800000;">• ${String(error?.message || 'AI Refresh failed').replace(/[<>&]/g, '')}</p>`;
   } finally {
     btn.disabled = false;
     btn.textContent = '↻ AI Refresh';
@@ -3429,7 +3436,8 @@ const searchResults = document.getElementById('win11-search-results') as HTMLDiv
 
 const SEARCHABLE_ENTRIES = [
   { label: '💿 Ability to Install (.EXE Installers & Physical OS Setup)', kind: 'Dual Installer', action: () => openApp('abilityToInstall', true) },
-  { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen() },
+  { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen(false) },
+  { label: '📖 Interactive FDISK Guide (Step-by-Step 90s Partitioning Coach)', kind: 'FDISK Tutorial', action: () => openFdiskScreen(true) },
   { label: '📲 Install Gemini 95 onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
   { label: '💿 Export Bootable x86 CD-ROM Image (GEMINI95_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
   { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
