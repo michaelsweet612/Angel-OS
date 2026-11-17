@@ -32,6 +32,80 @@
     <!-- Optional CRT Scanline Overlay -->
     <div id="crt-overlay" class="crt-overlay"></div>
 
+    <!-- Interactive Windows 95 BIOS POST & Cloud Splash Boot Sequence -->
+    <div id="boot-screen" class="boot-screen">
+      <!-- Stage 1: 1995 BIOS POST Screen -->
+      <div id="boot-bios-stage" class="boot-bios-stage">
+        <div class="bios-top-row">
+          <div class="bios-header-text">
+            <div>Award Modular BIOS v4.51PG, An Energy Star Ally</div>
+            <div>Copyright (C) 1984-95, Gemini Neural Systems, Inc.</div>
+            <div style="margin-top: 8px; color: #ffffff">GEMINI-95 ACPI BIOS REVISION 1000.X</div>
+          </div>
+          <div class="bios-energy-badge">
+            <pre class="bios-ascii-star">
+   /\
+  /  \  ENERGY
+ / /\ \ STAR '95
+/______\ COMPLIANT</pre>
+          </div>
+        </div>
+
+        <div class="bios-diagnostics">
+          <div>Main Processor : <span style="color: #fff">Intel Pentium(R) 133MHz + Gemini Neural Co-Processor</span></div>
+          <div>Memory Test : <span id="bios-ram-counter" class="tabular-nums" style="color: #ffff55">65536K OK</span></div>
+          <div id="bios-drives-list" class="bios-drives-list">
+            <div>Award Plug and Play BIOS Extension v1.0A</div>
+            <div>Detecting Primary Master ... <span style="color: #fff">QUANTUM FIREBALL 1995MB</span></div>
+            <div>Detecting Primary Slave  ... <span style="color: #fff">CREATIVE CD-ROM 8X</span></div>
+            <div>Sound Blaster 16 ASP DSP v4.13 Initialized (Port 220h, IRQ 5, DMA 1)</div>
+          </div>
+        </div>
+
+        <div class="bios-cta-box" id="bios-cta-box">
+          <div class="bios-prompt-blink" id="bios-status-line">
+            SYSTEM READY — CLICK BELOW OR PRESS [ENTER] TO POWER ON &amp; PLAY STARTUP AUDIO
+          </div>
+          <div class="bios-btn-group">
+            <button id="boot-power-btn" class="boot-power-btn">
+              ▶ Power On &amp; Boot Gemini 95 (Lo-Fi Synth Audio)
+            </button>
+            <button id="boot-skip-btn" class="boot-skip-btn">
+              Skip Boot (Silent)
+            </button>
+          </div>
+        </div>
+
+        <div class="bios-footer">
+          <span>Press <b>ENTER</b> to Boot with Audio · <b>ESC</b> to Skip</span>
+          <span>11/17/95-i430FX-2A59CG09C-00</span>
+        </div>
+      </div>
+
+      <!-- Stage 2: Classic Windows 95 Cloud Splash Screen -->
+      <div id="boot-splash-stage" class="boot-splash-stage" style="display: none">
+        <div class="splash-clouds-bg"></div>
+        <div class="splash-center-card">
+          <div class="splash-flag-icon">
+            <span class="flag-sq sq-red"></span>
+            <span class="flag-sq sq-green"></span>
+            <span class="flag-sq sq-blue"></span>
+            <span class="flag-sq sq-yellow"></span>
+          </div>
+          <div class="splash-brand-lockup">
+            <div class="splash-microsoft">Microsoft®</div>
+            <div class="splash-title">Gemini <span class="splash-95">95</span></div>
+            <div class="splash-subtitle">Lo-Fi Eno Synthesizer &amp; Neural Plus! Edition</div>
+          </div>
+          <div class="splash-audio-badge" id="splash-audio-status">
+            🔊 Synthesizing Warm Lo-Fi Eno Pad &amp; 1995 Tape Crunch...
+          </div>
+        </div>
+        <button id="splash-skip-btn" class="splash-skip-btn">Skip to Desktop ➔</button>
+        <div class="splash-loading-bar"></div>
+      </div>
+    </div>
+
     <!-- Desktop Selection Marquee -->
     <div id="selection-marquee" class="selection-marquee"></div>
 
@@ -616,6 +690,7 @@
           <div class="start-menu-divider"></div>
           <div class="start-menu-item" data-app="controlPanel">⚙️ Display &amp; Themes</div>
           <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
+          <div class="start-menu-item" id="start-reboot-os">🔄 Reboot Gemini 95...</div>
         </div>
       </div>
 

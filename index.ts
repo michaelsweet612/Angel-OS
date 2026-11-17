@@ -73,24 +73,173 @@ class RetroSoundEngine {
     });
   }
 
+  private createTapeSaturationCurve(amount = 24): Float32Array {
+    const samples = 8192;
+    const curve = new Float32Array(samples);
+    const k = amount;
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      // Soft hyperbolic tangent saturation + subtle 12-bit quantization step for 1995 Sound Blaster DAC crunch
+      const saturated = Math.tanh(x * (1 + k / 15));
+      curve[i] = Math.round(saturated * 64) / 64;
+    }
+    return curve;
+  }
+
+  playPostBeep() {
+    const ctx = this.getCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.11);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  }
+
+  playFloppySeek() {
+    const ctx = this.getCtx();
+    if (!ctx) return;
+    const steps = [0, 0.055, 0.11, 0.19, 0.25];
+    steps.forEach((offset, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      const t = ctx.currentTime + offset;
+      osc.frequency.setValueAtTime(idx % 2 === 0 ? 135 : 168, t);
+      osc.frequency.exponentialRampToValueAtTime(55, t + 0.03);
+      gain.gain.setValueAtTime(0.045, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.032);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.035);
+    });
+  }
+
   playStartupChime() {
     const ctx = this.getCtx();
     if (!ctx) return;
-    // Ethereal Brian Eno-inspired 95 pad chord
-    const chord = [311.13, 466.16, 622.25, 698.46, 932.33];
-    chord.forEach((freq, i) => {
+    const now = ctx.currentTime;
+
+    // Master bus: Low-Pass Filter Swell -> Lo-Fi Tape Saturation WaveShaper -> Stereo Delay Tail -> Destination
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.setValueAtTime(420, now);
+    lowpass.frequency.exponentialRampToValueAtTime(2450, now + 1.35);
+    lowpass.frequency.exponentialRampToValueAtTime(880, now + 4.4);
+    lowpass.Q.setValueAtTime(2.2, now);
+
+    const shaper = ctx.createWaveShaper();
+    shaper.curve = this.createTapeSaturationCurve(28);
+    shaper.oversample = '2x';
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.75, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 4.8);
+
+    // Stereo Chorus / Ambient Delay Tail
+    const delayL = ctx.createDelay(1.0);
+    const delayR = ctx.createDelay(1.0);
+    delayL.delayTime.setValueAtTime(0.19, now);
+    delayR.delayTime.setValueAtTime(0.29, now);
+
+    const feedback = ctx.createGain();
+    feedback.gain.setValueAtTime(0.34, now);
+
+    const wetGain = ctx.createGain();
+    wetGain.gain.setValueAtTime(0.32, now);
+
+    lowpass.connect(shaper);
+    shaper.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    // Connect ambient feedback loop
+    shaper.connect(delayL);
+    delayL.connect(delayR);
+    delayR.connect(feedback);
+    feedback.connect(delayL);
+    delayL.connect(wetGain);
+    delayR.connect(wetGain);
+    wetGain.connect(ctx.destination);
+
+    // 1. Warm 1995 DAC / Tape Hiss Layer (Filtered & Bit-Stepped Noise Buffer)
+    const bufferSize = Math.floor(ctx.sampleRate * 4.2);
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let b0 = 0;
+    let b1 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99 * b0 + white * 0.08;
+      b1 = 0.96 * b1 + b0 * 0.12;
+      // Quantize for authentic early-90s 16-bit Sound Blaster floor
+      output[i] = Math.round(b1 * 32) / 32;
+    }
+    const noiseNode = ctx.createBufferSource();
+    noiseNode.buffer = noiseBuffer;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.028, now + 0.35);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0005, now + 4.1);
+    noiseNode.connect(noiseGain);
+    noiseGain.connect(lowpass);
+    noiseNode.start(now);
+    noiseNode.stop(now + 4.2);
+
+    // 2. Brian Eno-Inspired Lush Ambient Pad Voices (Eb9 / AbMaj7 / Bb resolve)
+    const padVoices = [
+      { freq: 155.56, detune: -6, start: 0.0, peak: 0.09, dur: 4.1, type: 'sawtooth' as OscillatorType }, // Eb3 warm bass
+      { freq: 233.08, detune: 5, start: 0.06, peak: 0.08, dur: 4.0, type: 'triangle' as OscillatorType }, // Bb3 fifth
+      { freq: 349.23, detune: -8, start: 0.14, peak: 0.075, dur: 3.9, type: 'sine' as OscillatorType }, // F4 ninth
+      { freq: 392.0, detune: 7, start: 0.22, peak: 0.075, dur: 3.9, type: 'triangle' as OscillatorType }, // G4 third
+      { freq: 466.16, detune: -4, start: 0.32, peak: 0.07, dur: 3.8, type: 'sawtooth' as OscillatorType }, // Bb4
+      { freq: 622.25, detune: 9, start: 0.45, peak: 0.085, dur: 3.7, type: 'sine' as OscillatorType }, // Eb5 lead swell
+    ];
+
+    padVoices.forEach((v) => {
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-      const start = ctx.currentTime + i * 0.09;
-      osc.frequency.setValueAtTime(freq, start);
-      gain.gain.setValueAtTime(0.001, start);
-      gain.gain.linearRampToValueAtTime(0.06, start + 0.25);
-      gain.gain.exponentialRampToValueAtTime(0.0008, start + 2.4);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 2.5);
+      const vGain = ctx.createGain();
+      osc.type = v.type;
+      const t = now + v.start;
+      // Subtle analog pitch drift on attack (tape wow/flutter)
+      osc.frequency.setValueAtTime(v.freq * 0.994, t);
+      osc.frequency.exponentialRampToValueAtTime(v.freq, t + 0.18);
+      osc.detune.setValueAtTime(v.detune, t);
+
+      vGain.gain.setValueAtTime(0.0008, t);
+      vGain.gain.linearRampToValueAtTime(v.peak, t + 0.42);
+      vGain.gain.exponentialRampToValueAtTime(0.0005, t + v.dur);
+
+      osc.connect(vGain);
+      vGain.connect(lowpass);
+      osc.start(t);
+      osc.stop(t + v.dur + 0.05);
+    });
+
+    // 3. Shimmering Bell Harmonics at the Crest of the Swell
+    const bellNotes = [
+      { freq: 932.33, offset: 0.68, gain: 0.055 }, // Bb5
+      { freq: 1174.66, offset: 0.86, gain: 0.042 }, // D6
+      { freq: 1244.51, offset: 1.05, gain: 0.065 }, // Eb6 resolve shimmer
+    ];
+    bellNotes.forEach((b) => {
+      const osc = ctx.createOscillator();
+      const bGain = ctx.createGain();
+      osc.type = 'sine';
+      const t = now + b.offset;
+      osc.frequency.setValueAtTime(b.freq, t);
+      bGain.gain.setValueAtTime(0.001, t);
+      bGain.gain.linearRampToValueAtTime(b.gain, t + 0.06);
+      bGain.gain.exponentialRampToValueAtTime(0.0005, t + 2.8);
+      osc.connect(bGain);
+      bGain.connect(lowpass);
+      osc.start(t);
+      osc.stop(t + 2.9);
     });
   }
 
@@ -2539,3 +2688,131 @@ windows.forEach((windowElement, idx) => {
   windowElement.style.top = `${topOffset}px`;
   windowElement.style.left = `${leftOffset}px`;
 });
+
+// --- Interactive BIOS POST & Windows 95 Splash Boot Controller ---
+const bootScreen = document.getElementById('boot-screen') as HTMLDivElement | null;
+const bootBiosStage = document.getElementById('boot-bios-stage') as HTMLDivElement | null;
+const bootSplashStage = document.getElementById('boot-splash-stage') as HTMLDivElement | null;
+const biosRamCounter = document.getElementById('bios-ram-counter') as HTMLSpanElement | null;
+const biosStatusLine = document.getElementById('bios-status-line') as HTMLDivElement | null;
+const bootPowerBtn = document.getElementById('boot-power-btn') as HTMLButtonElement | null;
+const bootSkipBtn = document.getElementById('boot-skip-btn') as HTMLButtonElement | null;
+const splashSkipBtn = document.getElementById('splash-skip-btn') as HTMLButtonElement | null;
+
+let bootState: 'bios' | 'post_running' | 'splash' | 'complete' = 'bios';
+const bootTimeouts: number[] = [];
+
+function clearBootTimers() {
+  while (bootTimeouts.length > 0) {
+    const id = bootTimeouts.pop();
+    if (id !== undefined) clearTimeout(id);
+  }
+}
+
+function finishBootToDesktop() {
+  clearBootTimers();
+  bootState = 'complete';
+  if (!bootScreen) return;
+  bootScreen.classList.add('fade-out');
+  const hideId = window.setTimeout(() => {
+    if (bootScreen && bootState === 'complete') {
+      bootScreen.style.display = 'none';
+    }
+  }, 360);
+  bootTimeouts.push(hideId);
+}
+
+function startBootWithAudio() {
+  if (bootState !== 'bios') return;
+  bootState = 'post_running';
+  clearBootTimers();
+
+  // Ensure sound is enabled and play hardware POST beep + floppy seek
+  sfx.enabled = true;
+  const traySound = document.getElementById('tray-sound-btn');
+  if (traySound) traySound.textContent = '🔊';
+  sfx.playPostBeep();
+
+  if (biosStatusLine) {
+    biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOTING GEMINI 95...';
+  }
+
+  // Rapid RAM check counter animation
+  let ram = 16384;
+  const ramStep = () => {
+    ram = Math.min(65536, ram + 16384);
+    if (biosRamCounter) biosRamCounter.textContent = `${ram}K OK`;
+    if (ram < 65536) {
+      bootTimeouts.push(window.setTimeout(ramStep, 90));
+    }
+  };
+  if (biosRamCounter) biosRamCounter.textContent = '16384K';
+  bootTimeouts.push(window.setTimeout(ramStep, 90));
+  bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
+
+  // Transition to Stage 2: Windows 95 Cloud Splash + Lo-Fi Eno Synth Chime
+  const splashTimer = window.setTimeout(() => {
+    bootState = 'splash';
+    if (bootBiosStage) bootBiosStage.style.display = 'none';
+    if (bootSplashStage) bootSplashStage.style.display = 'flex';
+    sfx.playStartupChime();
+
+    // Reveal desktop as the warm Eno chime tail settles
+    const completeTimer = window.setTimeout(() => {
+      finishBootToDesktop();
+    }, 3400);
+    bootTimeouts.push(completeTimer);
+  }, 650);
+  bootTimeouts.push(splashTimer);
+}
+
+function rebootGemini95() {
+  clearBootTimers();
+  startMenu.classList.remove('active');
+  bootState = 'bios';
+  if (biosRamCounter) biosRamCounter.textContent = '65536K OK';
+  if (biosStatusLine) {
+    biosStatusLine.textContent = 'SYSTEM READY — CLICK BELOW OR PRESS [ENTER] TO POWER ON & PLAY STARTUP AUDIO';
+  }
+  if (bootBiosStage) bootBiosStage.style.display = 'flex';
+  if (bootSplashStage) bootSplashStage.style.display = 'none';
+  if (bootScreen) {
+    bootScreen.style.display = 'flex';
+    bootScreen.classList.remove('fade-out');
+  }
+}
+
+bootPowerBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  startBootWithAudio();
+});
+
+bootSkipBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  finishBootToDesktop();
+});
+
+splashSkipBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  finishBootToDesktop();
+});
+
+document.getElementById('start-reboot-os')?.addEventListener('click', () => {
+  rebootGemini95();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (bootState === 'bios') {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      startBootWithAudio();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finishBootToDesktop();
+    }
+  } else if (bootState === 'splash' && e.key === 'Escape') {
+    e.preventDefault();
+    finishBootToDesktop();
+  }
+});
+
