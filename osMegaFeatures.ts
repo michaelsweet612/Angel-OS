@@ -1517,33 +1517,43 @@ export function initSoundRecorderApp(windowElement: HTMLDivElement): void {
     });
   };
 
-  // Live green 1995 oscilloscope
+  // Live green 1995 oscilloscope (disabled/flatlined when global mute is active)
   const sCtx = scope.getContext('2d');
   let phase = 0;
   const drawScope = () => {
     if (sCtx && windowElement.style.display !== 'none') {
-      sCtx.fillStyle = '#001400';
+      const isGloballyMuted = megaBridge ? !megaBridge.sfx.enabled : false;
+      sCtx.fillStyle = isGloballyMuted ? '#100606' : '#001400';
       sCtx.fillRect(0, 0, scope.width, scope.height);
-      sCtx.strokeStyle = 'rgba(0, 255, 102, 0.2)';
+      sCtx.strokeStyle = isGloballyMuted ? 'rgba(255, 85, 85, 0.25)' : 'rgba(0, 255, 102, 0.2)';
       sCtx.beginPath();
       sCtx.moveTo(0, scope.height / 2);
       sCtx.lineTo(scope.width, scope.height / 2);
       sCtx.stroke();
 
-      sCtx.strokeStyle = '#00ff66';
-      sCtx.lineWidth = 2;
-      sCtx.beginPath();
-      for (let x = 0; x < scope.width; x++) {
-        const y =
-          scope.height / 2 +
-          Math.sin(x * 0.06 + phase) * (lastAmp * 28) +
-          Math.cos(x * 0.14 - phase * 1.4) * (lastAmp * 12);
-        if (x === 0) sCtx.moveTo(x, y);
-        else sCtx.lineTo(x, y);
+      if (isGloballyMuted) {
+        sCtx.fillStyle = '#ff6666';
+        sCtx.font = 'bold 11px "IBM Plex Mono", monospace';
+        sCtx.textAlign = 'center';
+        sCtx.fillText('🔇 SYSTEM MUTED — OSCILLOSCOPE DISABLED', scope.width / 2, scope.height / 2 - 8);
+        sCtx.textAlign = 'start';
+        lastAmp = 0;
+      } else {
+        sCtx.strokeStyle = '#00ff66';
+        sCtx.lineWidth = 2;
+        sCtx.beginPath();
+        for (let x = 0; x < scope.width; x++) {
+          const y =
+            scope.height / 2 +
+            Math.sin(x * 0.06 + phase) * (lastAmp * 28) +
+            Math.cos(x * 0.14 - phase * 1.4) * (lastAmp * 12);
+          if (x === 0) sCtx.moveTo(x, y);
+          else sCtx.lineTo(x, y);
+        }
+        sCtx.stroke();
+        phase += playing ? 0.35 : 0.06;
+        lastAmp = Math.max(0.08, lastAmp * 0.92);
       }
-      sCtx.stroke();
-      phase += playing ? 0.35 : 0.06;
-      lastAmp = Math.max(0.08, lastAmp * 0.92);
     }
     requestAnimationFrame(drawScope);
   };
@@ -2282,6 +2292,7 @@ export function executeRunCommand(raw: string): boolean {
   const cmd = raw.trim().toLowerCase().replace(/\.exe$/, '');
   if (!cmd) return false;
   unlockAchievement('run_poweruser');
+  logOsEvent('APP', 'RUN.DLL', `User executed Run command: "${raw}"`, 'INFO');
   const map: Record<string, string> = {
     calc: 'calcApp',
     sol: 'solitaireApp',
@@ -2299,10 +2310,15 @@ export function executeRunCommand(raw: string): boolean {
     recycle: 'recycleBin',
     trophies: 'trophiesApp',
     clipbrd: 'clipViewer',
+    eventvwr: 'sysLogsApp',
+    logs: 'sysLogsApp',
+    syslogs: 'sysLogsApp',
     notepad: 'notepad',
+    angelnotes: 'notepad',
     gemnotes: 'notepad',
     paint: 'paint',
     mspaint: 'paint',
+    angelpaint: 'paint',
     gempaint: 'paint',
     cmd: 'dosPrompt',
     dos: 'dosPrompt',
@@ -2314,11 +2330,15 @@ export function executeRunCommand(raw: string): boolean {
     sysmon: 'sysMonitor',
     minesweeper: 'minesweeper',
     winmine: 'minesweeper',
+    angelsweeper: 'minesweeper',
     doom: 'doom',
     aim: 'gemini',
+    angelaim: 'gemini',
     mplayer: 'mediaPlayer',
+    angelplayer: 'mediaPlayer',
     install: 'abilityToInstall',
     netscape: 'chrome',
+    angelnav: 'chrome',
     iexplore: 'chrome',
   };
 
@@ -2337,7 +2357,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 
@@ -2348,6 +2368,7 @@ export function triggerBsodPrank(reason = 'A fatal exception 0E has occurred at 
   if (reasonEl) reasonEl.textContent = reason;
   bsod.style.display = 'flex';
   megaBridge?.sfx.playChordError();
+  logOsEvent('KERNEL', 'VMM32.VXD', `BSOD Fatal Exception 0E: ${reason}`, 'ERROR');
   unlockAchievement('bsod_survivor');
 }
 
@@ -2365,7 +2386,473 @@ export function openHotkeysModal(): void {
   if (modal) modal.style.display = 'flex';
 }
 
-// ==================== 13. INITIALIZE ALL SHELL EXTRAS & GLOBAL HOTKEYS ====================
+// ==================== 13. ANGEL-OS SYSTEM LOGS & EVENT VIEWER (EVENTVWR.EXE) ====================
+export type OsLogCategory = 'KERNEL' | 'APP' | 'SETUP' | 'TERMINAL' | 'NETWORK' | 'AUDIO' | 'SECURITY';
+export type OsLogLevel = 'INFO' | 'WARN' | 'ERROR';
+
+export interface OsLogEntry {
+  id: number;
+  eventId: number;
+  timestamp: string;
+  category: OsLogCategory;
+  source: string;
+  level: OsLogLevel;
+  message: string;
+}
+
+const osEventLogs: OsLogEntry[] = [
+  {
+    id: 1,
+    eventId: 1000,
+    timestamp: new Date(Date.now() - 48000).toLocaleTimeString(),
+    category: 'KERNEL',
+    source: 'AWARD_BIOS',
+    level: 'INFO',
+    message: 'Award Modular BIOS v4.51PG POST OK — Primary Master Quantum Fireball 1995MB IDE detected.',
+  },
+  {
+    id: 2,
+    eventId: 1004,
+    timestamp: new Date(Date.now() - 42000).toLocaleTimeString(),
+    category: 'KERNEL',
+    source: 'IO.SYS',
+    level: 'INFO',
+    message: 'MS-DOS 7.00 / Angel-OS 95 Protected-Mode VMM32.VXD initialized (64 MB EDO RAM mapped).',
+  },
+  {
+    id: 3,
+    eventId: 2010,
+    timestamp: new Date(Date.now() - 36000).toLocaleTimeString(),
+    category: 'AUDIO',
+    source: 'SB16_DSP.VXD',
+    level: 'INFO',
+    message: 'Creative Sound Blaster 16 ASP initialized at Port 220h, IRQ 5, DMA 1 (16-Bit DAC ready).',
+  },
+  {
+    id: 4,
+    eventId: 3042,
+    timestamp: new Date(Date.now() - 28000).toLocaleTimeString(),
+    category: 'NETWORK',
+    source: 'CLOUDFLARE_PROXY',
+    level: 'INFO',
+    message: 'Angel-OS Live Web Tunnel (/api/web-proxy) bound on port 3000 — X-Frame-Options stripper active.',
+  },
+  {
+    id: 5,
+    eventId: 4095,
+    timestamp: new Date(Date.now() - 19000).toLocaleTimeString(),
+    category: 'SETUP',
+    source: 'APPWIZ.CPL',
+    level: 'INFO',
+    message: 'Mounted Angel-OS Software Repository with 157 packages (21 core + 136 expansion apps).',
+  },
+  {
+    id: 6,
+    eventId: 5001,
+    timestamp: new Date(Date.now() - 11000).toLocaleTimeString(),
+    category: 'APP',
+    source: 'ANGEL_PILOT.EXE',
+    level: 'WARN',
+    message: 'Angel Pilot loaded with 0.0% AI brain cells ("Sorry, I am way too lazy to help with that").',
+  },
+  {
+    id: 7,
+    eventId: 1095,
+    timestamp: new Date(Date.now() - 4000).toLocaleTimeString(),
+    category: 'KERNEL',
+    source: 'EXPLORER.EXE',
+    level: 'INFO',
+    message: 'Angel-OS 95 Desktop Shell ready. User profile: ANGEL (Administrator).',
+  },
+];
+
+let nextLogId = 8;
+let selectedLogEntryId = 7;
+let activeLogCatFilter: 'ALL' | OsLogCategory = 'ALL';
+let activeLogLevelFilter: 'ALL' | OsLogLevel = 'ALL';
+let activeLogSearch = '';
+
+export function logOsEvent(
+  category: OsLogCategory,
+  source: string,
+  message: string,
+  level: OsLogLevel = 'INFO',
+): void {
+  const entry: OsLogEntry = {
+    id: nextLogId++,
+    eventId: 1000 + ((nextLogId * 137) % 8999),
+    timestamp: new Date().toLocaleTimeString(),
+    category,
+    source,
+    level,
+    message,
+  };
+  osEventLogs.unshift(entry);
+  if (osEventLogs.length > 250) osEventLogs.pop();
+  selectedLogEntryId = entry.id;
+  renderSysLogsUI();
+}
+
+// Expose globally for other modules
+(window as any).__logOsEvent = logOsEvent;
+
+export function renderSysLogsUI(): void {
+  const tbody = document.getElementById('syslogs-tbody');
+  const detailEl = document.getElementById('syslogs-detail-box');
+  const countEl = document.getElementById('syslogs-status-count');
+  if (!tbody) return;
+
+  const q = activeLogSearch.trim().toLowerCase();
+  const filtered = osEventLogs.filter((e) => {
+    if (activeLogCatFilter !== 'ALL' && e.category !== activeLogCatFilter) return false;
+    if (activeLogLevelFilter !== 'ALL' && e.level !== activeLogLevelFilter) return false;
+    if (q) {
+      return (
+        e.message.toLowerCase().includes(q) ||
+        e.source.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q) ||
+        String(e.eventId).includes(q)
+      );
+    }
+    return true;
+  });
+
+  if (countEl) {
+    const errCount = osEventLogs.filter((x) => x.level === 'ERROR').length;
+    const warnCount = osEventLogs.filter((x) => x.level === 'WARN').length;
+    countEl.textContent = `Showing ${filtered.length} / ${osEventLogs.length} Events · Errors: ${errCount} · Warnings: ${warnCount}`;
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:14px;color:#555;">No system log events match the current filter.</td></tr>';
+    if (detailEl) detailEl.textContent = 'Select an event row above to inspect Win32 Event Viewer hex dump and telemetry.';
+    return;
+  }
+
+  if (!filtered.some((x) => x.id === selectedLogEntryId)) {
+    selectedLogEntryId = filtered[0].id;
+  }
+
+  tbody.innerHTML = filtered
+    .map((e) => {
+      const badgeCol = e.level === 'ERROR' ? '#cc0000' : e.level === 'WARN' ? '#995500' : '#000080';
+      const badgeIcon = e.level === 'ERROR' ? '🛑' : e.level === 'WARN' ? '⚠️' : 'ℹ️';
+      const isSel = e.id === selectedLogEntryId;
+      return `<tr class="syslogs-row ${isSel ? 'selected' : ''}" data-logid="${e.id}" style="cursor:pointer;${isSel ? 'background:#000080;color:#fff;' : ''}">
+        <td style="color:${isSel ? '#fff' : badgeCol};font-weight:700;">${badgeIcon} ${e.level}</td>
+        <td class="tabular-nums">${escapeHtml(e.timestamp)}</td>
+        <td><b>${escapeHtml(e.category)}</b></td>
+        <td style="font-family:'IBM Plex Mono',monospace;">${escapeHtml(e.source)}</td>
+        <td>${escapeHtml(e.message)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  tbody.querySelectorAll('.syslogs-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      selectedLogEntryId = Number((row as HTMLElement).dataset.logid);
+      renderSysLogsUI();
+    });
+  });
+
+  const sel = osEventLogs.find((x) => x.id === selectedLogEntryId) || filtered[0];
+  if (sel && detailEl) {
+    const hexBytes = Array.from(sel.message.slice(0, 24))
+      .map((c) => c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'))
+      .join(' ');
+    detailEl.innerHTML = `<b>Event ID #${sel.eventId}</b> · Category: <b>${sel.category}</b> · Source: <b>${escapeHtml(sel.source)}</b> · Time: <b>${escapeHtml(sel.timestamp)}</b> · Computer: <b>ANGEL-PC95</b><br/>Description: ${escapeHtml(sel.message)}<br/><span style="color:#555;">0000: ${hexBytes}</span>`;
+  }
+}
+
+export function initSysLogsApp(windowElement: HTMLDivElement): void {
+  windowElement.querySelectorAll('.syslogs-cat-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      megaBridge?.sfx.playClick();
+      windowElement.querySelectorAll('.syslogs-cat-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeLogCatFilter = ((btn as HTMLElement).dataset.lcat as any) || 'ALL';
+      renderSysLogsUI();
+    });
+  });
+
+  const lvlSelect = windowElement.querySelector('#syslogs-level-select') as HTMLSelectElement | null;
+  lvlSelect?.addEventListener('change', () => {
+    activeLogLevelFilter = (lvlSelect.value as any) || 'ALL';
+    renderSysLogsUI();
+  });
+
+  const searchIn = windowElement.querySelector('#syslogs-search-input') as HTMLInputElement | null;
+  searchIn?.addEventListener('input', () => {
+    activeLogSearch = searchIn.value;
+    renderSysLogsUI();
+  });
+
+  windowElement.querySelector('#syslogs-sim-btn')?.addEventListener('click', () => {
+    megaBridge?.sfx.playClick();
+    const samples: Array<{ c: OsLogCategory; s: string; m: string; l: OsLogLevel }> = [
+      { c: 'KERNEL', s: 'VMM32.VXD', m: 'Paged 1,024 KB inactive memory blocks to C:\\WIN386.SWP.', l: 'INFO' },
+      { c: 'NETWORK', s: 'WINSOCK.DLL', m: 'TCP/IP keep-alive ACK received from Cloudflare Web Proxy.', l: 'INFO' },
+      { c: 'AUDIO', s: 'SB16_DSP.VXD', m: 'DMA channel 1 buffer underrun recovered automatically.', l: 'WARN' },
+      { c: 'SECURITY', s: 'SAM_AUTH', m: 'Verified Administrator token for user ANGEL on local console.', l: 'INFO' },
+    ];
+    const pick = samples[Math.floor(Math.random() * samples.length)];
+    logOsEvent(pick.c, pick.s, pick.m, pick.l);
+  });
+
+  windowElement.querySelector('#syslogs-export-vfs-btn')?.addEventListener('click', () => {
+    megaBridge?.sfx.playClick();
+    const text = osEventLogs
+      .map((e) => `[${e.timestamp}] [${e.level}] [${e.category}/${e.source}] (EventID ${e.eventId}) ${e.message}`)
+      .join('\r\n');
+    megaBridge?.addVfsFile('ANGEL_SYSTEM95.LOG', 'text', 'C:\\Documents', text);
+    megaBridge?.refreshExplorerIfOpen();
+    pushBalloonToast('System Logs Saved', 'Exported ANGEL_SYSTEM95.LOG to C:\\Documents!', '📜');
+  });
+
+  windowElement.querySelector('#syslogs-download-btn')?.addEventListener('click', () => {
+    megaBridge?.sfx.playClick();
+    const text = osEventLogs
+      .map((e) => `[${e.timestamp}] [${e.level}] [${e.category}/${e.source}] (EventID ${e.eventId}) ${e.message}`)
+      .join('\r\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ANGEL_OS_95_SYSTEM.LOG';
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  });
+
+  windowElement.querySelector('#syslogs-clear-btn')?.addEventListener('click', () => {
+    megaBridge?.sfx.playClick();
+    osEventLogs.length = 0;
+    logOsEvent('KERNEL', 'EVENTVWR.EXE', 'System event log cleared by user ANGEL.', 'INFO');
+    renderSysLogsUI();
+  });
+
+  renderSysLogsUI();
+}
+
+// ==================== 14. UNIVERSAL WIN32 APP HOST FOR ALL 136+ INSTALLABLE CATALOG APPS ====================
+export function populateUniversalCatalogAppWindow(pkg: {
+  pkgId: string;
+  name: string;
+  version: string;
+  publisher: string;
+  category: string;
+  exeName: string;
+  installDir: string;
+  sizeMB: number;
+  description: string;
+  iconUrl?: string;
+  iconHtml: string;
+  appWindowId: string;
+}): void {
+  const win = document.getElementById('universalCatalogApp');
+  if (!win) return;
+
+  const titleSpan = win.querySelector('#ucat-window-title');
+  const bodyEl = win.querySelector('#ucat-body-content') as HTMLDivElement | null;
+  if (titleSpan) {
+    titleSpan.textContent = `${pkg.name} (${pkg.exeName})`;
+  }
+  if (!bodyEl) return;
+
+  const iconImg = pkg.iconUrl
+    ? `<img src="${pkg.iconUrl}" alt="" style="width:32px;height:32px;image-rendering:pixelated;" />`
+    : `<span style="font-size:28px;">${pkg.iconHtml}</span>`;
+
+  let workspaceHtml = '';
+  if (pkg.category === 'browser') {
+    workspaceHtml = `
+      <div style="border:2px inset #808080;background:#000;color:#00ff66;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:10px;height:175px;overflow-y:auto;" id="ucat-net-log">
+        <div>[${new Date().toLocaleTimeString()}] ${escapeHtml(pkg.exeName)} Winsock 1.1 stack initialized on ANGEL-PC95.</div>
+        <div>[TCP/IP] Bound local socket 192.168.95.10:1028 -> Cloudflare Tunnel Active.</div>
+        <div>[STATUS] ${escapeHtml(pkg.description)}</div>
+        <div style="color:#ffff55;margin-top:6px;">Ready for packet transmission or command input below...</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input type="text" id="ucat-net-input" class="win95-text-input" style="flex:1;" placeholder="Enter host, IRC message, FTP command, or search query..." value="ping archive.org" />
+        <button class="win95-btn" id="ucat-net-send-btn"><b>⚡ Execute</b></button>
+        <button class="win95-btn" id="ucat-net-proxy-btn">🌐 Open in Angel Navigator</button>
+      </div>
+    `;
+  } else if (pkg.category === 'multimedia') {
+    workspaceHtml = `
+      <div style="display:flex;gap:10px;align-items:stretch;height:185px;">
+        <canvas id="ucat-mm-canvas" width="320" height="180" style="border:2px inset #808080;background:#001122;flex:1;cursor:crosshair;"></canvas>
+        <div style="width:175px;border:2px inset #808080;background:#dfdfdf;padding:8px;display:flex;flex-direction:column;justify-content:space-between;font-size:11px;">
+          <div>
+            <b>🎮 Interactive Engine</b>
+            <div style="margin-top:4px;color:#333;">Click inside the viewport or press buttons below to interact with <b>${escapeHtml(pkg.name)}</b>!</div>
+            <div id="ucat-mm-score" class="tabular-nums" style="margin-top:8px;background:#000;color:#00ff66;padding:4px 6px;font-family:monospace;font-weight:bold;">PTS: 0000 · FPS: 60</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <button class="win95-btn" id="ucat-mm-action-btn" style="font-weight:700;">▶ Trigger Action / Synth</button>
+            <button class="win95-btn" id="ucat-mm-mode-btn">🎨 Cycle Visual Mode</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (pkg.category === 'system') {
+    workspaceHtml = `
+      <div style="border:2px inset #808080;background:#fff;padding:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;height:145px;overflow-y:auto;" id="ucat-sys-report">
+        <b>=== ${escapeHtml(pkg.name.toUpperCase())} DIAGNOSTIC CONSOLE ===</b><br/>
+        Binary Path : ${escapeHtml(pkg.installDir)}\\${escapeHtml(pkg.exeName)}<br/>
+        Target Drive: C:\\ (ANGEL_95 · FAT16 · 1,495 MB)<br/>
+        Memory Model: 32-Bit Protected Mode Flat Thunk<br/>
+        Status      : Ready to run hardware/system operation.
+      </div>
+      <div style="border:2px inset #808080;background:#000;height:18px;margin-top:6px;position:relative;">
+        <div id="ucat-sys-bar" style="background:#000080;height:100%;width:0%;transition:width 0.15s;"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="win95-btn" id="ucat-sys-run-btn" style="background:#ffffcc;font-weight:700;">🔧 Run Diagnostic / Optimize Now</button>
+        <button class="win95-btn" id="ucat-sys-save-btn">💾 Save Report to C:\\Documents</button>
+      </div>
+    `;
+  } else {
+    workspaceHtml = `
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <button class="win95-btn ucat-doc-tpl" data-tpl="memo">📄 Load 1995 Template</button>
+        <button class="win95-btn ucat-doc-tpl" data-tpl="calc">📊 Insert Data Table</button>
+        <button class="win95-btn" id="ucat-doc-save">💾 Save to C:\\Documents</button>
+      </div>
+      <textarea id="ucat-doc-editor" style="width:100%;height:165px;box-sizing:border-box;border:2px inset #808080;font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:8px;">=== ${escapeHtml(pkg.name)} (v${escapeHtml(pkg.version)}) ===
+Author: Angel
+Created on: ${new Date().toLocaleString()}
+----------------------------------------
+${escapeHtml(pkg.description)}
+
+[Workspace Ready — Type or edit your document/project here!]</textarea>
+    `;
+  }
+
+  bodyEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;background:#dfdfdf;border:2px groove #fff;padding:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${iconImg}
+        <div>
+          <div style="font-weight:700;font-size:13px;color:#000080;">${escapeHtml(pkg.name)}</div>
+          <div style="font-size:11px;color:#333;">Publisher: <b>${escapeHtml(pkg.publisher)}</b> · Version ${escapeHtml(pkg.version)} · <code>${escapeHtml(pkg.installDir)}\\${escapeHtml(pkg.exeName)}</code></div>
+        </div>
+      </div>
+      <button class="win95-btn" id="ucat-uninstall-this-btn" style="color:#880000;font-weight:700;">🗑️ De-install App</button>
+    </div>
+    <div style="margin-top:8px;">
+      ${workspaceHtml}
+    </div>
+  `;
+
+  logOsEvent('APP', pkg.exeName, `Launched catalog application "${pkg.name}" (${pkg.installDir}\\${pkg.exeName})`, 'INFO');
+
+  // Wire Uninstall button
+  bodyEl.querySelector('#ucat-uninstall-this-btn')?.addEventListener('click', () => {
+    (window as any).__uninstallCatalogApp?.(pkg.pkgId);
+  });
+
+  // Wire Category-Specific Interactive Controls
+  if (pkg.category === 'browser') {
+    const logBox = bodyEl.querySelector('#ucat-net-log');
+    const netIn = bodyEl.querySelector('#ucat-net-input') as HTMLInputElement | null;
+    bodyEl.querySelector('#ucat-net-send-btn')?.addEventListener('click', () => {
+      const cmd = netIn?.value.trim() || 'STATUS';
+      playTone(680, 0.06, 'square', 0.04);
+      if (logBox) {
+        const line = document.createElement('div');
+        line.innerHTML = `&gt; <b>${escapeHtml(cmd)}</b><br/><span style="color:#38bdf8;">[200 OK] Reply from 198.41.0.4: bytes=64 time=14ms TTL=56 (${escapeHtml(pkg.exeName)})</span>`;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    });
+    bodyEl.querySelector('#ucat-net-proxy-btn')?.addEventListener('click', () => {
+      megaBridge?.openApp('chrome');
+    });
+  } else if (pkg.category === 'multimedia') {
+    const c = bodyEl.querySelector('#ucat-mm-canvas') as HTMLCanvasElement | null;
+    const scoreBox = bodyEl.querySelector('#ucat-mm-score');
+    let pts = 0;
+    let visMode = 0;
+    const drawDemo = () => {
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = visMode % 2 === 0 ? '#001428' : '#1a0022';
+      ctx.fillRect(0, 0, c.width, c.height);
+      for (let i = 0; i < 18; i++) {
+        ctx.fillStyle = `hsl(${(i * 25 + pts * 7) % 360}, 85%, 60%)`;
+        const x = ((i * 37 + pts * 11) % (c.width - 24)) + 8;
+        const y = ((i * 29 + pts * 5) % (c.height - 24)) + 8;
+        ctx.fillRect(x, y, 14, 14);
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px monospace';
+      ctx.fillText(pkg.name.slice(0, 26), 12, 22);
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = '11px monospace';
+      ctx.fillText('Click viewport or [Trigger Action] to play!', 12, c.height - 12);
+    };
+    drawDemo();
+    const bump = () => {
+      pts += 25;
+      playTone(330 + (pts % 500), 0.08, 'triangle', 0.05);
+      if (scoreBox) scoreBox.textContent = `PTS: ${String(pts).padStart(4, '0')} · FPS: 60`;
+      drawDemo();
+    };
+    c?.addEventListener('click', bump);
+    bodyEl.querySelector('#ucat-mm-action-btn')?.addEventListener('click', bump);
+    bodyEl.querySelector('#ucat-mm-mode-btn')?.addEventListener('click', () => {
+      visMode++;
+      bump();
+    });
+  } else if (pkg.category === 'system') {
+    const rep = bodyEl.querySelector('#ucat-sys-report');
+    const bar = bodyEl.querySelector('#ucat-sys-bar') as HTMLDivElement | null;
+    bodyEl.querySelector('#ucat-sys-run-btn')?.addEventListener('click', () => {
+      let pct = 0;
+      const iv = window.setInterval(() => {
+        pct = Math.min(100, pct + 20);
+        if (bar) bar.style.width = `${pct}%`;
+        playTone(400 + pct * 4, 0.04, 'square', 0.03);
+        if (pct >= 100) {
+          clearInterval(iv);
+          if (rep) {
+            rep.innerHTML += `<br/><span style="color:#006600;font-weight:bold;">[${new Date().toLocaleTimeString()}] ✓ Operation completed: 0 bad sectors, 100% cluster integrity verified!</span>`;
+            rep.scrollTop = rep.scrollHeight;
+          }
+          logOsEvent('KERNEL', pkg.exeName, `Completed system utility scan in ${pkg.name}`, 'INFO');
+        }
+      }, 140);
+    });
+    bodyEl.querySelector('#ucat-sys-save-btn')?.addEventListener('click', () => {
+      const fname = `${pkg.exeName.replace('.EXE', '')}_REPORT.TXT`;
+      megaBridge?.addVfsFile(fname, 'text', 'C:\\Documents', rep?.textContent || pkg.description);
+      megaBridge?.refreshExplorerIfOpen();
+      pushBalloonToast('Report Saved', `Saved ${fname} to C:\\Documents!`, '💾');
+    });
+  } else {
+    const ed = bodyEl.querySelector('#ucat-doc-editor') as HTMLTextAreaElement | null;
+    bodyEl.querySelectorAll('.ucat-doc-tpl').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tpl = (btn as HTMLElement).dataset.tpl;
+        if (!ed) return;
+        if (tpl === 'memo') {
+          ed.value += `\n\nMEMORANDUM — ANGEL-OS 95 CORP.\nTO: All Engineering Staff\nFROM: Angel (CEO)\nSUBJECT: Q4 1995 Release Schedule\n`;
+        } else {
+          ed.value += `\n\nITEM       | QTY | PRICE\n-----------+-----+-------\nPentium PC |  1  | $1,995\nSoundBlast |  1  |   $149\n`;
+        }
+      });
+    });
+    bodyEl.querySelector('#ucat-doc-save')?.addEventListener('click', () => {
+      const fname = `${pkg.exeName.replace('.EXE', '')}_DOC.TXT`;
+      megaBridge?.addVfsFile(fname, 'text', 'C:\\Documents', ed?.value || '');
+      megaBridge?.refreshExplorerIfOpen();
+      pushBalloonToast('Saved to C:\\Documents', `Saved ${fname}!`, '💾');
+    });
+  }
+}
+
+// ==================== 15. INITIALIZE ALL SHELL EXTRAS & GLOBAL HOTKEYS ====================
 const KONAMI_SEQ = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 let konamiPos = 0;
 
@@ -2375,6 +2862,7 @@ export function initMegaShellFeatures(): void {
   renderTrophiesUI();
   renderRecycleBinUI();
   renderClipboardViewerUI();
+  renderSysLogsUI();
 
   // Notification Bell Drawer Toggle
   const notifDrawer = document.getElementById('notif-drawer');
@@ -2492,3 +2980,4 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
