@@ -1,6 +1,8 @@
 // ==================== ANGEL-OS MEGA FEATURE SUITE (osMegaFeatures.ts) ====================
 // 100% Client-Side Classic Win95 Accessories, Arcade Games, System Utilities & Shell Goodies
 
+import { getActivatedBiosCount, TOTAL_BIOS_FEATURES } from './osBios5000';
+
 export interface MegaBridge {
   openApp: (appName: string, bypassPkgCheck?: boolean) => Promise<void>;
   closeApp: (appName: string) => void;
@@ -173,6 +175,7 @@ const TROPHY_CATALOG: TrophyDef[] = [
   { id: 'clipboard_snip', icon: '📋', title: 'Ctrl+C Collector', desc: 'Saved a clip or screen snip in Clipboard Viewer.', points: 10 },
   { id: 'calendar_planner', icon: '📅', title: 'Y2K Scheduler', desc: 'Saved a schedule note or set an alarm in Calendar 95.', points: 15 },
   { id: 'recycle_cleaner', icon: '🗑️', title: 'Disk Clean Freak', desc: 'Restored or emptied items inside Recycle Bin 95.', points: 10 },
+  { id: 'bios_tinkerer', icon: '⚙️', title: 'Silicon Whisperer', desc: 'Activated advanced firmware registers inside CMOS BIOS Setup.', points: 25 },
 ];
 
 const TROPHY_LS_KEY = 'gemini95_trophies_v1';
@@ -2337,6 +2340,8 @@ export function executeRunCommand(raw: string): boolean {
     mplayer: 'mediaPlayer',
     angelplayer: 'mediaPlayer',
     install: 'abilityToInstall',
+    chrome: 'chrome',
+    google: 'chrome',
     netscape: 'chrome',
     angelnav: 'chrome',
     iexplore: 'chrome',
@@ -2357,7 +2362,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, bios, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 
@@ -2375,9 +2380,17 @@ export function triggerBsodPrank(reason = 'A fatal exception 0E has occurred at 
 export function openWinverModal(): void {
   const modal = document.getElementById('winver-modal');
   const uptimeEl = document.getElementById('winver-uptime');
+  const biosCountEl = document.getElementById('winver-bios-count');
   if (!modal) return;
   const upSec = Math.floor((Date.now() - bootedAtMs) / 1000);
   if (uptimeEl) uptimeEl.textContent = `${upSec} seconds · ${navigator.platform || 'x86 PC'}`;
+  if (biosCountEl) {
+    const active = getActivatedBiosCount();
+    biosCountEl.textContent =
+      active === 0
+        ? `0 / ${TOTAL_BIOS_FEATURES.toLocaleString()} Active (All Dormant Until BIOS Setup)`
+        : `${active.toLocaleString()} / ${TOTAL_BIOS_FEATURES.toLocaleString()} Advanced Registers Activated`;
+  }
   modal.style.display = 'flex';
 }
 

@@ -25,10 +25,12 @@ import {
   renderAbilityToInstallUI,
   renderMasterSettingsCurrentTab,
   resetIdleTimer,
+  startScreensaverNow,
   switchBrowserToAiMode,
   syncBrowserChromeToEngine,
   systemRegistry,
 } from './osExtendedApps';
+import { BIOS_FLAGSHIP_IDS, isBiosPilotOverclocked, isBiosZeroWaitPost } from './osBios5000';
 import { APP_SVG_ICONS } from './osSystemCore';
 import {
   downloadBootableIsoImage,
@@ -752,7 +754,7 @@ let geminiInstance: any | null = null;
 let paintCritiqueIntervalId: number | null = null;
 const paintResizeObserverMap = new Map<Element, ResizeObserver>();
 
-const PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'notepad', 'paint', 'dosPrompt', 'abilityToInstall', 'controlPanel'] as const;
+const PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'abilityToInstall', 'controlPanel'] as const;
 
 function getAppDockMeta(appName: string): { icon: string; title: string } {
   if (appName === 'chrome') {
@@ -3107,46 +3109,156 @@ icons.forEach((icon) => {
   });
 });
 
+const startPinnedView = document.getElementById('start-pinned-view') as HTMLDivElement | null;
+const startAllAppsView = document.getElementById('start-all-apps-view') as HTMLDivElement | null;
+const startMenuSearchInput = document.getElementById('start-menu-search-input') as HTMLInputElement | null;
+const startAllAppsTitle = document.getElementById('start-all-apps-title');
+const startPowerMenu = document.getElementById('start-power-menu') as HTMLDivElement | null;
+
+function setStartMenuView(mode: 'pinned' | 'all', filterText = ''): void {
+  const q = filterText.trim().toLowerCase();
+  if (mode === 'pinned' && !q) {
+    if (startPinnedView) startPinnedView.style.display = 'flex';
+    if (startAllAppsView) startAllAppsView.style.display = 'none';
+  } else {
+    if (startPinnedView) startPinnedView.style.display = 'none';
+    if (startAllAppsView) startAllAppsView.style.display = 'flex';
+    if (startAllAppsTitle) {
+      startAllAppsTitle.textContent = q ? `Search results: "${filterText.trim()}"` : 'All apps';
+    }
+    document.querySelectorAll('#start-all-apps-list .start-menu-item').forEach((el) => {
+      const txt = (el.textContent || '').toLowerCase();
+      (el as HTMLElement).style.display = !q || txt.includes(q) ? 'flex' : 'none';
+    });
+  }
+}
+
+function closeStartMenuUi(): void {
+  startMenu.classList.remove('active');
+  if (startPowerMenu) startPowerMenu.style.display = 'none';
+  if (startMenuSearchInput) startMenuSearchInput.value = '';
+  setStartMenuView('pinned', '');
+}
+
 document.querySelectorAll('.start-menu-item').forEach((item) => {
   item.addEventListener('click', () => {
     const appName = (item as HTMLElement).getAttribute('data-app');
     if (appName) openApp(appName);
-    startMenu.classList.remove('active');
+    closeStartMenuUi();
   });
+});
+
+startMenuSearchInput?.addEventListener('input', () => {
+  const val = startMenuSearchInput.value;
+  setStartMenuView(val.trim() ? 'all' : 'pinned', val);
+});
+
+startMenuSearchInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const firstMatch = Array.from(
+      document.querySelectorAll('#start-all-apps-list .start-menu-item'),
+    ).find((el) => (el as HTMLElement).style.display !== 'none') as HTMLElement | undefined;
+    firstMatch?.click();
+  } else if (e.key === 'Escape') {
+    closeStartMenuUi();
+  }
+});
+
+document.getElementById('start-all-apps-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  setStartMenuView('all', '');
+});
+
+document.getElementById('start-more-rec-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  setStartMenuView('all', '');
+});
+
+document.getElementById('start-back-pinned-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (startMenuSearchInput) startMenuSearchInput.value = '';
+  setStartMenuView('pinned', '');
+});
+
+document.getElementById('start-bios-shortcut-tile')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openCmosBiosSetup();
+});
+
+document.getElementById('start-rec-chrome-dl')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openApp('chrome').then(() => navigateBrowserExternal('chrome://downloads'));
+});
+
+document.getElementById('start-rec-bios')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openCmosBiosSetup();
+});
+
+document.getElementById('start-rec-fdisk')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openFdiskScreen(true);
+});
+
+document.getElementById('start-power-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (!startPowerMenu) return;
+  const isVis = startPowerMenu.style.display !== 'none';
+  startPowerMenu.style.display = isVis ? 'none' : 'flex';
+});
+
+document.getElementById('start-open-bios-menu')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openCmosBiosSetup();
+});
+
+document.getElementById('start-sleep-saver')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  startScreensaverNow();
+});
+
+document.getElementById('start-power-reinstall')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openOsReinstallScreen();
 });
 
 document.getElementById('start-sound-chime')?.addEventListener('click', () => {
   sfx.playStartupChime();
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
 });
 
 document.getElementById('start-os-reinstall')?.addEventListener('click', () => {
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   openOsReinstallScreen();
 });
 
 document.getElementById('start-run-dialog')?.addEventListener('click', () => {
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   openRunDialog();
 });
 
 document.getElementById('start-new-sticky')?.addEventListener('click', () => {
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   spawnCustomStickyNote();
 });
 
 document.getElementById('start-bsod-prank')?.addEventListener('click', () => {
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   triggerBsodPrank('Manually triggered BSOD 95 Simulator from Start Menu!');
 });
 
 document.getElementById('start-hotkeys-btn')?.addEventListener('click', () => {
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   openHotkeysModal();
 });
 
 document.getElementById('start-winver-btn')?.addEventListener('click', () => {
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   openWinverModal();
 });
 
@@ -3164,10 +3276,15 @@ document.querySelectorAll('.start-menu-folder').forEach((folder) => {
 startButton.addEventListener('click', (e) => {
   e.stopPropagation();
   sfx.playClick();
-  startMenu.classList.toggle('active');
-  if (startMenu.classList.contains('active')) {
+  const willOpen = !startMenu.classList.contains('active');
+  closeWin11Popups();
+  if (willOpen) {
+    startMenu.classList.add('active');
+    if (startPowerMenu) startPowerMenu.style.display = 'none';
     highestZIndex++;
     startMenu.style.zIndex = highestZIndex.toString();
+  } else {
+    closeStartMenuUi();
   }
 });
 
@@ -3305,10 +3422,15 @@ document.addEventListener('mouseup', () => {
 });
 
 document.addEventListener('click', (e) => {
-  if (startMenu.classList.contains('active') && !startMenu.contains(e.target as Node) && !startButton.contains(e.target as Node)) {
-    startMenu.classList.remove('active');
+  const targetNode = e.target as Node;
+  const targetEl = e.target as HTMLElement | null;
+  if (startPowerMenu && startPowerMenu.style.display !== 'none' && !targetEl?.closest('.start-power-wrap')) {
+    startPowerMenu.style.display = 'none';
   }
-  if (contextMenu && contextMenu.style.display !== 'none' && !contextMenu.contains(e.target as Node)) {
+  if (startMenu.classList.contains('active') && !startMenu.contains(targetNode) && !startButton.contains(targetNode)) {
+    closeStartMenuUi();
+  }
+  if (contextMenu && contextMenu.style.display !== 'none' && !contextMenu.contains(targetNode)) {
     contextMenu.style.display = 'none';
   }
 });
@@ -3475,8 +3597,10 @@ function startBootWithAudio() {
     bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
   }
 
-  // Transition to Stage 2: Windows 95 Cloud Splash + Lo-Fi Eno Synth Chime
-  const postDelay = systemRegistry.biosQuickPost ? 220 : 650;
+  // Transition to Stage 2: Windows 11 + 10 Boot Splash + Lo-Fi Eno Synth Chime
+  const biosZeroWait = isBiosZeroWaitPost();
+  const postDelay = biosZeroWait ? 80 : systemRegistry.biosQuickPost ? 220 : 650;
+  const splashDelay = biosZeroWait ? 450 : systemRegistry.biosQuickPost ? 1800 : 3400;
   const splashTimer = window.setTimeout(() => {
     bootState = 'splash';
     if (bootBiosStage) bootBiosStage.style.display = 'none';
@@ -3487,7 +3611,7 @@ function startBootWithAudio() {
 
     const completeTimer = window.setTimeout(() => {
       finishBootToDesktop();
-    }, systemRegistry.biosQuickPost ? 1800 : 3400);
+    }, splashDelay);
     bootTimeouts.push(completeTimer);
   }, postDelay);
   bootTimeouts.push(splashTimer);
@@ -3495,7 +3619,7 @@ function startBootWithAudio() {
 
 function rebootGemini95() {
   clearBootTimers();
-  startMenu.classList.remove('active');
+  closeStartMenuUi();
   bootState = 'bios';
   applySystemRegistryToOS(true);
   if (biosStatusLine) {
@@ -3532,6 +3656,7 @@ splashSkipBtn?.addEventListener('click', (e) => {
 });
 
 document.getElementById('start-reboot-os')?.addEventListener('click', () => {
+  closeStartMenuUi();
   rebootGemini95();
 });
 
@@ -4017,7 +4142,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '🎹 GemPlayer 95 (16-Bit Chiptune Synth & Retro TV)', kind: 'Application', action: () => openApp('mediaPlayer') },
   { label: '📟 MS-DOS Prompt (COMMAND.COM + AI Kernel)', kind: 'Application', action: () => openApp('dosPrompt') },
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
-  { label: '🔧 Award CMOS BIOS Setup Utility', kind: 'Firmware', action: () => openCmosBiosSetup() },
+  { label: '⚙️ Award / UEFI CMOS BIOS Setup (5,120+ Advanced Features)', kind: 'Firmware', action: () => openCmosBiosSetup() },
   { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
   { label: '🏷️ Toggle Taskbar App Labels (Icon-Only vs Win95 Text)', kind: 'Taskbar Style', action: () => toggleTaskbarLabels() },
   { label: '👼 Angel Pilot (In-Training Joke Copilot · 0% AI)', kind: 'Unhelpful Bot', action: () => {
@@ -4035,7 +4160,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
   { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
   { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
-  { label: '🏆 Angel-OS Trophy Vault (16 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
+  { label: '🏆 Angel-OS Trophy Vault (17 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
   { label: '🏃 Run Command... Dialog (Alt+R)', kind: 'Shell Tool', action: () => openRunDialog() },
   { label: '📌 Spawn New Desktop Sticky Note', kind: 'Desktop Toy', action: () => spawnCustomStickyNote() },
   { label: '💀 Trigger Blue Screen of Death (BSOD Prank)', kind: 'Easter Egg', action: () => triggerBsodPrank() },
@@ -4093,20 +4218,90 @@ function renderSearchResults(query: string) {
   }
 }
 
-document.getElementById('taskbar-search-btn')?.addEventListener('click', (e) => {
+const taskbarSearchBtn = document.getElementById('taskbar-search-btn') as HTMLDivElement | null;
+const taskbarSearchInput = document.getElementById('taskbar-search-input') as HTMLInputElement | null;
+const taskbarSearchClear = document.getElementById('taskbar-search-clear') as HTMLButtonElement | null;
+
+function syncTaskbarSearchClearBtn(val: string): void {
+  if (taskbarSearchClear) {
+    taskbarSearchClear.style.display = val.trim().length > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+function openSearchFlyoutWithQuery(query: string): void {
+  if (!searchFlyout) return;
+  closeWin11Popups(searchFlyout);
+  searchFlyout.style.display = 'block';
+  renderSearchResults(query);
+}
+
+taskbarSearchInput?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  openSearchFlyoutWithQuery(taskbarSearchInput.value);
+});
+
+taskbarSearchInput?.addEventListener('focus', () => {
+  openSearchFlyoutWithQuery(taskbarSearchInput.value);
+});
+
+taskbarSearchInput?.addEventListener('input', () => {
+  const val = taskbarSearchInput.value;
+  if (searchInput) searchInput.value = val;
+  syncTaskbarSearchClearBtn(val);
+  openSearchFlyoutWithQuery(val);
+});
+
+taskbarSearchInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const firstResult = searchResults?.querySelector('.search-result-item') as HTMLElement | null;
+    firstResult?.click();
+  } else if (e.key === 'Escape') {
+    if (searchFlyout) searchFlyout.style.display = 'none';
+    taskbarSearchInput.blur();
+  }
+});
+
+taskbarSearchClear?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (taskbarSearchInput) taskbarSearchInput.value = '';
+  if (searchInput) searchInput.value = '';
+  syncTaskbarSearchClearBtn('');
+  renderSearchResults('');
+  taskbarSearchInput?.focus();
+});
+
+taskbarSearchBtn?.addEventListener('click', (e) => {
+  const targetEl = e.target as HTMLElement | null;
+  if (targetEl === taskbarSearchInput || targetEl === taskbarSearchClear) return;
   e.stopPropagation();
   sfx.playClick();
   if (!searchFlyout) return;
   const isVis = searchFlyout.style.display !== 'none';
-  closeWin11Popups(searchFlyout);
-  searchFlyout.style.display = isVis ? 'none' : 'block';
-  if (!isVis) {
-    renderSearchResults(searchInput?.value || '');
-    searchInput?.focus();
+  if (isVis) {
+    searchFlyout.style.display = 'none';
+  } else {
+    openSearchFlyoutWithQuery(taskbarSearchInput?.value || searchInput?.value || '');
+    taskbarSearchInput?.focus();
   }
 });
 
-searchInput?.addEventListener('input', () => renderSearchResults(searchInput.value));
+searchInput?.addEventListener('input', () => {
+  const val = searchInput.value;
+  if (taskbarSearchInput) taskbarSearchInput.value = val;
+  syncTaskbarSearchClearBtn(val);
+  renderSearchResults(val);
+});
+
+searchInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const firstResult = searchResults?.querySelector('.search-result-item') as HTMLElement | null;
+    firstResult?.click();
+  }
+});
+
 document.getElementById('search-close-btn')?.addEventListener('click', () => {
   if (searchFlyout) searchFlyout.style.display = 'none';
 });
@@ -4153,9 +4348,12 @@ function pickAngelPilotNonAiReply(userText: string): string {
     unlockAchievement('angel_pilot_harass');
   }
 
+  const overclocked = isBiosPilotOverclocked();
   if (angelPilotStatusEl) {
     const pct = Math.max(-99, +(0.002 - angelPilotQuestionsIgnored * 0.005).toFixed(3));
-    angelPilotStatusEl.textContent = `🧠 Brain Cells: 0 · Training Progress: ${pct}% · Ignored: ${angelPilotQuestionsIgnored}`;
+    angelPilotStatusEl.textContent = overclocked
+      ? `⚡ BIOS OVERCLOCKED (Still 0 Brain Cells) · Training: ${pct}% · Ignored: ${angelPilotQuestionsIgnored}`
+      : `🧠 Brain Cells: 0 · Training Progress: ${pct}% · Ignored: ${angelPilotQuestionsIgnored}`;
   }
 
   // Contextual non-AI joke replies for specific topics
@@ -4187,6 +4385,9 @@ function pickAngelPilotNonAiReply(userText: string): string {
   }
   if (lower.includes('write') || lower.includes('essay') || lower.includes('homework') || lower.includes('work')) {
     return "Yeah... I'm not doing your work for you. I barely show up for my own job inside this sidebar.";
+  }
+  if (overclocked) {
+    return `⚡ [${BIOS_FLAGSHIP_IDS.pilotOverclock} 200% OVERCLOCKED]: Evaluated "${userText.slice(0, 30)}${userText.length > 30 ? '...' : ''}" at 8.4B ops/sec and concluded I'm STILL not helping with that!`;
   }
   if (lower.includes('why') || lower.includes('how') || lower.includes('what') || lower.includes('explain')) {
     const pick = ANGEL_PILOT_EXCUSES[angelPilotExcuseCursor % ANGEL_PILOT_EXCUSES.length];
@@ -4348,6 +4549,16 @@ brightnessSlider?.addEventListener('input', () => {
   applySystemRegistryToOS();
 });
 
+document.getElementById('qs-install-pwa-btn')?.addEventListener('click', () => {
+  if (quickSettings) quickSettings.style.display = 'none';
+  triggerNativePwaInstall();
+});
+
+document.getElementById('qs-open-bios-btn')?.addEventListener('click', () => {
+  if (quickSettings) quickSettings.style.display = 'none';
+  openCmosBiosSetup();
+});
+
 document.getElementById('qs-open-themes-btn')?.addEventListener('click', () => {
   if (quickSettings) quickSettings.style.display = 'none';
   openApp('controlPanel', true);
@@ -4423,6 +4634,7 @@ registerOsBridge({
   refreshExplorerIfOpen: () => {
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
   },
+  unlockAchievement,
   sfx,
 });
 
@@ -4471,7 +4683,7 @@ initMegaShellFeatures();
 applySystemRegistryToOS(true);
 syncTaskbarDock();
 resetIdleTimer();
-pushBalloonToast('Angel-OS Mega Suite Ready!', 'Added Solitaire 95, 4-in-1 Arcade, Sound Studio (.WAV), Calculator, Calendar, Task Manager, Clipboard, Sticky Notes & 16 Trophies!', '🎉');
+pushBalloonToast('Angel-OS Windows 11+10 Ready!', 'Left-side Windows 10 taskbar + Windows 11 Start menu, Google Chrome downloaded & ready, and 5,120+ dormant features waiting inside CMOS BIOS Setup!', '🪟');
 
 window.addEventListener('resize', () => {
   openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));

@@ -55,6 +55,7 @@ export interface SystemRegistry {
   clock24Hour: boolean;
   clockShowSeconds: boolean;
   startButtonLabel: string;
+  showStartText: boolean;
   snapLayoutsEnabled: boolean;
   snapHoverDelayMs: number; // 50 - 800
 
@@ -147,6 +148,7 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   clock24Hour: false,
   clockShowSeconds: false,
   startButtonLabel: 'Start',
+  showStartText: false,
   snapLayoutsEnabled: true,
   snapHoverDelayMs: 120,
 
@@ -459,8 +461,11 @@ function svgDataUri(svg: string): string {
 }
 
 export const APP_SVG_ICONS: Record<string, string> = {
+  windowsLogo: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="w1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#0078d4"/></linearGradient><linearGradient id="w2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#005fb8"/></linearGradient></defs><rect x="6" y="6" width="24" height="24" rx="2.5" fill="url(#w1)"/><rect x="34" y="6" width="24" height="24" rx="2.5" fill="url(#w1)"/><rect x="6" y="34" width="24" height="24" rx="2.5" fill="url(#w2)"/><rect x="34" y="34" width="24" height="24" rx="2.5" fill="url(#w2)"/></svg>',
+  ),
   chrome: svgDataUri(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="#ffffff"/><path d="M32 3 A29 29 0 0 1 57.5 18 H32 A14 14 0 0 0 19.8 25 L7.2 17 A29 29 0 0 1 32 3Z" fill="#ea4335"/><path d="M7.2 17 L19.8 25 A14 14 0 0 0 30.8 46 L23.5 59.8 A29 29 0 0 1 7.2 17Z" fill="#34a853"/><path d="M57.5 18 A29 29 0 0 1 23.5 59.8 L30.8 46 A14 14 0 0 0 45.8 29.5 H32 V18Z" fill="#fbbc05"/><circle cx="32" cy="32" r="13.5" fill="#ffffff"/><circle cx="32" cy="32" r="10.5" fill="#1a73e8"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#ffffff" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/><path d="M32 3 A29 29 0 0 1 57.5 18 H32 A14 14 0 0 0 19.8 25 L7.2 17 A29 29 0 0 1 32 3Z" fill="#ea4335"/><path d="M7.2 17 L19.8 25 A14 14 0 0 0 30.8 46 L23.5 59.8 A29 29 0 0 1 7.2 17Z" fill="#34a853"/><path d="M57.5 18 A29 29 0 0 1 23.5 59.8 L30.8 46 A14 14 0 0 0 45.8 29.5 H32 V18Z" fill="#fbbc05"/><circle cx="32" cy="32" r="13.5" fill="#ffffff"/><circle cx="32" cy="32" r="10.5" fill="#1a73e8"/></svg>',
   ),
   netscape: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="4" y="4" width="56" height="56" rx="8" fill="#0d4f6b" stroke="#000" stroke-width="2"/><path d="M12 48 Q32 22 52 48" fill="none" stroke="#38bdf8" stroke-width="4"/><path d="M20 46 V16 L44 46 V16" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/></svg>',
@@ -557,8 +562,8 @@ export const APP_SVG_ICONS: Record<string, string> = {
   ),
 };
 
-const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v3';
-const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v3';
+const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v4';
+const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v4';
 const BOOKMARKS_STORAGE_KEY = '__gemini95_browser_bookmarks_v3';
 const PARTITIONS_STORAGE_KEY = '__gemini95_partition_table_v1';
 
@@ -721,16 +726,17 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_CURRENT_USER', subkey: 'Control Panel\\WindowMetrics', name: 'DoubleClickLaunch', key: 'doubleClickIcons', regType: 'REG_DWORD', description: '1 = Require double-click on desktop icons' },
 
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'TaskbarAl', key: 'taskbarCentered', regType: 'REG_DWORD', description: '0 = Left-Aligned Hybrid Dock, 1 = Centered Dock' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskbarLabels', key: 'taskbarShowLabels', regType: 'REG_DWORD', description: '0 = Icon-Only Win10 Dock, 1 = Classic Text Labels' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskbarLabels', key: 'taskbarShowLabels', regType: 'REG_DWORD', description: '0 = Icon-Only Win10/11 Dock, 1 = Classic Text Labels' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StuckRectsEdge', key: 'taskbarPosition', regType: 'REG_SZ', description: 'Taskbar dock edge (bottom|top)' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'AutoHide', key: 'taskbarAutoHide', regType: 'REG_DWORD', description: '1 = Auto-collapse taskbar until hover' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowSearch', key: 'showSearchBtn', regType: 'REG_DWORD', description: 'Display Universal Search button on taskbar' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowSearch', key: 'showSearchBtn', regType: 'REG_DWORD', description: 'Display left-side taskbar Search bar' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskView', key: 'showTaskViewBtn', regType: 'REG_DWORD', description: 'Display Virtual Desktops Task View button' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowWidgets', key: 'showWidgetsBtn', regType: 'REG_DWORD', description: 'Display Weather & Widgets drawer button' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowCopilot', key: 'showCopilotBtn', regType: 'REG_DWORD', description: 'Display Windows Copilot 95 button' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowCopilot', key: 'showCopilotBtn', regType: 'REG_DWORD', description: 'Display Angel Pilot button' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'Clock24Hour', key: 'clock24Hour', regType: 'REG_DWORD', description: 'Use 24-hour clock in system tray' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ClockSeconds', key: 'clockShowSeconds', regType: 'REG_DWORD', description: 'Display live seconds in system tray clock' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StartLabel', key: 'startButtonLabel', regType: 'REG_SZ', description: 'Custom text label on the Start button' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowStartText', key: 'showStartText', regType: 'REG_DWORD', description: '0 = Windows 11 Icon Only, 1 = Show Text Label Next to Windows Icon' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StartLabel', key: 'startButtonLabel', regType: 'REG_SZ', description: 'Optional text label next to the Windows icon' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'SnapAssist', key: 'snapLayoutsEnabled', regType: 'REG_DWORD', description: 'Enable Win11 Snap Layouts flyout on Maximize' },
 
   // Browser Hive

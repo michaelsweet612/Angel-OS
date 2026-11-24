@@ -2,7 +2,9 @@
 
 # Angel-OS (`Remix Gemini 95`)
 
-**An installable, AI-powered retro Windows 95 & Windows 11-hybrid operating system that runs right in your browser.**
+**An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
+
+🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, and the Google Gemini API.
 

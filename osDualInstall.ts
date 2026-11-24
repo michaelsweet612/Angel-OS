@@ -315,6 +315,15 @@ export function buildSharewareDepotHtml(): string {
   </div>
   <div class="wrap">
     <div id="dl-banner"></div>
+    <div class="os-box" style="background:#e8f4ff;border-color:#0b57d0;">
+      <div>
+        <b style="font-size:13px;color:#0b57d0;">🌐 Google Chrome (v131.0.6778) — Downloaded &amp; Installed Default Browser</b><br/>
+        <span style="font-size:11px;color:#1e293b;">Installer cached at <code>C:\\Downloads\\CHROME_SETUP.EXE</code> (24.5 MB) · Pinned to left Taskbar &amp; Windows 11 Start Menu.</span>
+      </div>
+      <div style="white-space:nowrap;">
+        <span style="background:#dcfce7;color:#166534;border:1px solid #16a34a;padding:3px 8px;font-size:11px;font-weight:bold;border-radius:4px;">✓ Downloaded &amp; Installed</span>
+      </div>
+    </div>
     <div class="os-box">
       <div>
         <b style="font-size:13px;color:#800000;">💿 GEMINI95_OS_SETUP.EXE — Full Standalone OS Recovery &amp; Upgrade Package (68.4 MB)</b><br/>
@@ -1450,9 +1459,9 @@ function syncPwaTaskbarAndBadges(): void {
   const startItem = document.getElementById('start-pwa-install');
   const offlineBadge = document.getElementById('tray-offline-badge');
 
-  // Hide the persistent taskbar install button when already installed/running as a standalone PWA
+  // Hide the persistent taskbar install button when already installed/running as standalone or no install prompt is queued
   if (taskbarBtn) {
-    taskbarBtn.style.display = isStandaloneOsMode ? 'none' : 'inline-flex';
+    taskbarBtn.style.display = Boolean(deferredPwaPrompt) && !isStandaloneOsMode ? 'inline-flex' : 'none';
   }
   if (startItem) {
     startItem.innerHTML = isStandaloneOsMode
