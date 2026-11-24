@@ -1,0 +1,32 @@
+ANGEL-OS PERSONAL USE LICENSE
+Copyright (c) 2026 Michael Sweet (michaelsweet612). All rights reserved.
+
+1. PERMITTED USE (DOWNLOAD & PERSONAL EXECUTION)
+Permission is hereby granted to any individual to download, clone, build, and run
+copies of this Software locally for strictly PERSONAL, NON-COMMERCIAL USE ONLY.
+
+2. RESTRICTIONS (NO REPUBLICATION OR REDISTRIBUTION)
+Except as expressly permitted above or required by applicable law, you may NOT:
+  a) Republish, redistribute, mirror, or publicly re-host the Software or any
+     modified or unmodified versions of it (including re-uploading to GitHub,
+     websites, app stores, or package registries);
+  b) Sell, rent, lease, sublicense, or use the Software for commercial purposes;
+  c) Distribute derivative works built from this repository to third parties
+     without prior written permission from the copyright holder (michaelsweet612).
+
+3. THIRD-PARTY COMPONENTS & TEMPLATE SCAFFOLDING
+Third-party libraries and dependencies installed via npm/bun (such as React,
+Vite, Express, and Tailwind CSS) remain governed by their own respective
+open-source licenses. Any pre-existing starter template files carrying an
+explicit `SPDX-License-Identifier: Apache-2.0` header remain subject to their
+respective template notices where applicable, while all Angel-OS application
+modules, UI, assets, BIOS systems, and documentation created by the author are
+governed by this Personal Use License.
+
+4. DISCLAIMER
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY
+ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

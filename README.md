@@ -4,11 +4,21 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)**
+🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Latest Release (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, and the Google Gemini API.
 
+> **Personal Use Only:** You are welcome to download and run Angel-OS locally for your own personal use. Republishing, redistributing, or re-hosting copies is not permitted without written permission (see [`LICENSE`](./LICENSE)).
+
 </div>
+
+---
+
+## Download & Play Locally
+
+1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)**.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **`Angel-OS-v1.1.0-portable-web.zip`** from the **[GitHub Releases page](https://github.com/michaelsweet612/Angel-OS/releases)**, unzip it, and run `npx serve .` or `python3 -m http.server 3000` in that folder to run Angel-OS locally.
+3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
 
@@ -123,12 +133,15 @@ Angel-OS/
 ├── osSystemCore.ts     # SystemRegistry schema, software package catalog, partition state & defaults
 ├── osExtendedApps.ts   # Multi-engine browser, InstallShield 95, 8-tab Control Panel, REGEDIT, SYSMON & BIOS
 ├── osDualInstall.ts    # .EXE SFX runner, Tucows depot, Portable exporter, FDISK, ISO-9660/El Torito builder & PWA
+├── osBios5000.ts       # 5,120+ dormant CMOS BIOS firmware registers & live hardware hooks
 ├── genaiProxy.ts       # Browser-side proxy client mirroring @google/genai over /api/*
 ├── server.ts           # Express server, Gemini API endpoints & Vite dev/static serving
-├── public/             # PWA icons & SVG monitor asset
-├── vite.config.ts      # Vite + VitePWA Workbox manifest & caching configuration
+├── public/             # PWA icons & Windows logo asset
+├── vite.config.ts      # Vite + VitePWA Workbox manifest & GitHub Pages subpath config
 ├── tsconfig.json       # TypeScript configuration
 ├── metadata.json       # App metadata & capabilities
+├── LICENSE             # Personal Use Only License (No Republication / Redistribution)
+├── AGENTS.md           # Repository release and changelog policy
 └── package.json        # Scripts & dependencies
 ```
 
@@ -136,4 +149,9 @@ Angel-OS/
 
 ## License
 
-Code headers in this repository carry the `Apache-2.0` SPDX license identifier (`SPDX-License-Identifier: Apache-2.0`).
+Angel-OS is governed by the **[Angel-OS Personal Use License](./LICENSE)**:
+
+- **Allowed:** You may download, clone, build, and run Angel-OS locally for **personal, non-commercial use**.
+- **Not Allowed:** You may **not** republish, redistribute, mirror, publicly re-host, sell, or distribute modified/unmodified versions without prior written permission from the copyright holder (`michaelsweet612`).
+- Third-party libraries remain under their own respective open-source licenses, and any original template scaffolding files carrying an `Apache-2.0` SPDX header remain subject to their respective template notices where applicable.
+
