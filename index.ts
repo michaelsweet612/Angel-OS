@@ -32,9 +32,18 @@ import {
 } from './osExtendedApps';
 import { BIOS_FLAGSHIP_IDS, isBiosPilotOverclocked, isBiosZeroWaitPost } from './osBios5000';
 import { detectHostHardware, getEffectiveRamDisplay, getEffectiveRamMB, initPerfAdjustApp } from './osHardwarePerf';
+import {
+  closeLocalSignInScreen,
+  initPhysicalBooterAndSignIn,
+  openLocalSignInScreen,
+  openPhysicalBooterModal,
+  renderBootManagerOptions,
+  syncLocalAccountStartPill,
+} from './osPhysicalBooter';
 import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
+  downloadBootableUsbDiskImage,
   downloadPortableHostApp,
   dropSetupExeToVfs,
   executeVfsSetupExe,
@@ -3015,9 +3024,34 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       triggerBsodPrank('DOS Command BSOD executed from COMMAND.COM');
       return;
     }
+    if (upper === 'BOOTER' || upper === 'PHYSICALBOOT' || upper === 'PHYSICAL') {
+      openPhysicalBooterModal();
+      appendLine('Opening Angel-OS Physical Hardware Booter (.ISO / Raw USB .IMG / Linux & Windows Installers)...');
+      return;
+    }
+    if (upper === 'USBBOOT' || upper === 'USBIMG') {
+      downloadBootableUsbDiskImage();
+      appendLine('Generating 16 MB raw MBR-partitioned USB/HDD image (ANGELOS_USB_DISK.img)...');
+      return;
+    }
+    if (upper === 'SIGNIN' || upper === 'LOCK' || upper === 'SWITCHUSER') {
+      openLocalSignInScreen();
+      appendLine('Locking session & opening Always-Local Account Sign-In...');
+      return;
+    }
+    if (upper === 'SETUP') {
+      openOsReinstallScreen();
+      appendLine('Launching Windows-Style Partition Options & OS Setup...');
+      return;
+    }
+    if (upper === 'BIOS' || upper === 'CMOS') {
+      openCmosBiosSetup();
+      appendLine('Entering Award / UEFI CMOS BIOS Setup Utility...');
+      return;
+    }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('Angel-OS 95 (Version 4.00.950 B · Five Trillion Features Pack)');
+      appendLine('Angel-OS Windows 11+10 Hybrid (Version 1.4.0 · Physical Booter & Local Account Always)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -3547,9 +3581,10 @@ windows.forEach((windowElement, idx) => {
   windowElement.style.left = `${leftOffset}px`;
 });
 
-// --- Interactive BIOS POST & Windows 95 Splash Boot Controller ---
+// --- Interactive BIOS POST, Windows Boot Manager, Splash & Always-Local Sign-In Controller ---
 const bootScreen = document.getElementById('boot-screen') as HTMLDivElement | null;
 const bootBiosStage = document.getElementById('boot-bios-stage') as HTMLDivElement | null;
+const bootManagerStage = document.getElementById('boot-manager-stage') as HTMLDivElement | null;
 const bootSplashStage = document.getElementById('boot-splash-stage') as HTMLDivElement | null;
 const biosRamCounter = document.getElementById('bios-ram-counter') as HTMLSpanElement | null;
 const biosStatusLine = document.getElementById('bios-status-line') as HTMLDivElement | null;
@@ -3557,7 +3592,13 @@ const bootPowerBtn = document.getElementById('boot-power-btn') as HTMLButtonElem
 const bootSkipBtn = document.getElementById('boot-skip-btn') as HTMLButtonElement | null;
 const splashSkipBtn = document.getElementById('splash-skip-btn') as HTMLButtonElement | null;
 
-let bootState: 'bios' | 'post_running' | 'splash' | 'complete' = 'bios';
+type BootMgrChoice = 'normal' | 'safemode' | 'setup' | 'physical_booter' | 'cmos';
+let bootState: 'bios' | 'post_running' | 'bootmgr' | 'splash' | 'signin' | 'complete' = 'bios';
+let selectedBootChoice: BootMgrChoice = 'normal';
+let bootMgrCountdown = 5;
+let bootMgrPaused = false;
+let bootMgrTimerId: number | null = null;
+let bootMgrSafeModeFlag = false;
 const bootTimeouts: number[] = [];
 
 function clearBootTimers() {
@@ -3565,20 +3606,141 @@ function clearBootTimers() {
     const id = bootTimeouts.pop();
     if (id !== undefined) clearTimeout(id);
   }
+  if (bootMgrTimerId !== null) {
+    clearInterval(bootMgrTimerId);
+    bootMgrTimerId = null;
+  }
 }
 
-function finishBootToDesktop() {
+function syncBootMgrSelectionUI() {
+  document.querySelectorAll<HTMLElement>('.bootmgr-option').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.bootChoice === selectedBootChoice);
+  });
+}
+
+function updateBootMgrCountdownLabel(customMsg?: string) {
+  const el = document.getElementById('bootmgr-countdown-txt');
+  if (!el) return;
+  if (customMsg) {
+    el.textContent = customMsg;
+    return;
+  }
+  el.textContent = bootMgrPaused
+    ? 'Timer paused — click any OS or Physical Booter option, or press [ENTER]'
+    : `Starting highlighted option in ${bootMgrCountdown}s...`;
+}
+
+function finishBootToDesktop(bypassSignIn = false) {
   clearBootTimers();
+  if (!bypassSignIn && systemRegistry.requireSignInOnBoot) {
+    bootState = 'signin';
+    if (bootScreen) {
+      bootScreen.classList.add('fade-out');
+      const hideId = window.setTimeout(() => {
+        if (bootScreen && (bootState === 'signin' || bootState === 'complete')) {
+          bootScreen.style.display = 'none';
+        }
+      }, 360);
+      bootTimeouts.push(hideId);
+    }
+    openLocalSignInScreen();
+    return;
+  }
+
   bootState = 'complete';
   unlockAchievement('first_boot');
-  if (!bootScreen) return;
-  bootScreen.classList.add('fade-out');
-  const hideId = window.setTimeout(() => {
-    if (bootScreen && bootState === 'complete') {
-      bootScreen.style.display = 'none';
+  syncLocalAccountStartPill();
+  if (bootScreen) {
+    bootScreen.classList.add('fade-out');
+    const hideId = window.setTimeout(() => {
+      if (bootScreen && bootState === 'complete') {
+        bootScreen.style.display = 'none';
+      }
+    }, 360);
+    bootTimeouts.push(hideId);
+  }
+  if (bootMgrSafeModeFlag) {
+    bootMgrSafeModeFlag = false;
+    pushBalloonToast(
+      'Safe Mode & Diagnostics Active',
+      'Minimal drivers loaded. Partition Options, Registry Editor, and Local Accounts ready.',
+      '🛡️',
+    );
+  }
+}
+
+function startBootSplashStage(isSafeMode = false) {
+  clearBootTimers();
+  bootMgrSafeModeFlag = isSafeMode;
+  bootState = 'splash';
+  if (bootBiosStage) bootBiosStage.style.display = 'none';
+  if (bootManagerStage) bootManagerStage.style.display = 'none';
+  if (bootSplashStage) bootSplashStage.style.display = 'flex';
+  if (systemRegistry.biosBootAudio) {
+    sfx.playStartupChime();
+  }
+  const biosZeroWait = isBiosZeroWaitPost();
+  const splashDelay = biosZeroWait ? 450 : systemRegistry.biosQuickPost ? 1800 : isSafeMode ? 1200 : 2800;
+  const completeTimer = window.setTimeout(() => {
+    finishBootToDesktop(false);
+  }, splashDelay);
+  bootTimeouts.push(completeTimer);
+}
+
+function proceedFromBootManager(choice: BootMgrChoice) {
+  selectedBootChoice = choice;
+  syncBootMgrSelectionUI();
+  if (bootMgrTimerId !== null) {
+    clearInterval(bootMgrTimerId);
+    bootMgrTimerId = null;
+  }
+  bootMgrPaused = true;
+  if (choice === 'setup') {
+    updateBootMgrCountdownLabel('Paused — Windows Partition Options & Setup opened');
+    openOsReinstallScreen();
+    return;
+  }
+  if (choice === 'physical_booter') {
+    updateBootMgrCountdownLabel('Paused — Physical Hardware Booter Toolkit opened');
+    openPhysicalBooterModal();
+    return;
+  }
+  if (choice === 'cmos') {
+    updateBootMgrCountdownLabel('Paused — CMOS BIOS Setup Utility opened');
+    openCmosBiosSetup();
+    return;
+  }
+  startBootSplashStage(choice === 'safemode');
+}
+
+function enterBootManagerStage() {
+  clearBootTimers();
+  bootState = 'bootmgr';
+  selectedBootChoice = 'normal';
+  bootMgrCountdown = 5;
+  bootMgrPaused = false;
+  if (bootScreen) {
+    bootScreen.style.display = 'flex';
+    bootScreen.classList.remove('fade-out');
+  }
+  if (bootBiosStage) bootBiosStage.style.display = 'none';
+  if (bootSplashStage) bootSplashStage.style.display = 'none';
+  if (bootManagerStage) bootManagerStage.style.display = 'flex';
+  renderBootManagerOptions();
+  syncBootMgrSelectionUI();
+  const pauseBtn = document.getElementById('bootmgr-pause-btn');
+  if (pauseBtn) pauseBtn.textContent = '⏸ Pause Timer';
+  updateBootMgrCountdownLabel();
+
+  bootMgrTimerId = window.setInterval(() => {
+    if (bootState !== 'bootmgr' || bootMgrPaused) return;
+    bootMgrCountdown -= 1;
+    if (bootMgrCountdown <= 0) {
+      proceedFromBootManager(selectedBootChoice);
+    } else {
+      updateBootMgrCountdownLabel();
     }
-  }, 360);
-  bootTimeouts.push(hideId);
+  }, 1000);
 }
 
 function startBootWithAudio() {
@@ -3606,7 +3768,7 @@ function startBootWithAudio() {
   }
 
   if (biosStatusLine) {
-    biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOTING GEMINI 95...';
+    biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOT MANAGER...';
   }
 
   const maxRamKb = getEffectiveRamMB() * 1024;
@@ -3627,29 +3789,24 @@ function startBootWithAudio() {
     bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
   }
 
-  // Transition to Stage 2: Windows 11 + 10 Boot Splash + Lo-Fi Eno Synth Chime
+  // Transition to Windows Boot Manager (if enabled) or directly to Splash
   const biosZeroWait = isBiosZeroWaitPost();
   const postDelay = biosZeroWait ? 80 : systemRegistry.biosQuickPost ? 220 : 650;
-  const splashDelay = biosZeroWait ? 450 : systemRegistry.biosQuickPost ? 1800 : 3400;
-  const splashTimer = window.setTimeout(() => {
-    bootState = 'splash';
-    if (bootBiosStage) bootBiosStage.style.display = 'none';
-    if (bootSplashStage) bootSplashStage.style.display = 'flex';
-    if (systemRegistry.biosBootAudio) {
-      sfx.playStartupChime();
+  const nextTimer = window.setTimeout(() => {
+    if (systemRegistry.enableBootManagerOnBoot && !biosZeroWait) {
+      enterBootManagerStage();
+    } else {
+      startBootSplashStage(false);
     }
-
-    const completeTimer = window.setTimeout(() => {
-      finishBootToDesktop();
-    }, splashDelay);
-    bootTimeouts.push(completeTimer);
   }, postDelay);
-  bootTimeouts.push(splashTimer);
+  bootTimeouts.push(nextTimer);
 }
 
 function rebootGemini95() {
   clearBootTimers();
   closeStartMenuUi();
+  closeLocalSignInScreen();
+  bootMgrSafeModeFlag = false;
   bootState = 'bios';
   applySystemRegistryToOS(true);
   if (biosStatusLine) {
@@ -3659,6 +3816,7 @@ function rebootGemini95() {
       : '⚠ MISSING OPERATING SYSTEM ON C:\\ — PRESS [F9] FOR FDISK OR [F8] FOR OS SETUP CD-ROM';
   }
   if (bootBiosStage) bootBiosStage.style.display = 'flex';
+  if (bootManagerStage) bootManagerStage.style.display = 'none';
   if (bootSplashStage) bootSplashStage.style.display = 'none';
   if (bootScreen) {
     bootScreen.style.display = 'flex';
@@ -3677,12 +3835,41 @@ bootSkipBtn?.addEventListener('click', (e) => {
     startBootWithAudio();
     return;
   }
-  finishBootToDesktop();
+  finishBootToDesktop(true);
 });
 
 splashSkipBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
-  finishBootToDesktop();
+  finishBootToDesktop(true);
+});
+
+document.querySelectorAll<HTMLElement>('.bootmgr-option').forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sfx.playClick();
+    const choice = (btn.dataset.bootChoice || 'normal') as BootMgrChoice;
+    proceedFromBootManager(choice);
+  });
+});
+
+document.getElementById('bootmgr-pause-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  bootMgrPaused = !bootMgrPaused;
+  const btn = document.getElementById('bootmgr-pause-btn');
+  if (btn) btn.textContent = bootMgrPaused ? '▶ Resume Timer' : '⏸ Pause Timer';
+  updateBootMgrCountdownLabel();
+});
+
+document.getElementById('bootmgr-continue-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  proceedFromBootManager(selectedBootChoice);
+});
+
+document.getElementById('bootmgr-skip-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  finishBootToDesktop(true);
 });
 
 document.getElementById('start-reboot-os')?.addEventListener('click', () => {
@@ -3694,12 +3881,20 @@ window.addEventListener('keydown', (e) => {
   const cmosOpen = document.getElementById('cmos-bios-screen')?.style.display === 'flex';
   const setupOpen = document.getElementById('os-reinstall-screen')?.style.display === 'flex';
   const fdiskOpen = document.getElementById('fdisk-screen')?.style.display === 'flex';
+  const physOpen = document.getElementById('physical-booter-modal')?.style.display === 'flex';
+  const signInOpen = document.getElementById('os-signin-screen')?.style.display === 'flex';
+  if (physOpen && e.key === 'Escape') {
+    e.preventDefault();
+    const m = document.getElementById('physical-booter-modal');
+    if (m) m.style.display = 'none';
+    return;
+  }
   if (fdiskOpen && e.key === 'Escape') {
     e.preventDefault();
     document.getElementById('fdisk-exit-btn')?.click();
     return;
   }
-  if (cmosOpen || setupOpen || fdiskOpen) return;
+  if (cmosOpen || setupOpen || fdiskOpen || physOpen || signInOpen) return;
 
   if (bootState === 'bios') {
     if (e.key === 'Delete' || e.key === 'F2') {
@@ -3716,12 +3911,34 @@ window.addEventListener('keydown', (e) => {
       startBootWithAudio();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      if (isPrimaryBootable()) finishBootToDesktop();
+      if (isPrimaryBootable()) finishBootToDesktop(true);
       else startBootWithAudio();
+    }
+  } else if (bootState === 'bootmgr') {
+    const order: BootMgrChoice[] = ['normal', 'safemode', 'setup', 'physical_booter', 'cmos'];
+    const curIdx = order.indexOf(selectedBootChoice);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      bootMgrPaused = true;
+      selectedBootChoice = order[(curIdx + 1) % order.length];
+      syncBootMgrSelectionUI();
+      updateBootMgrCountdownLabel();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      bootMgrPaused = true;
+      selectedBootChoice = order[(curIdx - 1 + order.length) % order.length];
+      syncBootMgrSelectionUI();
+      updateBootMgrCountdownLabel();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      proceedFromBootManager(selectedBootChoice);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finishBootToDesktop(true);
     }
   } else if (bootState === 'splash' && e.key === 'Escape') {
     e.preventDefault();
-    finishBootToDesktop();
+    finishBootToDesktop(true);
   }
 });
 
@@ -4154,11 +4371,15 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '💾 Physical Hardware Booter (.ISO / Raw USB .IMG / Linux & Win Installers)', kind: 'Bare-Metal OS', action: () => openPhysicalBooterModal() },
+  { label: '🔌 Export Bootable Raw USB / HDD Image (ANGELOS_USB_DISK.img)', kind: 'Physical OS', action: () => downloadBootableUsbDiskImage() },
+  { label: '🔒 Always-Local Account Sign-In & User Switcher (Offline Profiles)', kind: 'Local Account Always', action: () => openLocalSignInScreen() },
+  { label: '🪟 Open Windows Boot Manager (OS & Partition Selector)', kind: 'Boot Menu', action: () => enterBootManagerStage() },
   { label: '💿 Ability to Install (.EXE Installers & Physical OS Setup)', kind: 'Dual Installer', action: () => openApp('abilityToInstall', true) },
   { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen(false) },
   { label: '📖 Interactive FDISK Guide (Step-by-Step 90s Partitioning Coach)', kind: 'FDISK Tutorial', action: () => openFdiskScreen(true) },
   { label: '📲 Install Gemini 95 onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
-  { label: '💿 Export Bootable x86 CD-ROM Image (GEMINI95_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
+  { label: '💿 Export Bootable x86 CD-ROM Image (ANGELOS_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
   { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
   { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
   { label: '🗂️ REGEDIT.EXE (Live Windows 95 Registry Editor)', kind: 'System Utility', action: () => openApp('regedit') },
@@ -4693,6 +4914,9 @@ registerMegaBridge({
   openFdiskScreen,
   openCmosBiosSetup,
   openOsReinstallScreen,
+  openPhysicalBooterModal,
+  openLocalSignInScreen,
+  downloadBootableUsbDiskImage,
   addVfsFile: (name, type, parent, content) => {
     virtualFileSystem.push({ name, type, parent, content });
   },
@@ -4710,11 +4934,20 @@ initCmosBiosController();
 initOsReinstallerController();
 initFdiskController();
 initPwaAndHostOsController();
+initPhysicalBooterAndSignIn({
+  onEnterBootManager: () => enterBootManagerStage(),
+  onOpenSetup: () => openOsReinstallScreen(),
+  onOpenFdisk: (withGuide) => openFdiskScreen(withGuide),
+  onOpenCmos: () => openCmosBiosSetup(),
+  onReboot: () => rebootGemini95(),
+  onDesktopUnlocked: () => finishBootToDesktop(true),
+});
 initMegaShellFeatures();
 applySystemRegistryToOS(true);
 syncTaskbarDock();
+syncLocalAccountStartPill();
 resetIdleTimer();
-pushBalloonToast('Angel-OS Windows 11+10 Ready!', 'Left-side Windows 10 taskbar + Windows 11 Start menu, Google Chrome downloaded & ready, and 5,120+ dormant features waiting inside CMOS BIOS Setup!', '🪟');
+pushBalloonToast('Angel-OS Windows 11+10 Ready!', 'Physical Boot Media (.ISO / Raw USB .IMG / Linux & Win Installers), Partition Options, Windows Boot Manager, and Always-Local Sign-In ready!', '🪟');
 
 window.addEventListener('resize', () => {
   openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));

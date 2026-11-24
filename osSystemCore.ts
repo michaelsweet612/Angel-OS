@@ -8,6 +8,17 @@ export type BrowserEngineId = 'chrome' | 'netscape' | 'ie3';
 export type BrowserRenderMode = 'ai' | 'live';
 export type BrowserAiEra = '1996' | '2001' | 'modern';
 
+export interface LocalUserAccount {
+  username: string;
+  displayName: string;
+  avatar: string;
+  role: 'Administrator' | 'Standard';
+  password: string;
+  pin: string;
+  homeDir: string;
+  createdAt: string;
+}
+
 export interface SystemRegistry {
   // --- Tab 1: Display, CRT & Compositor (HKCU\Control Panel\Display) ---
   themePreset: 'standard' | 'hotdog' | 'cyberpunk' | 'vaporwave' | 'matrix' | 'win31' | 'highcontrast' | 'custom';
@@ -99,7 +110,7 @@ export interface SystemRegistry {
   screensaverStyle: 'starfield' | 'matrix';
   fileSystemFormat: 'FAT16' | 'FAT32';
 
-  // --- Tab 7: Dual-Path Install (.EXE Policy, FDISK Disk & Host OS Mode) ---
+  // --- Tab 7: Dual-Path Install (.EXE Policy, FDISK Disk, Partition Target & Host OS Mode) ---
   sfxVerifyPrompt: boolean;
   autoDeleteExeAfterInstall: boolean;
   defaultExeDownloadDir: 'C:\\Downloads' | 'C:\\' | 'D:\\Installers';
@@ -108,12 +119,18 @@ export interface SystemRegistry {
   strictMbrBootCheck: boolean;
   isoVolumeLabel: string;
   autoFullscreenStandalone: boolean;
+  selectedInstallTargetPartition: 'C:' | 'D:';
+  selectedBootloaderMode: 'win_hybrid_mbr' | 'legacy_95_mbr';
 
-  // --- Tab 8 / CMOS BIOS Settings (HKLM\Hardware\BIOS) ---
+  // --- Tab 8 / CMOS BIOS & Always-Local Sign-In Settings (HKLM\Hardware\BIOS) ---
   biosQuickPost: boolean;
   biosBootOrder: 'C_A_CDROM' | 'A_C_CDROM' | 'CDROM_C_A';
   biosBootAudio: boolean;
   biosNumLockOn: boolean;
+  enableBootManagerOnBoot: boolean;
+  requireSignInOnBoot: boolean;
+  activeLocalAccount: string;
+  localAccounts: LocalUserAccount[];
 }
 
 export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
@@ -207,13 +224,40 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   primaryPartitionSizeMB: 1495,
   enableSecondaryDriveD: true,
   strictMbrBootCheck: true,
-  isoVolumeLabel: 'GEMINI95_OS',
+  isoVolumeLabel: 'ANGELOS_BOOT',
   autoFullscreenStandalone: false,
+  selectedInstallTargetPartition: 'C:',
+  selectedBootloaderMode: 'win_hybrid_mbr',
 
   biosQuickPost: true,
   biosBootOrder: 'C_A_CDROM',
   biosBootAudio: true,
   biosNumLockOn: true,
+  enableBootManagerOnBoot: true,
+  requireSignInOnBoot: true,
+  activeLocalAccount: 'Michael',
+  localAccounts: [
+    {
+      username: 'Michael',
+      displayName: 'Michael',
+      avatar: '🧑‍💻',
+      role: 'Administrator',
+      password: '',
+      pin: '',
+      homeDir: 'C:\\Users\\Michael',
+      createdAt: '1995-08-24',
+    },
+    {
+      username: 'Guest95',
+      displayName: 'Guest (Local)',
+      avatar: '👤',
+      role: 'Standard',
+      password: '',
+      pin: '',
+      homeDir: 'C:\\Users\\Guest95',
+      createdAt: '1995-08-24',
+    },
+  ],
 };
 
 export interface PartitionTableState {
@@ -665,7 +709,14 @@ export function loadSystemRegistry(): SystemRegistry {
       if (parsed && parsed.defaultBrowserEngine === 'cyberchrome') {
         parsed.defaultBrowserEngine = 'chrome';
       }
-      return { ...DEFAULT_SYSTEM_REGISTRY, ...parsed };
+      const merged: SystemRegistry = { ...DEFAULT_SYSTEM_REGISTRY, ...parsed };
+      if (!Array.isArray(merged.localAccounts) || merged.localAccounts.length === 0) {
+        merged.localAccounts = DEFAULT_SYSTEM_REGISTRY.localAccounts.map((a) => ({ ...a }));
+      }
+      if (!merged.localAccounts.some((a) => a.username === merged.activeLocalAccount)) {
+        merged.activeLocalAccount = merged.localAccounts[0].username;
+      }
+      return merged;
     }
   } catch (e) {
     console.warn('Registry load fallback:', e);
@@ -828,8 +879,13 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'MountLogicalDriveD', key: 'enableSecondaryDriveD', regType: 'REG_DWORD', description: '1 = Mount secondary D:\\ partition in Explorer' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'StrictMBRBootGuard', key: 'strictMbrBootCheck', regType: 'REG_DWORD', description: '1 = Halt BIOS POST if C:\\ or MBR is missing' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'BootISOVolumeLabel', key: 'isoVolumeLabel', regType: 'REG_SZ', description: 'ISO-9660 volume label for exported bootable ISO' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\Setup', name: 'TargetInstallPartition', key: 'selectedInstallTargetPartition', regType: 'REG_SZ', description: 'Selected target drive partition for OS installation (C: or D:)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\Setup', name: 'BootloaderMode', key: 'selectedBootloaderMode', regType: 'REG_SZ', description: 'win_hybrid_mbr or legacy_95_mbr boot manager configuration' },
 
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'QuickPOST', key: 'biosQuickPost', regType: 'REG_DWORD', description: 'Fast RAM test during power-on boot' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'BootSequence', key: 'biosBootOrder', regType: 'REG_SZ', description: 'Boot priority (C_A_CDROM|A_C_CDROM|CDROM_C_A)' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'BootStartupChime', key: 'biosBootAudio', regType: 'REG_DWORD', description: 'Synthesize Eno startup chime during splash' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Boot\\Manager', name: 'EnableBootManager', key: 'enableBootManagerOnBoot', regType: 'REG_DWORD', description: '1 = Show Windows Boot Manager partition selector during boot' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Accounts\\LocalOnly', name: 'RequireLocalSignIn', key: 'requireSignInOnBoot', regType: 'REG_DWORD', description: '1 = Show Windows Always-Local-Account sign-in screen on boot' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Accounts\\LocalOnly', name: 'ActiveLocalAccount', key: 'activeLocalAccount', regType: 'REG_SZ', description: 'Currently active Always-Local user account profile' },
 ];

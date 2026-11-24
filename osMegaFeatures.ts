@@ -17,6 +17,9 @@ export interface MegaBridge {
   openFdiskScreen: (withGuide?: boolean) => void;
   openCmosBiosSetup: () => void;
   openOsReinstallScreen: () => void;
+  openPhysicalBooterModal?: () => void;
+  openLocalSignInScreen?: () => void;
+  downloadBootableUsbDiskImage?: () => void;
   addVfsFile: (name: string, type: 'folder' | 'text' | 'image' | 'app' | 'installer_exe', parent: string, content?: string) => void;
   removeVfsFile: (name: string, parent: string) => void;
   getVfsFiles: () => Array<{ name: string; type: string; parent: string; content?: string; appTarget?: string; pkgId?: string; sizeMB?: number }>;
@@ -2360,6 +2363,9 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'fdisk /?' || cmd === 'fdisk help') { megaBridge?.openFdiskScreen(true); return true; }
   if (cmd === 'bios' || cmd === 'cmos') { megaBridge?.openCmosBiosSetup(); return true; }
   if (cmd === 'setup') { megaBridge?.openOsReinstallScreen(); return true; }
+  if (cmd === 'booter' || cmd === 'physicalboot' || cmd === 'physical') { megaBridge?.openPhysicalBooterModal?.(); return true; }
+  if (cmd === 'usbboot' || cmd === 'usbimg') { megaBridge?.downloadBootableUsbDiskImage?.(); return true; }
+  if (cmd === 'lock' || cmd === 'signin' || cmd === 'switchuser') { megaBridge?.openLocalSignInScreen?.(); return true; }
   if (cmd === 'bsod') { triggerBsodPrank('User executed BSOD.EXE from Run dialog.'); return true; }
   if (cmd === 'winver') { openWinverModal(); return true; }
   if (cmd === 'hotkeys') { openHotkeysModal(); return true; }
@@ -2367,7 +2373,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, perf, bios, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 

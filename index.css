@@ -4354,7 +4354,7 @@ body.taskbar-is-top .window.maximized {
 .cmos-bios-screen {
   position: fixed;
   inset: 0;
-  z-index: 9700;
+  z-index: 9750;
   background: #00009a;
   color: #ffffff;
   font-family: 'IBM Plex Mono', monospace;
@@ -4816,8 +4816,10 @@ body.taskbar-is-top .window.maximized {
 }
 
 .os-setup-center-dialog {
-  width: 610px;
-  max-width: 95vw;
+  width: 780px;
+  max-width: 96vw;
+  max-height: 92vh;
+  overflow-y: auto;
   background: #c0c0c0;
   color: #000000;
   border-top: 3px solid #ffffff;
@@ -4828,7 +4830,7 @@ body.taskbar-is-top .window.maximized {
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .os-setup-dialog-title {
@@ -7208,6 +7210,443 @@ body.bios-rgb-trim .window.active-window {
     min-width: 110px;
   }
 }
+
+/* ==================== BOOT MANAGER, ALWAYS-LOCAL SIGN-IN & PHYSICAL BOOTER ==================== */
+.boot-manager-stage {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, #0f4c9a 0%, #062863 60%, #031538 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 3;
+}
+
+.bootmgr-card {
+  width: 720px;
+  max-width: 95vw;
+  background: rgba(7, 29, 73, 0.92);
+  border: 2px solid #60a5fa;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bootmgr-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bootmgr-sub {
+  font-size: 0.82rem;
+  color: #bae6fd;
+  margin-top: 4px;
+}
+
+.bootmgr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bootmgr-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(147, 197, 253, 0.35);
+  color: #ffffff;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.bootmgr-option:hover,
+.bootmgr-option.selected {
+  background: rgba(37, 99, 235, 0.55);
+  border-color: #fde047;
+}
+
+.bootmgr-opt-icon {
+  font-size: 1.55rem;
+  flex-shrink: 0;
+}
+
+.bootmgr-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.bootmgr-opt-text b {
+  font-size: 0.92rem;
+}
+
+.bootmgr-opt-text span {
+  font-size: 0.74rem;
+  color: #dbeafe;
+}
+
+.bootmgr-opt-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid #93c5fd;
+  color: #fde047;
+}
+
+.bootmgr-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(147, 197, 253, 0.35);
+  padding-top: 12px;
+  font-size: 0.8rem;
+  color: #e0f2fe;
+}
+
+/* Windows Always-Local-Account Lock & Sign-In Screen */
+.os-signin-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9650;
+  background: radial-gradient(circle at 25% 20%, #0c4a6e 0%, #0f172a 55%, #020617 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 28px;
+  backdrop-filter: blur(18px);
+}
+
+.signin-top-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.signin-local-badge {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid #34d399;
+  color: #a7f3d0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.signin-lock-clock {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.signin-center-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin: auto 0;
+}
+
+.signin-avatar-circle {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #38bdf8, #1d4ed8);
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.1rem;
+}
+
+.signin-username {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.signin-user-meta {
+  font-size: 0.82rem;
+  color: #bae6fd;
+}
+
+.signin-form-box {
+  width: 440px;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.signin-input-row {
+  display: flex;
+  gap: 0;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.signin-secret-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.signin-submit-btn {
+  width: 46px;
+  background: #0078d4;
+  color: #ffffff;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.signin-submit-btn:hover {
+  background: #1084e0;
+}
+
+.signin-auth-hint {
+  font-size: 0.74rem;
+  color: #cbd5e1;
+}
+
+.signin-error-msg {
+  font-size: 0.76rem;
+  color: #fecaca;
+  background: rgba(185, 28, 28, 0.45);
+  border: 1px solid #f87171;
+  padding: 5px 8px;
+}
+
+.signin-actions-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.signin-link-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-link-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.signin-create-panel {
+  background: #c0c0c0;
+  color: #000000;
+  border: 2px outset #ffffff;
+  padding: 10px;
+  text-align: left;
+  margin-top: 6px;
+}
+
+.signin-bottom-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.signin-accounts-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.signin-acct-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  padding: 6px 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.signin-acct-chip.active {
+  background: rgba(0, 120, 212, 0.7);
+  border-color: #fde047;
+}
+
+.signin-acct-chip-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: block;
+}
+
+.signin-acct-chip-sub {
+  font-size: 0.67rem;
+  color: #e0f2fe;
+}
+
+.signin-power-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.signin-tool-btn {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  color: #f8fafc;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-tool-btn:hover {
+  background: rgba(30, 64, 175, 0.85);
+  border-color: #93c5fd;
+}
+
+/* OS Setup Partition Options Table & Physical Booter Modal */
+.os-setup-part-panel {
+  background: #dfdfdf;
+  border: 2px inset #808080;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.os-setup-part-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  font-size: 0.73rem;
+}
+
+.os-setup-part-table th {
+  background: #000080;
+  color: #ffffff;
+  text-align: left;
+  padding: 4px 6px;
+}
+
+.os-setup-part-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.os-setup-part-row {
+  cursor: pointer;
+}
+
+.os-setup-part-row:hover {
+  background: #e0f2fe;
+}
+
+.os-setup-part-row.selected {
+  background: #000080;
+  color: #ffffff;
+}
+
+.win95-input {
+  background: #ffffff;
+  color: #000000;
+  border: 2px inset #808080;
+  padding: 3px 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  box-sizing: border-box;
+  height: 25px;
+}
+
+.os-setup-acct-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #d4d0c8;
+  border: 1px solid #808080;
+  padding: 8px 10px;
+  font-size: 0.74rem;
+}
+
+.phys-booter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.phys-booter-grid > div {
+  min-width: 0;
+}
+
+.phys-booter-grid .win95-btn {
+  width: 100%;
+  height: auto;
+  min-height: 27px;
+  padding: 5px 8px;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.phys-booter-cmd {
+  background: #0f172a;
+  color: #86efac;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.69rem;
+  padding: 8px;
+  border: 2px inset #808080;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 4px 0 0;
+}
+
+.start-user-pill.clickable-acct {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.start-user-pill.clickable-acct:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 120, 212, 0.35);
+}
+
+#physical-booter-modal,
+#pwa-ios-modal {
+  z-index: 9900;
+}
+
 
 
 
