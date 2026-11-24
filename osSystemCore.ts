@@ -55,6 +55,7 @@ export interface SystemRegistry {
   clock24Hour: boolean;
   clockShowSeconds: boolean;
   startButtonLabel: string;
+  showStartText: boolean;
   snapLayoutsEnabled: boolean;
   snapHoverDelayMs: number; // 50 - 800
 
@@ -77,11 +78,23 @@ export interface SystemRegistry {
   browserHomePage: string;
   browserZoomPercent: number; // 80 - 130
 
-  // --- Tab 6: Hardware, CPU, RAM & Power (HKLM\Hardware\Description\System) ---
+  // --- Tab 6: Hardware, CPU, RAM, Performance Levels & Fans (HKLM\Hardware\Description\System) ---
   cpuModel: 'Intel 486DX2 66MHz' | 'Intel Pentium 133MHz' | 'Intel Pentium MMX 233MHz' | 'Intel Pentium II 400MHz';
   cpuTurboBoost: boolean;
-  installedRamMB: 16 | 32 | 64 | 128 | 256;
-  virtualSwapMB: 64 | 128 | 256 | 512;
+  ramMode: 'auto' | 'limited' | 'custom';
+  installedRamMB: 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
+  customRamMB: number;
+  virtualSwapMB: 64 | 128 | 256 | 512 | 1024;
+  perfProfile: 'eco' | 'balanced' | 'performance' | 'turbo' | 'custom';
+  perfCpuScalePct: number; // 40 - 200 (%)
+  perfVoltageMv: number; // 850 - 1450 mV
+  perfPowerLimitW: number; // 15 - 350 W
+  perfFanMode: 'auto' | 'silent' | 'balanced' | 'turbo' | 'manual' | 'off';
+  perfFanDutyPct: number; // 0 - 100 %
+  fanCpuEnabled: boolean;
+  fanIntakeEnabled: boolean;
+  fanExhaustEnabled: boolean;
+  fanGpuEnabled: boolean;
   screensaverMinutes: 0 | 1 | 3 | 5;
   screensaverStyle: 'starfield' | 'matrix';
   fileSystemFormat: 'FAT16' | 'FAT32';
@@ -147,6 +160,7 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   clock24Hour: false,
   clockShowSeconds: false,
   startButtonLabel: 'Start',
+  showStartText: false,
   snapLayoutsEnabled: true,
   snapHoverDelayMs: 120,
 
@@ -169,8 +183,20 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
 
   cpuModel: 'Intel Pentium 133MHz',
   cpuTurboBoost: true,
+  ramMode: 'auto',
   installedRamMB: 64,
+  customRamMB: 4096,
   virtualSwapMB: 128,
+  perfProfile: 'balanced',
+  perfCpuScalePct: 100,
+  perfVoltageMv: 1180,
+  perfPowerLimitW: 95,
+  perfFanMode: 'auto',
+  perfFanDutyPct: 52,
+  fanCpuEnabled: true,
+  fanIntakeEnabled: true,
+  fanExhaustEnabled: true,
+  fanGpuEnabled: true,
   screensaverMinutes: 0,
   screensaverStyle: 'starfield',
   fileSystemFormat: 'FAT16',
@@ -327,6 +353,24 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     canUninstall: true,
   },
   {
+    pkgId: 'sys_perf_adjust',
+    name: 'Performance & Adjustment Levels',
+    version: '4.10.950',
+    publisher: 'Angel-OS Hardware Lab',
+    category: 'system',
+    sizeMB: 2.8,
+    installDir: 'C:\\System95',
+    exeName: 'PERFLEVELS.EXE',
+    setupExeFileName: 'PERFADJ95_SETUP.EXE',
+    appWindowId: 'perfAdjust',
+    iconHtml: '🎛️',
+    description: 'Hardware Auto-Detect (RAM/CPU/GPU/Fans/Temps), Limited & Custom RAM sizing, clock scaling, and live thermal cooling curves.',
+    installed: true,
+    desktopShortcut: true,
+    startMenuShortcut: true,
+    canUninstall: true,
+  },
+  {
     pkgId: 'sys_monitor',
     name: 'System Resource Monitor 95',
     version: '4.00.950',
@@ -459,8 +503,11 @@ function svgDataUri(svg: string): string {
 }
 
 export const APP_SVG_ICONS: Record<string, string> = {
+  windowsLogo: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="w1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6ee7ff"/><stop offset="100%" stop-color="#0078d4"/></linearGradient><linearGradient id="w2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#005fb8"/></linearGradient></defs><rect x="6" y="6" width="24" height="24" rx="2.5" fill="url(#w1)"/><rect x="34" y="6" width="24" height="24" rx="2.5" fill="url(#w1)"/><rect x="6" y="34" width="24" height="24" rx="2.5" fill="url(#w2)"/><rect x="34" y="34" width="24" height="24" rx="2.5" fill="url(#w2)"/></svg>',
+  ),
   chrome: svgDataUri(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="#ffffff"/><path d="M32 3 A29 29 0 0 1 57.5 18 H32 A14 14 0 0 0 19.8 25 L7.2 17 A29 29 0 0 1 32 3Z" fill="#ea4335"/><path d="M7.2 17 L19.8 25 A14 14 0 0 0 30.8 46 L23.5 59.8 A29 29 0 0 1 7.2 17Z" fill="#34a853"/><path d="M57.5 18 A29 29 0 0 1 23.5 59.8 L30.8 46 A14 14 0 0 0 45.8 29.5 H32 V18Z" fill="#fbbc05"/><circle cx="32" cy="32" r="13.5" fill="#ffffff"/><circle cx="32" cy="32" r="10.5" fill="#1a73e8"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#ffffff" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/><path d="M32 3 A29 29 0 0 1 57.5 18 H32 A14 14 0 0 0 19.8 25 L7.2 17 A29 29 0 0 1 32 3Z" fill="#ea4335"/><path d="M7.2 17 L19.8 25 A14 14 0 0 0 30.8 46 L23.5 59.8 A29 29 0 0 1 7.2 17Z" fill="#34a853"/><path d="M57.5 18 A29 29 0 0 1 23.5 59.8 L30.8 46 A14 14 0 0 0 45.8 29.5 H32 V18Z" fill="#fbbc05"/><circle cx="32" cy="32" r="13.5" fill="#ffffff"/><circle cx="32" cy="32" r="10.5" fill="#1a73e8"/></svg>',
   ),
   netscape: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="4" y="4" width="56" height="56" rx="8" fill="#0d4f6b" stroke="#000" stroke-width="2"/><path d="M12 48 Q32 22 52 48" fill="none" stroke="#38bdf8" stroke-width="4"/><path d="M20 46 V16 L44 46 V16" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/></svg>',
@@ -476,6 +523,9 @@ export const APP_SVG_ICONS: Record<string, string> = {
   ),
   regedit: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="10" y="10" width="14" height="14" fill="#0284c7" stroke="#000" stroke-width="2"/><rect x="26" y="10" width="14" height="14" fill="#38bdf8" stroke="#000" stroke-width="2"/><rect x="10" y="26" width="14" height="14" fill="#7dd3fc" stroke="#000" stroke-width="2"/><rect x="26" y="26" width="14" height="14" fill="#0ea5e9" stroke="#000" stroke-width="2"/><rect x="38" y="34" width="16" height="16" fill="#38bdf8" stroke="#000" stroke-width="2"/><rect x="22" y="42" width="14" height="14" fill="#0284c7" stroke="#000" stroke-width="2"/></svg>',
+  ),
+  perfAdjust: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="8" width="52" height="48" rx="3" fill="#c0c0c0" stroke="#000" stroke-width="2"/><rect x="10" y="12" width="44" height="22" fill="#0f172a" stroke="#475569" stroke-width="1.5"/><path d="M16 30 A14 14 0 0 1 44 30" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/><path d="M34 22 A14 14 0 0 1 44 30" fill="none" stroke="#ef4444" stroke-width="3.5" stroke-linecap="round"/><line x1="30" y1="30" x2="39" y2="19" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/><circle cx="30" cy="30" r="2.5" fill="#ffffff"/><rect x="12" y="40" width="40" height="4" fill="#475569"/><rect x="18" y="38" width="6" height="8" fill="#0078d4" stroke="#000" stroke-width="1"/><rect x="12" y="48" width="40" height="4" fill="#475569"/><rect x="34" y="46" width="6" height="8" fill="#16a34a" stroke="#000" stroke-width="1"/></svg>',
   ),
   sysMonitor: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="8" width="52" height="40" rx="2" fill="#c0c0c0" stroke="#000" stroke-width="2"/><rect x="11" y="13" width="42" height="28" fill="#022c22"/><polyline points="13,32 22,32 26,18 32,37 38,23 44,30 51,30" fill="none" stroke="#00ff66" stroke-width="3" stroke-linejoin="round"/><rect x="22" y="48" width="20" height="8" fill="#808080" stroke="#000" stroke-width="2"/></svg>',
@@ -557,8 +607,8 @@ export const APP_SVG_ICONS: Record<string, string> = {
   ),
 };
 
-const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v3';
-const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v3';
+const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v4';
+const PACKAGES_STORAGE_KEY = '__gemini95_package_catalog_v4';
 const BOOKMARKS_STORAGE_KEY = '__gemini95_browser_bookmarks_v3';
 const PARTITIONS_STORAGE_KEY = '__gemini95_partition_table_v1';
 
@@ -721,16 +771,17 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_CURRENT_USER', subkey: 'Control Panel\\WindowMetrics', name: 'DoubleClickLaunch', key: 'doubleClickIcons', regType: 'REG_DWORD', description: '1 = Require double-click on desktop icons' },
 
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'TaskbarAl', key: 'taskbarCentered', regType: 'REG_DWORD', description: '0 = Left-Aligned Hybrid Dock, 1 = Centered Dock' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskbarLabels', key: 'taskbarShowLabels', regType: 'REG_DWORD', description: '0 = Icon-Only Win10 Dock, 1 = Classic Text Labels' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskbarLabels', key: 'taskbarShowLabels', regType: 'REG_DWORD', description: '0 = Icon-Only Win10/11 Dock, 1 = Classic Text Labels' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StuckRectsEdge', key: 'taskbarPosition', regType: 'REG_SZ', description: 'Taskbar dock edge (bottom|top)' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'AutoHide', key: 'taskbarAutoHide', regType: 'REG_DWORD', description: '1 = Auto-collapse taskbar until hover' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowSearch', key: 'showSearchBtn', regType: 'REG_DWORD', description: 'Display Universal Search button on taskbar' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowSearch', key: 'showSearchBtn', regType: 'REG_DWORD', description: 'Display left-side taskbar Search bar' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowTaskView', key: 'showTaskViewBtn', regType: 'REG_DWORD', description: 'Display Virtual Desktops Task View button' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowWidgets', key: 'showWidgetsBtn', regType: 'REG_DWORD', description: 'Display Weather & Widgets drawer button' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowCopilot', key: 'showCopilotBtn', regType: 'REG_DWORD', description: 'Display Windows Copilot 95 button' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowCopilot', key: 'showCopilotBtn', regType: 'REG_DWORD', description: 'Display Angel Pilot button' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'Clock24Hour', key: 'clock24Hour', regType: 'REG_DWORD', description: 'Use 24-hour clock in system tray' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ClockSeconds', key: 'clockShowSeconds', regType: 'REG_DWORD', description: 'Display live seconds in system tray clock' },
-  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StartLabel', key: 'startButtonLabel', regType: 'REG_SZ', description: 'Custom text label on the Start button' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'ShowStartText', key: 'showStartText', regType: 'REG_DWORD', description: '0 = Windows 11 Icon Only, 1 = Show Text Label Next to Windows Icon' },
+  { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'StartLabel', key: 'startButtonLabel', regType: 'REG_SZ', description: 'Optional text label next to the Windows icon' },
   { hive: 'HKEY_CURRENT_USER', subkey: 'Software\\Explorer\\Taskbar', name: 'SnapAssist', key: 'snapLayoutsEnabled', regType: 'REG_DWORD', description: 'Enable Win11 Snap Layouts flyout on Maximize' },
 
   // Browser Hive
@@ -753,8 +804,20 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
 
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\CentralProcessor', name: 'ProcessorNameString', key: 'cpuModel', regType: 'REG_SZ', description: 'Emulated CPU identifier string' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\CentralProcessor', name: 'TurboBoost', key: 'cpuTurboBoost', regType: 'REG_DWORD', description: 'Front-panel hardware Turbo button state' },
-  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'PhysicalMemoryMB', key: 'installedRamMB', regType: 'REG_DWORD', description: 'Installed SIMM/EDO RAM in MB (16-256)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'RamAllocationMode', key: 'ramMode', regType: 'REG_SZ', description: 'auto = Host Hardware Auto-Detect, limited = Capped Pool, custom = Manual MB' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'PhysicalMemoryMB', key: 'installedRamMB', regType: 'REG_DWORD', description: 'Installed / Limited RAM pool in MB (16-4096)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'CustomMemoryMB', key: 'customRamMB', regType: 'REG_DWORD', description: 'Manual custom RAM target in MB when RamAllocationMode=custom' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Memory', name: 'PagingFileMB', key: 'virtualSwapMB', regType: 'REG_DWORD', description: 'WIN386.SWP virtual memory swap size in MB' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Performance', name: 'AdjustmentProfile', key: 'perfProfile', regType: 'REG_SZ', description: 'Active performance tier (eco|balanced|performance|turbo|custom)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Performance', name: 'CpuClockScalePct', key: 'perfCpuScalePct', regType: 'REG_DWORD', description: 'CPU frequency multiplier scale percentage (40-200)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Performance', name: 'CoreVoltageMv', key: 'perfVoltageMv', regType: 'REG_DWORD', description: 'Vcore voltage regulation setpoint in millivolts (850-1450)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Performance', name: 'PowerLimitWatts', key: 'perfPowerLimitW', regType: 'REG_DWORD', description: 'Package TDP power limit envelope in Watts (15-350)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Cooling', name: 'FanCurveMode', key: 'perfFanMode', regType: 'REG_SZ', description: 'Thermal fan policy (auto|silent|balanced|turbo|manual|off)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Cooling', name: 'ManualFanDutyPct', key: 'perfFanDutyPct', regType: 'REG_DWORD', description: 'Manual PWM fan duty cycle percentage (0-100)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Cooling', name: 'CpuFanActive', key: 'fanCpuEnabled', regType: 'REG_DWORD', description: '1 = CPU cooler fan powered, 0 = Fan halted' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Cooling', name: 'ChassisIntakeFanActive', key: 'fanIntakeEnabled', regType: 'REG_DWORD', description: '1 = Front intake fan powered, 0 = Fan halted' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Cooling', name: 'ChassisExhaustFanActive', key: 'fanExhaustEnabled', regType: 'REG_DWORD', description: '1 = Rear exhaust fan powered, 0 = Fan halted' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\System\\Cooling', name: 'GpuFansActive', key: 'fanGpuEnabled', regType: 'REG_DWORD', description: '1 = GPU dual-axial fans powered, 0 = Fans halted' },
 
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Setup\\ExePolicy', name: 'VerifyMZHeaderPrompt', key: 'sfxVerifyPrompt', regType: 'REG_DWORD', description: '1 = Show Win32 SFX MZ dialog before running .EXE' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Setup\\ExePolicy', name: 'AutoCleanExeAfterSetup', key: 'autoDeleteExeAfterInstall', regType: 'REG_DWORD', description: '1 = Delete .EXE from Downloads after setup finishes' },

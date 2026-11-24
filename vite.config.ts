@@ -35,7 +35,10 @@ const disableViteClientWs: Plugin = {
   },
 };
 
+const basePath = process.env.VITE_BASE || '/';
+
 export default defineConfig({
+  base: basePath,
   server: {
     port: 3000,
     host: '0.0.0.0',
@@ -49,30 +52,30 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
       manifest: {
-        id: '/',
-        name: 'Remix Gemini 95 Operating System',
-        short_name: 'Gemini 95',
-        description: 'Installable retro Windows 95 operating system with AI web synthesis, InstallShield .EXE packages, FDISK, and Sound Blaster synth.',
-        theme_color: '#000080',
+        id: basePath,
+        name: 'Angel-OS (Windows 11 + 10 Hybrid)',
+        short_name: 'Angel-OS',
+        description: 'Installable Windows 11 + 10 hybrid desktop OS with Google Chrome, left-side search bar, and 5,120+ BIOS features.',
+        theme_color: '#0078d4',
         background_color: '#008080',
         display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        start_url: basePath,
+        scope: basePath,
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: `${basePath}pwa-192x192.png`,
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/pwa-512x512.png',
+            src: `${basePath}pwa-512x512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/pwa-maskable-512x512.png',
+            src: `${basePath}pwa-maskable-512x512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

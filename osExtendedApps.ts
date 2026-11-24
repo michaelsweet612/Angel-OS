@@ -33,6 +33,29 @@ import {
   toggleHardwareFullscreen,
   triggerNativePwaInstall,
 } from './osDualInstall';
+import {
+  applyPerfPreset,
+  computeHardwareTelemetry,
+  detectHostHardware,
+  getEffectiveRamDisplay,
+  getEffectiveRamMB,
+  refreshPerfAdjustIfOpen,
+  registerPerfRegistryProvider,
+} from './osHardwarePerf';
+import {
+  applyBios5000EffectsToOS,
+  BIOS_FLAGSHIP_IDS,
+  getActivatedBiosCount,
+  getBiosCpuLabelSuffix,
+  getBiosRamBoostMB,
+  initCmos5000Listeners,
+  isBiosChromeGpuAccelerated,
+  isBiosTpmVerified,
+  registerBios5000Callbacks,
+  renderCmos5000Browser,
+  resetAllBios5000ToDefaults,
+  TOTAL_BIOS_FEATURES,
+} from './osBios5000';
 
 export interface OsBridgeCallbacks {
   openApp: (appName: string, bypassPkgCheck?: boolean) => Promise<void>;
@@ -42,6 +65,7 @@ export interface OsBridgeCallbacks {
   updateClock: () => void;
   syncTaskbarDock?: () => void;
   clampOpenWindows?: () => void;
+  unlockAchievement?: (id: string) => void;
   getGeminiInstance: (context: string) => Promise<any | null>;
   injectShimIntoHtml: (rawHtml: string) => string;
   addVfsFile: (
@@ -86,6 +110,7 @@ export interface OsBridgeCallbacks {
 
 // Singleton runtime state shared across OS modules
 export let systemRegistry: SystemRegistry = loadSystemRegistry();
+registerPerfRegistryProvider(() => systemRegistry);
 export let packageCatalog: SoftwarePackage[] = loadPackageCatalog();
 export let browserBookmarks: BrowserBookmark[] = loadBrowserBookmarks();
 
@@ -268,6 +293,7 @@ export function applySystemRegistryToOS(skipSave = false): void {
     taskbar.classList.toggle('auto-hide-taskbar', systemRegistry.taskbarAutoHide);
   }
   body.classList.toggle('taskbar-is-top', systemRegistry.taskbarPosition === 'top');
+  body.classList.toggle('taskbar-is-centered', systemRegistry.taskbarCentered);
 
   const setVis = (id: string, show: boolean) => {
     const el = document.getElementById(id);
@@ -279,8 +305,11 @@ export function applySystemRegistryToOS(skipSave = false): void {
   setVis('show-desktop-btn', systemRegistry.showDesktopBtn);
   setVis('taskbar-copilot-btn', systemRegistry.showCopilotBtn);
 
-  const startLabelSpan = document.querySelector('#start-button span');
-  if (startLabelSpan) startLabelSpan.textContent = systemRegistry.startButtonLabel || 'Start';
+  const startLabelSpan = document.getElementById('start-button-label') as HTMLElement | null;
+  if (startLabelSpan) {
+    startLabelSpan.textContent = systemRegistry.startButtonLabel || 'Start';
+    startLabelSpan.style.display = systemRegistry.showStartText ? 'inline' : 'none';
+  }
 
   // Sync Quick Settings active tiles
   document.getElementById('qs-tile-center-taskbar')?.classList.toggle('active', systemRegistry.taskbarCentered);
@@ -312,18 +341,21 @@ export function applySystemRegistryToOS(skipSave = false): void {
     trayCrt.title = systemRegistry.crtEnabled ? 'CRT Scanlines On — Click to Toggle' : 'CRT Scanlines Off — Click to Toggle';
   }
 
-  // 6. BIOS POST & Explorer Hardware Labels
+  // 6. BIOS POST & Explorer Hardware Labels (Including Activated BIOS 5,120 Overrides)
   const biosCpu = document.getElementById('bios-cpu-label');
   if (biosCpu) {
-    biosCpu.textContent = `${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO]' : ''} + Gemini Neural Co-Processor`;
+    const tpmTag = isBiosTpmVerified() ? ' · TPM 2.0 + Secure Boot' : '';
+    biosCpu.textContent = `${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO]' : ''}${getBiosCpuLabelSuffix()} + Gemini Neural Co-Processor${tpmTag}`;
   }
   const biosRam = document.getElementById('bios-ram-counter');
   if (biosRam) {
-    biosRam.textContent = `${systemRegistry.installedRamMB * 1024}K OK`;
+    const totalRamMb = getEffectiveRamMB(systemRegistry, getBiosRamBoostMB());
+    biosRam.textContent = `${totalRamMb * 1024}K OK${getBiosRamBoostMB() > 0 ? ' [XMP-6400]' : ''}`;
   }
   const biosFs = document.getElementById('bios-fs-label');
   if (biosFs) biosFs.textContent = systemRegistry.fileSystemFormat;
 
+  refreshPerfAdjustIfOpen();
   syncPartitionTableWithRegistry();
 
   const driveDBtn = document.getElementById('explorer-drive-d-btn');
@@ -340,9 +372,10 @@ export function applySystemRegistryToOS(skipSave = false): void {
     explorerSpace.textContent = `Free Space: ${freeMb.toLocaleString()} MB / ${cCap.toLocaleString()} MB (${systemRegistry.fileSystemFormat})`;
   }
 
-  // 7. Synchronize Installed Package Icons & Browser Engine Branding
+  // 7. Synchronize Installed Package Icons, Browser Engine Branding & Dormant BIOS 5,120 Effects
   syncInstalledShortcutsToDesktop();
   syncBrowserChromeToEngine();
+  applyBios5000EffectsToOS();
   refreshRegeditIfOpen();
   refreshMasterSettingsPreview();
 }
@@ -383,7 +416,14 @@ export function syncInstalledShortcutsToDesktop(): void {
   const startBrowserItem = document.getElementById('start-menu-browser-item');
   if (startBrowserItem) {
     startBrowserItem.style.display = hasAnyBrowser && (activeEnginePkg?.startMenuShortcut ?? true) ? '' : 'none';
-    startBrowserItem.innerHTML = `${activeEnginePkg?.iconHtml || '🟢'} ${meta.shortTitle}`;
+    const tileImg = startBrowserItem.querySelector('img') as HTMLImageElement | null;
+    const tileSpan = startBrowserItem.querySelector('span');
+    if (tileImg && tileSpan) {
+      tileImg.src = meta.iconUrl;
+      tileSpan.textContent = meta.shortTitle === 'Google Chrome' ? 'Chrome' : meta.shortTitle;
+    } else {
+      startBrowserItem.innerHTML = `${activeEnginePkg?.iconHtml || '🟢'} ${meta.shortTitle}`;
+    }
   }
 
   // Disk space meter in Ability to Install
@@ -825,7 +865,9 @@ function buildChromeSettingsHtml(): string {
   <main>
     <div class="card">
       <h2>Active Engine &amp; Connection Profile</h2>
-      <div class="row"><span>Default Browser Engine</span><b>${escapeHtml(meta.fullTitle)}</b></div>
+      <div class="row"><span>Default Browser Engine</span><b>${escapeHtml(meta.fullTitle)} (Downloaded &amp; Installed on C:\\)</b></div>
+      <div class="row"><span>Installer Binary</span><code>C:\\Downloads\\CHROME_SETUP.EXE</code></div>
+      <div class="row"><span>BIOS GPU Hardware Hook</span><code>${isBiosChromeGpuAccelerated() ? `⚡ ACTIVE (${BIOS_FLAGSHIP_IDS.chromeGpu})` : 'Dormant (Enable in BIOS)'}</code></div>
       <div class="row"><span>Default Browsing Mode</span><code>${systemRegistry.defaultBrowserMode.toUpperCase()}</code></div>
       <div class="row"><span>AI Time-Machine Era</span><code>${systemRegistry.browserAiEra}</code></div>
       <div class="row"><span>Viewport Zoom</span><code>${systemRegistry.browserZoomPercent}%</code></div>
@@ -1388,7 +1430,11 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
           updateToolbarFromTab(tab);
           if (statusText) statusText.textContent = `Loaded Live: ${tab.url} (HTTP ${data.status || 200})`;
         } else {
-          const reason = data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
+          const isStaticHost = !['localhost', '127.0.0.1'].includes(window.location.hostname);
+          const reason =
+            resp.status === 404 && isStaticHost
+              ? 'Static GitHub Pages hosting has no backend /api/browse proxy — use built-in chrome:// pages, local files, or run `npm run dev` locally for external Live URLs.'
+              : data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
           tab.title = 'Site Unreachable';
           tab.embedUrl = undefined;
           tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
@@ -2398,7 +2444,7 @@ export function openMasterSettingsTab(tabId: string): void {
 function refreshMasterSettingsPreview(): void {
   const statusEl = document.getElementById('settings-live-status');
   if (statusEl) {
-    statusEl.textContent = `● Live Sync OK — Theme: ${systemRegistry.useCustomColors ? 'CUSTOM HEX' : systemRegistry.themePreset.toUpperCase()} · CPU: ${systemRegistry.cpuModel} · RAM: ${systemRegistry.installedRamMB}MB`;
+    statusEl.textContent = `● Live Sync OK — Theme: ${systemRegistry.useCustomColors ? 'CUSTOM HEX' : systemRegistry.themePreset.toUpperCase()} · CPU: ${systemRegistry.cpuModel} · RAM: ${getEffectiveRamDisplay(systemRegistry)}`;
   }
 }
 
@@ -2643,12 +2689,12 @@ export function renderMasterSettingsCurrentTab(): void {
   } else if (currentSettingsTab === 'taskbar') {
     container.innerHTML = `
       <fieldset class="settings-fieldset">
-        <legend>Taskbar Layout &amp; Windows 10/11 Backport Controls</legend>
+        <legend>Windows 11 + 10 Hybrid Taskbar &amp; Left-Side Search Controls</legend>
         <div class="settings-grid-2col">
           <div class="settings-row">
             <label>Taskbar Alignment:</label>
             <select id="st-tb-align" class="win95-select">
-              <option value="left" ${!r.taskbarCentered ? 'selected' : ''}>Classic Left (Win10 + Win95 Dock)</option>
+              <option value="left" ${!r.taskbarCentered ? 'selected' : ''}>Left-Side Win10 + Win11 Style (Default)</option>
               <option value="center" ${r.taskbarCentered ? 'selected' : ''}>Centered Icon Dock</option>
             </select>
           </div>
@@ -2667,6 +2713,10 @@ export function renderMasterSettingsCurrentTab(): void {
             <span>Auto-Hide Taskbar Until Hover</span>
             <input type="checkbox" id="st-tb-autohide" ${r.taskbarAutoHide ? 'checked' : ''} />
           </label>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Show Text Next to Windows Icon</span>
+            <input type="checkbox" id="st-start-txt-on" ${r.showStartText ? 'checked' : ''} />
+          </label>
           <div class="settings-row">
             <label>Start Button Text:</label>
             <input type="text" id="st-start-lbl" class="win95-text-input" style="width:110px;" maxlength="12" value="${r.startButtonLabel}" />
@@ -2677,10 +2727,10 @@ export function renderMasterSettingsCurrentTab(): void {
       <fieldset class="settings-fieldset">
         <legend>Taskbar Button &amp; System Tray Visibility</legend>
         <div class="settings-grid-2col">
-          <label class="settings-row" style="cursor:pointer;"><span>Show 🔍 Universal Search</span><input type="checkbox" id="st-vis-search" ${r.showSearchBtn ? 'checked' : ''} /></label>
+          <label class="settings-row" style="cursor:pointer;"><span>Show 🔍 Left Search Bar</span><input type="checkbox" id="st-vis-search" ${r.showSearchBtn ? 'checked' : ''} /></label>
           <label class="settings-row" style="cursor:pointer;"><span>Show 🪟 Task View (Desktops)</span><input type="checkbox" id="st-vis-tv" ${r.showTaskViewBtn ? 'checked' : ''} /></label>
-          <label class="settings-row" style="cursor:pointer;"><span>Show 🌤️ Widgets Drawer</span><input type="checkbox" id="st-vis-wid" ${r.showWidgetsBtn ? 'checked' : ''} /></label>
-          <label class="settings-row" style="cursor:pointer;"><span>Show ✨ Copilot 95 Button</span><input type="checkbox" id="st-vis-cop" ${r.showCopilotBtn ? 'checked' : ''} /></label>
+          <label class="settings-row" style="cursor:pointer;"><span>Show 🌤️ Widgets Pill</span><input type="checkbox" id="st-vis-wid" ${r.showWidgetsBtn ? 'checked' : ''} /></label>
+          <label class="settings-row" style="cursor:pointer;"><span>Show 👼 Angel Pilot Button</span><input type="checkbox" id="st-vis-cop" ${r.showCopilotBtn ? 'checked' : ''} /></label>
           <label class="settings-row" style="cursor:pointer;"><span>Show 🖥️ Minimize-All Button</span><input type="checkbox" id="st-vis-desk" ${r.showDesktopBtn ? 'checked' : ''} /></label>
           <label class="settings-row" style="cursor:pointer;"><span>24-Hour Military Tray Clock</span><input type="checkbox" id="st-clk-24" ${r.clock24Hour ? 'checked' : ''} /></label>
           <label class="settings-row" style="cursor:pointer;"><span>Show Seconds in Tray Clock</span><input type="checkbox" id="st-clk-sec" ${r.clockShowSeconds ? 'checked' : ''} /></label>
@@ -2688,7 +2738,7 @@ export function renderMasterSettingsCurrentTab(): void {
       </fieldset>
 
       <fieldset class="settings-fieldset">
-        <legend>Snap Layouts 95 (WINSNAP.DRV)</legend>
+        <legend>Snap Layouts (WINSNAP.DRV)</legend>
         <div class="settings-grid-2col">
           <label class="settings-row" style="cursor:pointer;">
             <span>Enable Snap Grid on □ Hover</span>
@@ -2709,6 +2759,7 @@ export function renderMasterSettingsCurrentTab(): void {
     bindSelect('st-tb-edge', (v) => (r.taskbarPosition = v as any));
     bindCheck('st-tb-labels', (c) => (r.taskbarShowLabels = c));
     bindCheck('st-tb-autohide', (c) => (r.taskbarAutoHide = c));
+    bindCheck('st-start-txt-on', (c) => (r.showStartText = c));
     container.querySelector('#st-start-lbl')?.addEventListener('input', (e) => {
       r.startButtonLabel = (e.target as HTMLInputElement).value || 'Start';
       applySystemRegistryToOS();
@@ -2941,14 +2992,38 @@ export function renderMasterSettingsCurrentTab(): void {
             <input type="checkbox" id="st-hw-turbo" ${r.cpuTurboBoost ? 'checked' : ''} />
           </label>
           <div class="settings-row">
-            <label>Physical RAM:</label>
+            <label>Detected Host PC:</label>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:#000080;">${detectHostHardware().cpuThreads} Threads · ${detectHostHardware().autoDetectedRamMB.toLocaleString()}MB Host RAM · ${detectHostHardware().gpuRenderer}</span>
+          </div>
+          <div class="settings-row">
+            <label>RAM Selection Mode:</label>
+            <select id="st-hw-ram-mode" class="win95-select">
+              <option value="auto" ${r.ramMode === 'auto' ? 'selected' : ''}>Auto-Detect Host PC RAM (${detectHostHardware().autoDetectedRamMB.toLocaleString()} MB)</option>
+              <option value="limited" ${r.ramMode === 'limited' ? 'selected' : ''}>Limited Pool (Cap 16–4096 MB)</option>
+              <option value="custom" ${r.ramMode === 'custom' ? 'selected' : ''}>Custom Manual MB</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label>Limited RAM Cap:</label>
             <select id="st-hw-ram" class="win95-select">
               <option value="16" ${r.installedRamMB === 16 ? 'selected' : ''}>16 MB SIMM</option>
               <option value="32" ${r.installedRamMB === 32 ? 'selected' : ''}>32 MB SIMM</option>
               <option value="64" ${r.installedRamMB === 64 ? 'selected' : ''}>64 MB EDO DRAM</option>
               <option value="128" ${r.installedRamMB === 128 ? 'selected' : ''}>128 MB PC66 SDRAM</option>
               <option value="256" ${r.installedRamMB === 256 ? 'selected' : ''}>256 MB Workstation</option>
+              <option value="512" ${r.installedRamMB === 512 ? 'selected' : ''}>512 MB Extended</option>
+              <option value="1024" ${r.installedRamMB === 1024 ? 'selected' : ''}>1,024 MB (1 GB)</option>
+              <option value="2048" ${r.installedRamMB === 2048 ? 'selected' : ''}>2,048 MB (2 GB)</option>
+              <option value="4096" ${r.installedRamMB === 4096 ? 'selected' : ''}>4,096 MB (4 GB)</option>
             </select>
+          </div>
+          <div class="settings-row">
+            <label>Custom RAM (MB):</label>
+            <input type="number" id="st-hw-ram-custom" class="win95-input" min="16" max="65536" step="16" value="${r.customRamMB}" style="width:110px;" />
+          </div>
+          <div class="settings-row">
+            <label>Performance &amp; Fans:</label>
+            <button type="button" class="win95-btn" id="st-hw-open-perf">🎛️ Open Performance &amp; Adjustment Levels</button>
           </div>
           <div class="settings-row">
             <label>WIN386.SWP Swap:</label>
@@ -3003,7 +3078,27 @@ export function renderMasterSettingsCurrentTab(): void {
 
     bindSelect('st-hw-cpu', (v) => (r.cpuModel = v as any));
     bindCheck('st-hw-turbo', (c) => (r.cpuTurboBoost = c));
-    bindSelect('st-hw-ram', (v) => (r.installedRamMB = Number(v) as any));
+    bindSelect('st-hw-ram-mode', (v) => (r.ramMode = v as any));
+    bindSelect('st-hw-ram', (v) => {
+      r.installedRamMB = Number(v) as any;
+      r.ramMode = 'limited';
+      const modeEl = container.querySelector<HTMLSelectElement>('#st-hw-ram-mode');
+      if (modeEl) modeEl.value = 'limited';
+    });
+    container.querySelector<HTMLInputElement>('#st-hw-ram-custom')?.addEventListener('change', (e) => {
+      const val = Math.max(16, Math.min(65536, Math.round(Number((e.target as HTMLInputElement).value) || 512)));
+      (e.target as HTMLInputElement).value = String(val);
+      r.customRamMB = val;
+      r.ramMode = 'custom';
+      const modeEl = container.querySelector<HTMLSelectElement>('#st-hw-ram-mode');
+      if (modeEl) modeEl.value = 'custom';
+      applySystemRegistryToOS();
+      refreshMasterSettingsPreview();
+    });
+    container.querySelector('#st-hw-open-perf')?.addEventListener('click', () => {
+      bridgeRef?.sfx.playClick();
+      bridgeRef?.openApp('perfAdjust', true);
+    });
     bindSelect('st-hw-swap', (v) => (r.virtualSwapMB = Number(v) as any));
     bindSelect('st-ss-min', (v) => (r.screensaverMinutes = Number(v) as any));
     bindSelect('st-ss-style', (v) => (r.screensaverStyle = v as any));
@@ -3171,15 +3266,16 @@ export function renderMasterSettingsCurrentTab(): void {
       }
     });
   } else if (currentSettingsTab === 'registry') {
+    const activeBios = getActivatedBiosCount();
     container.innerHTML = `
       <fieldset class="settings-fieldset">
-        <legend>Low-Level Kernel, REGEDIT.EXE &amp; Award CMOS BIOS</legend>
+        <legend>Low-Level Kernel, REGEDIT.EXE &amp; Award CMOS BIOS (5,120+ Registers)</legend>
         <p style="margin:0 0 8px 0;font-size:0.75rem;line-height:1.4;">
-          Every slider, toggle, hex color, browser flag, and hardware jumper in Gemini 95 is stored in <b>${REGISTRY_DESCRIPTORS.length} live Registry Keys</b> across <code>HKEY_CURRENT_USER</code> and <code>HKEY_LOCAL_MACHINE</code>.
+          Every slider, toggle, hex color, and hardware jumper is stored in <b>${REGISTRY_DESCRIPTORS.length} live Registry Keys</b>, plus <b>${TOTAL_BIOS_FEATURES.toLocaleString()} dormant BIOS firmware features</b> inside CMOS Setup (currently <b>${activeBios.toLocaleString()} / ${TOTAL_BIOS_FEATURES.toLocaleString()} activated</b>).
         </p>
         <div class="settings-grid-2col">
           <button class="win95-btn" id="st-reg-launch-regedit" style="height:30px;font-weight:700;">🗂️ Launch Live REGEDIT.EXE</button>
-          <button class="win95-btn" id="st-reg-launch-bios" style="height:30px;font-weight:700;">⚙️ Enter Award CMOS BIOS Setup</button>
+          <button class="win95-btn" id="st-reg-launch-bios" style="height:30px;font-weight:700;">⚙️ Enter CMOS BIOS (5,120+ Features)</button>
           <button class="win95-btn" id="st-reg-launch-sysmon" style="height:30px;">📊 Open / Install System Monitor</button>
           <button class="win95-btn" id="st-reg-reboot" style="height:30px;">🔄 Reboot via BIOS POST</button>
         </div>
@@ -3456,7 +3552,8 @@ let sysmonTimerId: number | null = null;
 
 export function initSysMonitorApp(windowElement: HTMLDivElement): void {
   windowElement.querySelector('#sysmon-tune-hw-btn')?.addEventListener('click', () => {
-    openMasterSettingsTab('hardware');
+    bridgeRef?.sfx.playClick();
+    bridgeRef?.openApp('perfAdjust', true);
   });
 
   if (sysmonTimerId) clearInterval(sysmonTimerId);
@@ -3495,8 +3592,9 @@ export function initSysMonitorApp(windowElement: HTMLDivElement): void {
     if (windowElement.style.display === 'none') return;
     const cpuBase = systemRegistry.cpuModel.includes('486') ? 52 : systemRegistry.cpuModel.includes('400MHz') ? 11 : 24;
     const cpuVal = Math.min(99, Math.max(4, Math.round(cpuBase + Math.random() * 24)));
-    const usedMb = Math.min(systemRegistry.installedRamMB - 2, Math.round(14 + Math.random() * 10));
-    const ramPct = Math.round((usedMb / systemRegistry.installedRamMB) * 100);
+    const totalRamMb = getEffectiveRamMB(systemRegistry, getBiosRamBoostMB());
+    const usedMb = Math.min(totalRamMb - 2, Math.max(8, Math.round(totalRamMb * (0.24 + Math.random() * 0.08))));
+    const ramPct = Math.round((usedMb / totalRamMb) * 100);
     const swapMb = Math.round(8 + Math.random() * 8);
     const kbps = ((systemRegistry.modemBaudRate / 1000) * (0.4 + Math.random() * 0.55)).toFixed(1);
 
@@ -3515,29 +3613,64 @@ export function initSysMonitorApp(windowElement: HTMLDivElement): void {
       if (el) el.textContent = t;
     };
     setTxt('sysmon-cpu-val', `${cpuVal}%`);
-    setTxt('sysmon-ram-val', `${usedMb} / ${systemRegistry.installedRamMB} MB`);
+    setTxt('sysmon-ram-val', `${usedMb} / ${totalRamMb} MB`);
     setTxt('sysmon-swap-val', `${swapMb} / ${systemRegistry.virtualSwapMB} MB`);
     setTxt('sysmon-net-val', `${kbps} kbps`);
-    setTxt('sysmon-hw-summary', `${systemRegistry.cpuModel} · ${systemRegistry.installedRamMB} MB RAM`);
+    const t = computeHardwareTelemetry(systemRegistry);
+    setTxt('sysmon-hw-summary', `${systemRegistry.cpuModel}${getBiosCpuLabelSuffix()} · ${totalRamMb}MB (${systemRegistry.ramMode}) · ${t.cpuTempC.toFixed(1)}°C · Fans ${t.cpuFanRpm} RPM · BIOS Regs: ${getActivatedBiosCount()}`);
   }, 700);
 }
 
-// ==================== AWARD CMOS BIOS SETUP UTILITY ====================
+// ==================== AWARD / UEFI CMOS BIOS SETUP UTILITY (5,120+ FEATURES) ====================
+let cmosSensorsTickerId: number | null = null;
+
+function updateCmosLiveSensorsStrip(): void {
+  const t = computeHardwareTelemetry(systemRegistry);
+  const headerEl = document.getElementById('cmos-live-sensors');
+  if (headerEl) {
+    headerEl.textContent = `Vcore: ${t.vcoreV}V · CPU: ${t.cpuTempC.toFixed(1)}°C · Fan: ${t.cpuFanRpm} RPM · RAM: ${t.effectiveRamMB.toLocaleString()} MB`;
+  }
+  const panelEl = document.getElementById('cmos-panel-sensors');
+  if (panelEl) {
+    panelEl.textContent = `${t.cpuClockGHz}GHz · ${t.cpuTempC.toFixed(1)}°C · CPU Fan ${t.cpuFanRpm} RPM · RAM: ${t.effectiveRamMB.toLocaleString()}MB (${systemRegistry.ramMode.toUpperCase()})`;
+  }
+}
+
 export function openCmosBiosSetup(): void {
   const screen = document.getElementById('cmos-bios-screen');
   if (!screen) return;
   bridgeRef?.sfx.playPostBeep();
   syncCmosControlsFromRegistry();
+  updateCmosLiveSensorsStrip();
+  renderCmos5000Browser();
   screen.style.display = 'flex';
+  if (cmosSensorsTickerId !== null) clearInterval(cmosSensorsTickerId);
+  cmosSensorsTickerId = window.setInterval(() => {
+    const s = document.getElementById('cmos-bios-screen');
+    if (s && s.style.display !== 'none') {
+      updateCmosLiveSensorsStrip();
+    } else if (cmosSensorsTickerId !== null) {
+      clearInterval(cmosSensorsTickerId);
+      cmosSensorsTickerId = null;
+    }
+  }, 1000);
 }
 
 function syncCmosControlsFromRegistry(): void {
   const cpuSel = document.getElementById('cmos-cpu-select') as HTMLSelectElement | null;
+  const ramModeSel = document.getElementById('cmos-ram-mode-select') as HTMLSelectElement | null;
   const ramSel = document.getElementById('cmos-ram-select') as HTMLSelectElement | null;
+  const ramCustomInp = document.getElementById('cmos-ram-custom-input') as HTMLInputElement | null;
+  const perfSel = document.getElementById('cmos-perf-select') as HTMLSelectElement | null;
+  const fanSel = document.getElementById('cmos-fan-select') as HTMLSelectElement | null;
   const bootSel = document.getElementById('cmos-bootorder-select') as HTMLSelectElement | null;
   const fsSel = document.getElementById('cmos-fs-select') as HTMLSelectElement | null;
   if (cpuSel) cpuSel.value = systemRegistry.cpuModel;
+  if (ramModeSel) ramModeSel.value = systemRegistry.ramMode;
   if (ramSel) ramSel.value = String(systemRegistry.installedRamMB);
+  if (ramCustomInp) ramCustomInp.value = String(systemRegistry.customRamMB);
+  if (perfSel) perfSel.value = systemRegistry.perfProfile;
+  if (fanSel) fanSel.value = systemRegistry.perfFanMode;
   if (bootSel) bootSel.value = systemRegistry.biosBootOrder;
   if (fsSel) fsSel.value = systemRegistry.fileSystemFormat;
 
@@ -3558,6 +3691,15 @@ function syncCmosControlsFromRegistry(): void {
 export function initCmosBiosController(): void {
   const screen = document.getElementById('cmos-bios-screen');
   if (!screen) return;
+
+  registerBios5000Callbacks({
+    onPlayClick: () => bridgeRef?.sfx.playClick(),
+    onFeatureChanged: () => {
+      applySystemRegistryToOS();
+    },
+    onUnlockTrophy: (id) => bridgeRef?.unlockAchievement?.(id),
+  });
+  initCmos5000Listeners();
 
   document.getElementById('boot-cmos-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -3585,9 +3727,50 @@ export function initCmosBiosController(): void {
 
   document.getElementById('cmos-cpu-select')?.addEventListener('change', (e) => {
     systemRegistry.cpuModel = (e.target as HTMLSelectElement).value as any;
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-ram-mode-select')?.addEventListener('change', (e) => {
+    systemRegistry.ramMode = (e.target as HTMLSelectElement).value as any;
+    updateCmosLiveSensorsStrip();
   });
   document.getElementById('cmos-ram-select')?.addEventListener('change', (e) => {
     systemRegistry.installedRamMB = Number((e.target as HTMLSelectElement).value) as any;
+    systemRegistry.ramMode = 'limited';
+    const modeSel = document.getElementById('cmos-ram-mode-select') as HTMLSelectElement | null;
+    if (modeSel) modeSel.value = 'limited';
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-ram-custom-input')?.addEventListener('change', (e) => {
+    const val = Math.max(16, Math.min(65536, Math.round(Number((e.target as HTMLInputElement).value) || 512)));
+    (e.target as HTMLInputElement).value = String(val);
+    systemRegistry.customRamMB = val;
+    systemRegistry.ramMode = 'custom';
+    const modeSel = document.getElementById('cmos-ram-mode-select') as HTMLSelectElement | null;
+    if (modeSel) modeSel.value = 'custom';
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-perf-select')?.addEventListener('change', (e) => {
+    const profile = (e.target as HTMLSelectElement).value as SystemRegistry['perfProfile'];
+    if (profile === 'custom') systemRegistry.perfProfile = 'custom';
+    else applyPerfPreset(profile, systemRegistry);
+    const fanSel = document.getElementById('cmos-fan-select') as HTMLSelectElement | null;
+    if (fanSel) fanSel.value = systemRegistry.perfFanMode;
+    syncCmosControlsFromRegistry();
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-fan-select')?.addEventListener('change', (e) => {
+    const mode = (e.target as HTMLSelectElement).value as SystemRegistry['perfFanMode'];
+    systemRegistry.perfFanMode = mode;
+    if (mode === 'off') systemRegistry.perfFanDutyPct = 0;
+    else if (mode === 'silent') systemRegistry.perfFanDutyPct = 28;
+    else if (mode === 'balanced') systemRegistry.perfFanDutyPct = 54;
+    else if (mode === 'turbo') systemRegistry.perfFanDutyPct = 100;
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-open-perf-btn')?.addEventListener('click', () => {
+    applySystemRegistryToOS();
+    screen.style.display = 'none';
+    bridgeRef?.openApp('perfAdjust', true);
   });
   document.getElementById('cmos-bootorder-select')?.addEventListener('change', (e) => {
     systemRegistry.biosBootOrder = (e.target as HTMLSelectElement).value as any;
@@ -3607,6 +3790,13 @@ export function initCmosBiosController(): void {
     }
   });
 
+  document.getElementById('cmos-apply-desktop-btn')?.addEventListener('click', () => {
+    bridgeRef?.sfx.playWindowOpen();
+    applySystemRegistryToOS();
+    renderMasterSettingsCurrentTab();
+    screen.style.display = 'none';
+  });
+
   document.getElementById('cmos-os-setup-btn')?.addEventListener('click', () => {
     applySystemRegistryToOS();
     screen.style.display = 'none';
@@ -3616,8 +3806,10 @@ export function initCmosBiosController(): void {
   document.getElementById('cmos-defaults-btn')?.addEventListener('click', () => {
     bridgeRef?.sfx.playPostBeep();
     systemRegistry = { ...DEFAULT_SYSTEM_REGISTRY };
+    resetAllBios5000ToDefaults();
     syncCmosControlsFromRegistry();
     applySystemRegistryToOS();
+    renderCmos5000Browser();
   });
 
   document.getElementById('cmos-cancel-btn')?.addEventListener('click', () => {

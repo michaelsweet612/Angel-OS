@@ -2,11 +2,23 @@
 
 # Angel-OS (`Remix Gemini 95`)
 
-**An installable, AI-powered retro Windows 95 & Windows 11-hybrid operating system that runs right in your browser.**
+**An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
+
+🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.3.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, and the Google Gemini API.
 
+> **Personal Use Only:** You are welcome to download and run Angel-OS locally for your own personal use. Republishing, redistributing, or re-hosting copies is not permitted without written permission (see [`LICENSE`](./LICENSE)).
+
 </div>
+
+---
+
+## Download & Play Locally
+
+1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)**.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.3.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.3.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run Angel-OS locally for personal use.
+3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
 
@@ -27,7 +39,7 @@ It also includes a **Dual-Mode Installation Architecture**: you can install soft
   - `F8` — Boot CD-ROM into **OS Setup (`SETUP.EXE`)**
   - `F9` — Launch **MS-DOS `FDISK.EXE`**
   - `ESC` — Skip boot sequence straight to the desktop
-- **CMOS BIOS Setup Utility**: Configure CPU model (`486DX2 66MHz` through `Pentium II 400MHz`), Turbo toggle, EDO/SDRAM capacity (`16`–`256 MB`), Quick POST, boot priority (`C, A, CDROM` / `A, C, CDROM` / `CDROM, C, A`), Audio DSP, CRT scanlines, and `FAT16`/`FAT32` file system—synced directly with `HKLM\Hardware\BIOS`.
+- **CMOS BIOS Setup Utility**: Configure CPU model (`486DX2 66MHz` through `Pentium II 400MHz`), Turbo toggle, **RAM Allocation Mode** (`Auto-Detect Host PC RAM`, `Limited Pool 16–4,096 MB`, or `Custom Manual MB`), Performance Level presets, Cooling Fan curves, live Vcore/Temp/RPM telemetry, Quick POST, boot priority (`C, A, CDROM` / `A, C, CDROM` / `CDROM, C, A`), Audio DSP, CRT scanlines, `FAT16`/`FAT32` file system, and **5,120+ dormant firmware registers** synced with `HKLM\Hardware\BIOS`.
 - **MS-DOS `FDISK.EXE` Partitioner**: Create, resize, or delete Primary `C:\` and Logical `D:\` partitions, toggle the `Active` boot flag, run `FORMAT C: /S`, and write or wipe the `0x55AA` Master Boot Record (`FDISK /MBR`) to test real BIOS boot halting.
 - **Full Blue-Screen OS Reinstaller (`SETUP.EXE`)**: Perform an **Express In-Place Repair** (preserves `C:\Documents` and `C:\Pictures`) or a **Clean Format `C:\` Factory Reinstall** with selectable bundled browser engines.
 - **Web Audio Lo-Fi Synth Engine (`RetroSoundEngine`)**: Synthesizes the BIOS POST beep, floppy seek clicks, V.90 56k dial-up modem handshakes, window chimes, and an ambient Brian Eno-inspired startup pad with tape saturation and adjustable DAC bit depth (`4`/`8`/`12`/`16`-bit).
@@ -36,18 +48,19 @@ It also includes a **Dual-Mode Installation Architecture**: you can install soft
 - **Ability to Install (Dual-Mode Installer)**:
   - **Way 1 — `.EXE` Setup Files & Portable App**: Drop or run `*_SETUP.EXE` packages in `C:\Downloads`, browse the built-in **Tucows 95 Shareware Depot**, unpack `MZ 0x5A4D` self-extracting cabinets, walk through the 5-step **InstallShield 95 Wizard**, or download a portable `.HTML` (with embedded Registry snapshot) / `.BAT` desktop launcher.
   - **Way 2 — Physical OS Install & Media Export**: Install as a standalone offline **PWA**, lock hardware fullscreen, or export a real 64 KB **ISO-9660 + El Torito x86 Bootable `.ISO`** (`GEMINI95_BOOTCD.ISO`) containing an x86 real-mode boot sector at `0x7C00`, `AUTORUN.INF`, `README.TXT`, and `REGISTRY.JSON` (testable in QEMU via `qemu-system-i386 -cdrom <LABEL>_BOOTCD.ISO`).
-- **Multi-Engine Web Browser**: Multi-tab browser supporting three swappable/reinstallable engines (**Netscape Navigator 95 Gold**, **Microsoft Internet Explorer 3.0**, **CyberChrome 95 Turbo**), **✨ AI Web Synthesis** (`1996`, `2001`, or `modern` eras), **🌐 Live URL** iframe browsing, local `file:///C:/` HTML/text viewing, simulated modem speeds (`14.4k` to `T1 1.0 Mbps`), bookmarks, and a live **HTML Source Inspector & Editor**.
+- **Performance & Adjustment Levels (`PERFLEVELS.EXE`)**: Available inside **Ability to Install** (`PERFADJ95_SETUP.EXE`) and integrated directly with **CMOS BIOS Setup**; detects host CPU threads, platform, WebGL GPU, physical RAM (`navigator.deviceMemory` / JS heap), network, and battery status, lets you switch between **Auto-Detect**, **Limited (`16`–`4,096 MB`)**, and **Custom** RAM pools, tune CPU clock scaling, core voltage, and TDP limits, toggle individual **CPU / Intake / Exhaust / GPU cooling fans** (including `0 RPM` passive thermal tests), and monitor real-time die/VRM temperatures (`°C`/`°F`).
+- **Multi-Engine Web Browser**: Multi-tab browser supporting three swappable/reinstallable engines (**Netscape Navigator 95 Gold**, **Microsoft Internet Explorer 3.0**, **Google Chrome**), **✨ AI Web Synthesis** (`1996`, `2001`, or `modern` eras), **🌐 Live URL** iframe browsing, local `file:///C:/` HTML/text viewing, simulated modem speeds (`14.4k` to `T1 1.0 Mbps`), bookmarks, and a live **HTML Source Inspector & Editor**.
 - **My Gemtop (`Explorer`)**: Virtual file system across `C:\` (`Downloads`, `Documents`, `Pictures`, `System95`) and `D:\` (`Installers`) with live disk usage tracking.
 - **GemNotes**: Retro word processor with `C:\Documents` saving, live word/character counter, and streaming AI tools (`Twist Story`, `Continue`, `90s Zine`, `ASCII Art`).
 - **GemPaint 95**: 16-color pixel canvas with brush, airbrush spray, flood-fill bucket, shapes, eraser, 15-step undo, drawing prompts, PNG saving to `C:\Pictures`, and **Clippy / Robot AI Art Critic** multimodal canvas critiques.
 - **Gemini AIM (Instant Messenger)**: Chat with 1995 personas (`SmarterChild_95`, `ZeroCool_1337`, `Clippy_Pro`, `Win95_Guru`), trigger quick prompts, and save chat transcripts to GemNotes.
 - **GemSweeper Deluxe**: Classic Minesweeper (`9×9`, `12×12`, `14×16`) with chord-clicking, timer/flag counters, and AI tactical hints.
 - **GemPlayer 95**: 4-track 16-bit Web Audio FM Chiptune Synthesizer (`Canyon.mid`, `CyberWave 95`, `DOOM Boss Riff`, `Teal Desktop Dreams`) with a live spectrum visualizer and tempo control, plus **YouTube Retro CRT TV** playback.
-- **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `FDISK`, `ISO`, `INSTALL`, `SETUP`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
+- **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `FDISK`, `ISO`, `INSTALL`, `SETUP`, `PERF`, `PERFLEVELS`, `RAM`, `FANS`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
 - **DOOM II**: Protected-mode MS-DOS DOOM II embed (`js-dos`).
 - **Master System Settings & Control Panel (`CONTROL.EXE`)**: 8-tab configuration suite covering **Display & CRT**, **Windows & Fonts**, **Taskbar & Snap**, **Sound DSP**, **Browser & Modem**, **CPU, RAM & Power**, **Install & OS Setup**, and **Registry & BIOS**—including 7 built-in themes (*Standard Teal*, *Hot Dog Stand*, *Cyberpunk*, *Vaporwave*, *Matrix*, *Win 3.1*, *High Contrast*), custom hex palettes, CRT scanline/calibration sliders, idle screensavers (*3D Starfield* / *Matrix*), and `.REG` JSON import/export.
-- **Registry Editor (`REGEDIT.EXE`)**: Hierarchical live editor for 50+ `HKEY_CURRENT_USER` and `HKEY_LOCAL_MACHINE` keys with instant search and `REGEDIT4` file export to `C:\System95`.
-- **System Resource Monitor (`SYSMON.EXE`)**: Installable real-time plotter for CPU, RAM, `WIN386.SWP` paging file, and modem throughput.
+- **Registry Editor (`REGEDIT.EXE`)**: Hierarchical live editor for 60+ `HKEY_CURRENT_USER` and `HKEY_LOCAL_MACHINE` keys with instant search and `REGEDIT4` file export to `C:\System95`.
+- **System Resource Monitor (`SYSMON.EXE`)**: Installable real-time plotter for CPU, effective Auto/Limited/Custom RAM, `WIN386.SWP` paging file, temperatures, fans, and modem throughput.
 
 ### Windows 11-Inspired Shell Extensions
 - **Snap Layouts 95**: Hover any window's maximize (`□`) button to snap into 50/50 split, 3-column, main+stack, or 4-quadrant grids.
@@ -119,19 +132,39 @@ Angel-OS/
 ├── index.css           # Win95 3D bevel styling, themes, CRT scanlines, and Win11 shell layouts
 ├── index.ts            # Main OS kernel, window manager, VFS, RetroSoundEngine, apps & Win11 controllers
 ├── osSystemCore.ts     # SystemRegistry schema, software package catalog, partition state & defaults
+├── osHardwarePerf.ts   # Host hardware auto-detect, Auto/Limited/Custom RAM modes & fan/thermal engine
 ├── osExtendedApps.ts   # Multi-engine browser, InstallShield 95, 8-tab Control Panel, REGEDIT, SYSMON & BIOS
 ├── osDualInstall.ts    # .EXE SFX runner, Tucows depot, Portable exporter, FDISK, ISO-9660/El Torito builder & PWA
+├── osBios5000.ts       # 5,120+ dormant CMOS BIOS firmware registers & live hardware hooks
 ├── genaiProxy.ts       # Browser-side proxy client mirroring @google/genai over /api/*
 ├── server.ts           # Express server, Gemini API endpoints & Vite dev/static serving
-├── public/             # PWA icons & SVG monitor asset
-├── vite.config.ts      # Vite + VitePWA Workbox manifest & caching configuration
+├── public/             # PWA icons & Windows logo asset
+├── vite.config.ts      # Vite + VitePWA Workbox manifest & GitHub Pages subpath config
 ├── tsconfig.json       # TypeScript configuration
 ├── metadata.json       # App metadata & capabilities
+├── LICENSE             # Personal Use Only License (No Republication / Redistribution)
+├── CODE_OF_CONDUCT.md  # Community behavioral guidelines (Contributor Covenant v2.1)
+├── CONTRIBUTING.md     # Local setup, PR workflow, licensing terms & AGENTS.md release rules
+├── AGENTS.md           # Repository release and changelog policy
+├── .github/            # GitHub Issue templates & Pull Request changelog template
 └── package.json        # Scripts & dependencies
 ```
 
 ---
 
+## Community & Governance
+
+- **[Code of Conduct](./CODE_OF_CONDUCT.md)** — Community participation standards and maintainer enforcement guidelines.
+- **[Contributing Guide](./CONTRIBUTING.md)** — Local build/lint workflow, Pull Request structure, and [AGENTS.md](./AGENTS.md) mandatory changelog policy.
+- **[Personal Use License](./LICENSE)** — Terms for personal local execution and no-republication protections.
+
+---
+
 ## License
 
-Code headers in this repository carry the `Apache-2.0` SPDX license identifier (`SPDX-License-Identifier: Apache-2.0`).
+Angel-OS is governed by the **[Angel-OS Personal Use License](./LICENSE)**:
+
+- **Allowed:** You may download, clone, build, and run Angel-OS locally for **personal, non-commercial use**.
+- **Not Allowed:** You may **not** republish, redistribute, mirror, publicly re-host, sell, or distribute modified/unmodified versions without prior written permission from the copyright holder (`michaelsweet612`).
+- Third-party libraries remain under their own respective open-source licenses, and any original template scaffolding files carrying an `Apache-2.0` SPDX header remain subject to their respective template notices where applicable.
+

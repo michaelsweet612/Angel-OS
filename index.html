@@ -68,6 +68,7 @@
             <div>Detecting Primary Master ... <span style="color: #fff">QUANTUM FIREBALL 1995MB (<span id="bios-fs-label">FAT16</span>)</span></div>
             <div>Detecting Primary Slave  ... <span style="color: #fff">CREATIVE CD-ROM 8X [GEMINI95_SETUP_DISC]</span></div>
             <div>Sound Blaster 16 ASP DSP v4.13 Initialized (Port 220h, IRQ 5, DMA 1)</div>
+            <div>Firmware Vault : <span id="bios-post-active-chip" class="tabular-nums" style="color: #94a3b8">0 / 5,120 ADVANCED FEATURES ACTIVE (DORMANT)</span></div>
           </div>
         </div>
 
@@ -77,10 +78,10 @@
           </div>
           <div class="bios-btn-group">
             <button id="boot-power-btn" class="boot-power-btn">
-              ▶ Power On &amp; Boot Gemini 95 (Lo-Fi Synth Audio)
+              ▶ Power On &amp; Boot Windows 11+10 (Lo-Fi Synth Audio)
             </button>
             <button id="boot-cmos-btn" class="boot-skip-btn" style="color: #ffff55; border-color: #ffff55">
-              ⚙️ CMOS BIOS Setup [DEL]
+              ⚙️ CMOS BIOS Setup (5,120+ Features) [DEL]
             </button>
             <button id="boot-os-setup-btn" class="boot-skip-btn" style="color: #00ffff; border-color: #00ffff">
               💿 Boot CD-ROM (OS Setup) [F8]
@@ -95,25 +96,37 @@
         </div>
 
         <div class="bios-footer">
-          <span>Press <b>ENTER</b> Boot · <b>DEL</b> CMOS BIOS · <b>F8</b> Setup CD · <b>F9</b> FDISK · <b>ESC</b> Skip</span>
+          <span>Press <b>ENTER</b> Boot · <b>DEL</b> CMOS BIOS (5,120+ Features) · <b>F8</b> Setup CD · <b>F9</b> FDISK · <b>ESC</b> Skip</span>
           <span>11/17/95-i430FX-2A59CG09C-00</span>
         </div>
       </div>
 
-      <!-- Stage 2: Classic Windows 95 Cloud Splash Screen -->
+      <!-- Stage 2: Windows 11 + 10 Boot Splash Screen with Windows Icon -->
       <div id="boot-splash-stage" class="boot-splash-stage" style="display: none">
         <div class="splash-clouds-bg"></div>
         <div class="splash-center-card">
-          <div class="splash-flag-icon">
-            <span class="flag-sq sq-red"></span>
-            <span class="flag-sq sq-green"></span>
-            <span class="flag-sq sq-blue"></span>
-            <span class="flag-sq sq-yellow"></span>
+          <div class="splash-win11-logo" aria-label="Windows Logo">
+            <svg viewBox="0 0 64 64" width="84" height="84" aria-hidden="true">
+              <defs>
+                <linearGradient id="splashWinTL" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#8be9ff" />
+                  <stop offset="100%" stop-color="#28a8ea" />
+                </linearGradient>
+                <linearGradient id="splashWinBR" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#38bdf8" />
+                  <stop offset="100%" stop-color="#005fb8" />
+                </linearGradient>
+              </defs>
+              <rect x="4" y="4" width="26" height="26" rx="3" fill="url(#splashWinTL)" />
+              <rect x="34" y="4" width="26" height="26" rx="3" fill="url(#splashWinTL)" />
+              <rect x="4" y="34" width="26" height="26" rx="3" fill="url(#splashWinBR)" />
+              <rect x="34" y="34" width="26" height="26" rx="3" fill="url(#splashWinBR)" />
+            </svg>
           </div>
           <div class="splash-brand-lockup">
-            <div class="splash-microsoft">Microsoft®</div>
-            <div class="splash-title">Gemini <span class="splash-95">95</span></div>
-            <div class="splash-subtitle">Lo-Fi Eno Synthesizer &amp; Neural Plus! Edition</div>
+            <div class="splash-microsoft">Windows® 11 + 10 Hybrid</div>
+            <div class="splash-title">Angel <span class="splash-95">OS</span></div>
+            <div class="splash-subtitle">Left-Side Classic Shell · Google Chrome Installed · 5,120+ BIOS Features</div>
           </div>
           <div class="splash-audio-badge" id="splash-audio-status">
             🔊 Synthesizing Warm Lo-Fi Eno Pad &amp; 1995 Tape Crunch...
@@ -124,83 +137,190 @@
       </div>
     </div>
 
-    <!-- AWARD CMOS BIOS SETUP UTILITY OVERLAY -->
+    <!-- AWARD / UEFI HYBRID CMOS BIOS SETUP UTILITY OVERLAY (5,120+ FEATURES) -->
     <div id="cmos-bios-screen" class="cmos-bios-screen" style="display: none">
       <div class="cmos-header">
-        <div>ROM PCI/ISA BIOS (2A59CG09)</div>
-        <div>CMOS SETUP UTILITY — AWARD SOFTWARE, INC. (1995)</div>
-      </div>
-      <div class="cmos-grid-frame">
-        <div class="cmos-col">
-          <div class="cmos-section-title">STANDARD &amp; ADVANCED BIOS FEATURES</div>
-          <div class="cmos-row">
-            <span>CPU Clock / Architecture</span>
-            <select id="cmos-cpu-select" class="cmos-select">
-              <option value="Intel 486DX2 66MHz">Intel 486DX2 66MHz</option>
-              <option value="Intel Pentium 133MHz">Intel Pentium 133MHz</option>
-              <option value="Intel Pentium MMX 233MHz">Intel Pentium MMX 233MHz</option>
-              <option value="Intel Pentium II 400MHz">Intel Pentium II 400MHz</option>
-            </select>
-          </div>
-          <div class="cmos-row">
-            <span>Front-Panel Hardware Turbo</span>
-            <button id="cmos-turbo-btn" class="cmos-toggle-btn">ENABLED</button>
-          </div>
-          <div class="cmos-row">
-            <span>Installed EDO DRAM Bank</span>
-            <select id="cmos-ram-select" class="cmos-select">
-              <option value="16">16 MB SIMM (16384K)</option>
-              <option value="32">32 MB SIMM (32768K)</option>
-              <option value="64">64 MB EDO (65536K)</option>
-              <option value="128">128 MB SDRAM (131072K)</option>
-              <option value="256">256 MB Workstation</option>
-            </select>
-          </div>
-          <div class="cmos-row">
-            <span>Quick Power On Self Test</span>
-            <button id="cmos-quickpost-btn" class="cmos-toggle-btn">ENABLED</button>
-          </div>
-          <div class="cmos-row">
-            <span>Boot Device Sequence</span>
-            <select id="cmos-bootorder-select" class="cmos-select">
-              <option value="C_A_CDROM">C, A, CDROM (Normal HDD)</option>
-              <option value="A_C_CDROM">A, C, CDROM (Floppy Seek)</option>
-              <option value="CDROM_C_A">CDROM, C, A (Launch OS Setup!)</option>
-            </select>
-          </div>
+        <div class="cmos-header-left">
+          <span>ROM PCI/ISA/UEFI BIOS (2A59CG09)</span>
+          <span class="cmos-sub-banner">CMOS SETUP UTILITY — AWARD / ANGEL FIRMWARE VAULT</span>
         </div>
-        <div class="cmos-col">
-          <div class="cmos-section-title">INTEGRATED PERIPHERALS &amp; DSP</div>
-          <div class="cmos-row">
-            <span>Onboard Sound Blaster 16 DSP</span>
-            <button id="cmos-audio-btn" class="cmos-toggle-btn">ENABLED</button>
-          </div>
-          <div class="cmos-row">
-            <span>Boot Lo-Fi Eno Startup Chime</span>
-            <button id="cmos-bootchime-btn" class="cmos-toggle-btn">ENABLED</button>
-          </div>
-          <div class="cmos-row">
-            <span>CRT Hardware Scanline Generator</span>
-            <button id="cmos-crt-btn" class="cmos-toggle-btn">ENABLED</button>
-          </div>
-          <div class="cmos-row">
-            <span>Primary IDE File System</span>
-            <select id="cmos-fs-select" class="cmos-select">
-              <option value="FAT16">FAT16 (1995 Classic)</option>
-              <option value="FAT32">FAT32 (OSR2 Extended)</option>
-            </select>
-          </div>
-          <div class="cmos-help-box">
-            <b>ITEM HELP:</b><br />
-            Changes made in CMOS Setup write directly to <code>HKEY_LOCAL_MACHINE\Hardware\BIOS</code> and synchronize immediately with the Windows 95 Master Settings Control Panel. Set Boot Sequence to <b>CDROM, C, A</b> or click <b>Launch OS Reinstaller</b> to reinstall Gemini 95!
-          </div>
+        <div class="cmos-header-right">
+          <span id="cmos-5000-active-counter" class="cmos-active-counter tabular-nums">0 / 5,120 ACTIVATED</span>
+          <span id="cmos-live-sensors" class="cmos-live-sensors tabular-nums">Vcore: 1.180V · CPU: 35°C · Fan: 1450 RPM · POST: 0xFF</span>
         </div>
       </div>
+
+      <div class="cmos-workbench">
+        <!-- Left Category Rail (14 Firmware Menus = 5,120 Registers) -->
+        <aside class="cmos-sidebar">
+          <div class="cmos-sidebar-hdr">FIRMWARE CATEGORIES (5,120)</div>
+          <div id="cmos-cat-list" class="cmos-cat-list"></div>
+          <div class="cmos-dormant-note">
+            All 5,120+ advanced features remain <b>DORMANT / INACTIVE</b> unless enabled here inside BIOS Setup.
+          </div>
+        </aside>
+
+        <!-- Right Main Workbench -->
+        <div class="cmos-main-pane">
+          <!-- Search & Quick Filter Bar -->
+          <div class="cmos-toolbar">
+            <input
+              type="text"
+              id="cmos-5000-search"
+              class="cmos-search-input"
+              placeholder="Search all 5,120 BIOS features (e.g. Overclock, TPM, CRT, Chrome, Matrix, 0x00C8, Fan)..."
+              autocomplete="off"
+            />
+            <div class="cmos-filter-pills">
+              <button type="button" class="cmos-filter-pill active" data-filter="all">All (5,120)</button>
+              <button type="button" class="cmos-filter-pill" data-filter="live">⚡ Live OS Effects</button>
+              <button type="button" class="cmos-filter-pill" data-filter="active">✓ Activated Only</button>
+            </div>
+          </div>
+
+          <!-- Standard 9 Classic Hardware Controls (Shown on Main Category) -->
+          <div id="cmos-standard-panel" class="cmos-standard-panel">
+            <div class="cmos-std-col">
+              <div class="cmos-section-title">STANDARD CMOS HARDWARE</div>
+              <div class="cmos-row">
+                <span>CPU Clock / Architecture</span>
+                <select id="cmos-cpu-select" class="cmos-select">
+                  <option value="Intel 486DX2 66MHz">Intel 486DX2 66MHz</option>
+                  <option value="Intel Pentium 133MHz">Intel Pentium 133MHz</option>
+                  <option value="Intel Pentium MMX 233MHz">Intel Pentium MMX 233MHz</option>
+                  <option value="Intel Pentium II 400MHz">Intel Pentium II 400MHz</option>
+                </select>
+              </div>
+              <div class="cmos-row">
+                <span>Front-Panel Hardware Turbo</span>
+                <button id="cmos-turbo-btn" class="cmos-toggle-btn">ENABLED</button>
+              </div>
+              <div class="cmos-row">
+                <span>RAM Allocation Mode</span>
+                <select id="cmos-ram-mode-select" class="cmos-select">
+                  <option value="auto">Auto-Detect Host PC RAM</option>
+                  <option value="limited">Limited Pool Cap (16–4096 MB)</option>
+                  <option value="custom">Custom Manual Size (MB)</option>
+                </select>
+              </div>
+              <div class="cmos-row">
+                <span>Installed / Limited DRAM</span>
+                <select id="cmos-ram-select" class="cmos-select">
+                  <option value="16">16 MB SIMM (16384K)</option>
+                  <option value="32">32 MB SIMM (32768K)</option>
+                  <option value="64">64 MB EDO (65536K)</option>
+                  <option value="128">128 MB SDRAM (131072K)</option>
+                  <option value="256">256 MB Workstation</option>
+                  <option value="512">512 MB Extended</option>
+                  <option value="1024">1,024 MB (1 GB)</option>
+                  <option value="2048">2,048 MB (2 GB)</option>
+                  <option value="4096">4,096 MB (4 GB)</option>
+                </select>
+              </div>
+              <div class="cmos-row">
+                <span>Custom RAM Size (MB)</span>
+                <input id="cmos-ram-custom-input" class="cmos-select" type="number" min="16" max="65536" step="16" value="4096" />
+              </div>
+              <div class="cmos-row">
+                <span>Performance Level</span>
+                <select id="cmos-perf-select" class="cmos-select">
+                  <option value="eco">Eco (70% Clock / Silent)</option>
+                  <option value="balanced">Balanced (100% Auto)</option>
+                  <option value="performance">Performance (135% Boost)</option>
+                  <option value="turbo">Turbo Overclock (185%)</option>
+                  <option value="custom">Custom Adjustment Level</option>
+                </select>
+              </div>
+              <div class="cmos-row">
+                <span>Cooling Fan Curve</span>
+                <select id="cmos-fan-select" class="cmos-select">
+                  <option value="auto">Smart Auto Curve</option>
+                  <option value="silent">Silent (28% PWM)</option>
+                  <option value="balanced">Balanced (54% PWM)</option>
+                  <option value="turbo">Turbo Full Blast (100%)</option>
+                  <option value="manual">Manual PWM Target</option>
+                  <option value="off">FANS OFF (0 RPM Passive)</option>
+                </select>
+              </div>
+              <div class="cmos-row cmos-sensors-live-row">
+                <span id="cmos-panel-sensors">CPU --°C · Fans -- RPM · RAM -- MB</span>
+                <button type="button" id="cmos-open-perf-btn" class="cmos-toggle-btn">🎛️ Perf &amp; Levels</button>
+              </div>
+              <div class="cmos-row">
+                <span>Quick Power On Self Test</span>
+                <button id="cmos-quickpost-btn" class="cmos-toggle-btn">ENABLED</button>
+              </div>
+              <div class="cmos-row">
+                <span>Boot Device Sequence</span>
+                <select id="cmos-bootorder-select" class="cmos-select">
+                  <option value="C_A_CDROM">C, A, CDROM (Normal HDD)</option>
+                  <option value="A_C_CDROM">A, C, CDROM (Floppy Seek)</option>
+                  <option value="CDROM_C_A">CDROM, C, A (Launch OS Setup!)</option>
+                </select>
+              </div>
+            </div>
+            <div class="cmos-std-col">
+              <div class="cmos-section-title">INTEGRATED PERIPHERALS &amp; DSP</div>
+              <div class="cmos-row">
+                <span>Onboard Sound Blaster 16 DSP</span>
+                <button id="cmos-audio-btn" class="cmos-toggle-btn">ENABLED</button>
+              </div>
+              <div class="cmos-row">
+                <span>Boot Lo-Fi Eno Startup Chime</span>
+                <button id="cmos-bootchime-btn" class="cmos-toggle-btn">ENABLED</button>
+              </div>
+              <div class="cmos-row">
+                <span>CRT Hardware Scanline Generator</span>
+                <button id="cmos-crt-btn" class="cmos-toggle-btn">ENABLED</button>
+              </div>
+              <div class="cmos-row">
+                <span>Primary IDE File System</span>
+                <select id="cmos-fs-select" class="cmos-select">
+                  <option value="FAT16">FAT16 (1995 Classic)</option>
+                  <option value="FAT32">FAT32 (OSR2 Extended)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paginated 5,120 Register Table -->
+          <div class="cmos-table-wrap">
+            <table class="cmos-features-table">
+              <thead>
+                <tr>
+                  <th>Reg / ID</th>
+                  <th>Advanced BIOS Feature</th>
+                  <th>Subsystem</th>
+                  <th>State (Dormant Until Changed)</th>
+                </tr>
+              </thead>
+              <tbody id="cmos-features-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination & Item Help -->
+          <div class="cmos-pagination-bar">
+            <span id="cmos-page-label" class="tabular-nums">Page 1 / 1</span>
+            <div class="cmos-page-btns">
+              <button type="button" id="cmos-page-first" class="cmos-mini-btn">⏮ First</button>
+              <button type="button" id="cmos-page-prev" class="cmos-mini-btn">◀ Prev</button>
+              <button type="button" id="cmos-page-next" class="cmos-mini-btn">Next ▶</button>
+              <button type="button" id="cmos-page-last" class="cmos-mini-btn">Last ⏭</button>
+            </div>
+          </div>
+
+          <div id="cmos-item-help-box" class="cmos-help-box">
+            <b>ITEM HELP:</b> Select any of the 5,120 advanced firmware registers above to inspect its documentation. Nothing is activated unless you enable it here!
+          </div>
+        </div>
+      </div>
+
       <div class="cmos-footer-actions">
         <button id="cmos-save-exit-btn" class="cmos-action-btn primary">F10: Save to CMOS &amp; Reboot</button>
+        <button id="cmos-apply-desktop-btn" class="cmos-action-btn" style="background: #86efac">✓ Apply &amp; Return to Desktop</button>
         <button id="cmos-os-setup-btn" class="cmos-action-btn">💿 Boot CD-ROM (OS Reinstall)</button>
-        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Load BIOS Defaults</button>
-        <button id="cmos-cancel-btn" class="cmos-action-btn">ESC: Exit Without Reboot</button>
+        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Reset All 5,120+ to Inactive</button>
+        <button id="cmos-cancel-btn" class="cmos-action-btn">ESC: Exit</button>
       </div>
     </div>
 
@@ -504,6 +624,10 @@
     </div>
 
     <div class="desktop" id="desktop">
+      <!-- Dormant BIOS Matrix & Hardware Telemetry HUD (Inactive unless enabled inside CMOS BIOS) -->
+      <canvas id="bios-matrix-canvas" class="bios-matrix-canvas" style="display: none"></canvas>
+      <div id="bios-hardware-hud" class="bios-hardware-hud" style="display: none"></div>
+
       <!-- Desktop Icons Grid -->
       <div class="desktop-icons" id="desktop-icons">
         <div class="icon" data-app="abilityToInstall">
@@ -600,6 +724,14 @@
           />
           <span>Doom II</span>
         </div>
+        <div class="icon" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">
+          <img
+            data-icon-key="perfAdjust"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Performance & Adjustment Levels"
+          />
+          <span>Perf &amp; Levels</span>
+        </div>
         <div class="icon" data-app="sysMonitor" data-pkg-id="sys_monitor" style="display: none">
           <img
             data-icon-key="sysMonitor"
@@ -652,13 +784,13 @@
       <!-- Desktop Welcome Sticky Widget -->
       <div class="desktop-sticky-note" id="desktop-welcome">
         <div class="sticky-header">
-          <span>📌 GEMINI 95 SYSTEM GUIDE</span>
+          <span>📌 WINDOWS 11 + 10 HYBRID GUIDE</span>
           <button id="sticky-close" title="Dismiss">✕</button>
         </div>
         <div class="sticky-body">
-          <p>• <b>2 Ways to Install</b>: Run <b>.EXE Setup Files</b> in <code>C:\Downloads</code> (+ Portable App) OR run a <b>Physical OS Install</b> (<code>FDISK.EXE</code> + Guide, <code>.ISO</code> &amp; PWA)!</p>
-          <p>• <b>Google Chrome + Mega Suite</b>: Tabbed Chrome (Live Web + AI), <b>Solitaire 95</b>, <b>Arcade 95</b>, <b>Sound Studio</b>, <b>Calculator 95</b> &amp; <b>16 Trophies</b>!</p>
-          <p>• <b>Power Hotkeys</b>: Press <code>Alt+R</code> for Run, <code>Ctrl+Shift+Esc</code> for Task Manager, or try the <b>Konami Code</b>!</p>
+          <p>• <b>Left-Side Win11 + Win10 Shell</b>: Click the <b>Windows icon</b> at bottom-left for the Windows 11 Start interface, or use the left <b>Search bar</b>!</p>
+          <p>• <b>Google Chrome Downloaded</b>: Pinned on Taskbar &amp; Start with <code>CHROME_SETUP.EXE</code> ready in <code>C:\Downloads</code> (Live Web + AI).</p>
+          <p>• <b>5,120+ BIOS Features</b>: Open <b>CMOS BIOS Setup</b> (<code>DEL</code> at boot or Start → Power) to explore &amp; activate 5,120 dormant firmware registers!</p>
         </div>
       </div>
 
@@ -809,7 +941,10 @@
           </div>
           <div class="window-statusbar">
             <span id="browser-status-text">Google Chrome Ready — Search Google, browse live web URLs, or switch to ✨ AI!</span>
-            <span id="browser-conn-badge" class="tabular-nums">Chrome 131 · Live Web</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px">
+              <span id="chrome-bios-gpu-badge" class="chrome-bios-gpu-badge" style="display: none">⚡ GPU Accelerated</span>
+              <span id="browser-conn-badge" class="tabular-nums">Chrome 131 · Live Web</span>
+            </span>
           </div>
         </div>
       </div>
@@ -1314,6 +1449,21 @@
         </div>
       </div>
 
+      <!-- 14B. PERFORMANCE & ADJUSTMENT LEVELS (PERFLEVELS.EXE) -->
+      <div class="window resizable" id="perfAdjust" style="width: 860px; height: 660px">
+        <div class="window-titlebar">
+          <span class="window-title">🎛️ Performance &amp; Adjustment Levels — Hardware Auto-Detect &amp; Cooling</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content perf-window-body">
+          <div id="perf-adjust-body" class="perf-adjust-body"></div>
+        </div>
+      </div>
+
       <!-- 15. SCIENTIFIC & PROGRAMMER CALCULATOR 95 (CALC.EXE) -->
       <div class="window resizable" id="calcApp" style="width: 470px; height: 420px">
         <div class="window-titlebar">
@@ -1679,66 +1829,204 @@
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
       </div>
 
-      <!-- ==================== START MENU ==================== -->
-      <div class="start-menu" id="start-menu">
-        <div class="start-menu-sidebar">
-          <span><b>GEMINI</b> 95</span>
+      <!-- ==================== WINDOWS 11 START MENU INTERFACE (LEFT-SIDE WIN10 ANCHORED) ==================== -->
+      <div class="start-menu win11-start-menu" id="start-menu">
+        <!-- Top Start Search Bar -->
+        <div class="start-search-wrap">
+          <svg class="start-search-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="6.75" cy="6.75" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+            <line x1="10.2" y1="10.2" x2="14.2" y2="14.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <input
+            type="text"
+            id="start-menu-search-input"
+            class="start-menu-search-input"
+            placeholder="Search for apps, settings, and documents"
+            autocomplete="off"
+          />
         </div>
-        <div class="start-menu-items">
-          <div class="start-menu-item" data-app="abilityToInstall">💿 <b>Ability to Install</b></div>
-          <div class="start-menu-item" data-app="controlPanel">⚙️ <b>Settings &amp; Control Panel</b></div>
 
-          <div class="start-menu-folder">
-            <span>🎮 Games &amp; Arcade</span><span>▸</span>
-            <div class="start-submenu">
-              <div class="start-menu-item" data-app="solitaireApp">🃏 Solitaire 95 (Cascading Cards!)</div>
-              <div class="start-menu-item" data-app="arcadeApp">🕹️ Arcade 95 (Snake/Breakout/Tetris/Ski)</div>
-              <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
-              <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
-              <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (16 Achievements)</div>
-            </div>
+        <!-- Pinned View -->
+        <div id="start-pinned-view" class="start-view-pane">
+          <div class="start-section-hdr">
+            <span>Pinned</span>
+            <button type="button" class="start-pill-btn" id="start-all-apps-btn">All apps &rsaquo;</button>
+          </div>
+          <div class="start-pinned-grid" id="start-pinned-grid">
+            <button type="button" class="start-tile-btn start-menu-item" data-app="chrome" data-pkg-app="chrome" id="start-menu-browser-item" title="Google Chrome (Downloaded & Ready)">
+              <img data-icon-key="chrome" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Google Chrome" />
+              <span>Chrome</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="myComputer">
+              <img data-icon-key="myComputer" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="File Explorer" />
+              <span>Explorer</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="controlPanel">
+              <img data-icon-key="controlPanel" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Settings" />
+              <span>Settings</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">
+              <img data-icon-key="perfAdjust" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Perf &amp; Levels" />
+              <span>Perf &amp; Levels</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="abilityToInstall">
+              <img data-icon-key="abilityToInstall" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="App Installer" />
+              <span>Installer</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="notepad" data-pkg-id="app_notepad">
+              <img data-icon-key="notepad" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="GemNotes" />
+              <span>GemNotes</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="paint" data-pkg-id="app_paint">
+              <img data-icon-key="paint" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="GemPaint" />
+              <span>GemPaint</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="dosPrompt">
+              <img data-icon-key="dosPrompt" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Terminal" />
+              <span>Terminal</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="taskManager">
+              <img data-icon-key="taskManager" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Task Manager" />
+              <span>Task Mgr</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="calcApp">
+              <img data-icon-key="calcApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Calculator" />
+              <span>Calculator</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="solitaireApp">
+              <img data-icon-key="solitaireApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Solitaire" />
+              <span>Solitaire</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="arcadeApp">
+              <img data-icon-key="arcadeApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Arcade" />
+              <span>Arcade 95</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="soundRecorder">
+              <img data-icon-key="soundRecorder" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Sound Studio" />
+              <span>Sound Studio</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="calendarApp">
+              <img data-icon-key="calendarApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Calendar" />
+              <span>Calendar</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">
+              <img data-icon-key="regedit" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Registry" />
+              <span>Registry</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">
+              <img data-icon-key="mediaPlayer" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Media Player" />
+              <span>GemPlayer</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">
+              <img data-icon-key="minesweeper" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="GemSweeper" />
+              <span>Sweeper</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="trophiesApp">
+              <img data-icon-key="trophiesApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Trophies" />
+              <span>Trophies</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" id="start-bios-shortcut-tile" title="Enter CMOS BIOS Setup (5,120+ Advanced Features)">
+              <span class="start-emoji-badge">🔧</span>
+              <span>BIOS (5,120)</span>
+            </button>
           </div>
 
-          <div class="start-menu-folder">
-            <span>🛠️ Accessories &amp; Media</span><span>▸</span>
-            <div class="start-submenu">
-              <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
-              <div class="start-menu-item" data-app="calendarApp">📅 Calendar, Clock &amp; Alarms</div>
-              <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (.WAV Export)</div>
-              <div class="start-menu-item" data-app="clipViewer">📋 Clipboard &amp; Snipping Studio</div>
-              <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
-              <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
-              <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
-              <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
+          <div class="start-section-hdr" style="margin-top: 8px">
+            <span>Recommended</span>
+            <button type="button" class="start-pill-btn" id="start-more-rec-btn">All tools &rsaquo;</button>
+          </div>
+          <div class="start-recommended-grid">
+            <button type="button" class="start-rec-card" id="start-rec-chrome-dl">
+              <img data-icon-key="chrome" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="" />
+              <div>
+                <b>Google Chrome</b>
+                <span>Downloaded · Ready in C:\Downloads</span>
+              </div>
+            </button>
+            <button type="button" class="start-rec-card" id="start-rec-bios">
+              <span class="start-rec-emoji">⚙️</span>
+              <div>
+                <b>CMOS BIOS Setup</b>
+                <span>5,120+ Features (Dormant Until Opened)</span>
+              </div>
+            </button>
+            <button type="button" class="start-rec-card" id="start-rec-fdisk">
+              <span class="start-rec-emoji">💾</span>
+              <div>
+                <b>FDISK Partitioner</b>
+                <span>Disk 0 C:\ &amp; D:\ + Interactive Guide</span>
+              </div>
+            </button>
+            <button type="button" class="start-rec-card start-menu-item" data-app="gemini" data-pkg-id="app_aim">
+              <img data-icon-key="gemini" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="" />
+              <div>
+                <b>Gemini AIM</b>
+                <span>1995 Instant Messenger</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- All Apps / Search Filtered View -->
+        <div id="start-all-apps-view" class="start-view-pane" style="display: none">
+          <div class="start-section-hdr">
+            <span id="start-all-apps-title">All apps</span>
+            <button type="button" class="start-pill-btn" id="start-back-pinned-btn">&lsaquo; Back</button>
+          </div>
+          <div class="start-all-apps-list" id="start-all-apps-list">
+            <div class="start-menu-item" data-app="chrome" data-pkg-app="chrome">🟢 Google Chrome (Downloaded)</div>
+            <div class="start-menu-item" data-app="abilityToInstall">💿 Ability to Install (.EXE &amp; OS Setup)</div>
+            <div class="start-menu-item" data-app="controlPanel">⚙️ Settings &amp; Control Panel</div>
+            <div class="start-menu-item" data-app="myComputer">💻 File Explorer (My Gemtop)</div>
+            <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt (COMMAND.COM)</div>
+            <div class="start-menu-item" data-app="taskManager">⚡ Task Manager (TASKMGR.EXE)</div>
+            <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT.EXE)</div>
+            <div class="start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">🎛️ Performance &amp; Adjustment Levels</div>
+            <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
+            <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
+            <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
+            <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
+            <div class="start-menu-item" data-app="calendarApp">📅 Calendar, Clock &amp; Alarms</div>
+            <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (.WAV Export)</div>
+            <div class="start-menu-item" data-app="clipViewer">📋 Clipboard &amp; Snipping Studio</div>
+            <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
+            <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
+            <div class="start-menu-item" data-app="solitaireApp">🃏 Solitaire 95 (Cascading Cards!)</div>
+            <div class="start-menu-item" data-app="arcadeApp">🕹️ Arcade 95 (Snake/Breakout/Blocks/Ski)</div>
+            <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
+            <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
+            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (16 Achievements)</div>
+            <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
+            <div class="start-menu-divider"></div>
+            <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
+            <div class="start-menu-item" id="start-run-dialog">🏃 Run... (Alt+R)</div>
+            <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
+            <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
+            <div class="start-menu-item" id="start-pwa-install">📲 Install as Physical OS (PWA)...</div>
+            <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
+            <div class="start-menu-item" id="start-hotkeys-btn">⌨️ Keyboard Shortcuts &amp; Secrets</div>
+            <div class="start-menu-item" id="start-winver-btn">ℹ️ About Windows (WINVER)</div>
+            <div class="start-menu-item" id="start-bsod-prank">💀 Trigger BSOD Prank</div>
+          </div>
+        </div>
+
+        <!-- Bottom Windows 11 Profile & Power Footer -->
+        <div class="start-footer-bar">
+          <div class="start-user-pill">
+            <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" class="start-user-win-icon" />
+            <span>Angel-OS · Win11+10</span>
+          </div>
+          <div class="start-power-wrap">
+            <button type="button" class="start-power-btn" id="start-power-btn" title="Power, BIOS &amp; Restart Options">
+              ⏻
+            </button>
+            <div class="start-power-menu" id="start-power-menu" style="display: none">
+              <div class="start-power-item" id="start-open-bios-menu">⚙️ Enter CMOS BIOS (5,120+ Features)</div>
+              <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Enter BIOS POST</div>
+              <div class="start-power-item" id="start-sleep-saver">🌙 Sleep (Screensaver)</div>
+              <div class="start-power-item" id="start-power-reinstall">💿 Reinstall OS (SETUP.EXE)</div>
             </div>
           </div>
-
-          <div class="start-menu-folder">
-            <span>🔧 System &amp; Power Tools</span><span>▸</span>
-            <div class="start-submenu">
-              <div class="start-menu-item" data-app="taskManager">⚡ Task Manager (TASKMGR)</div>
-              <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT)</div>
-              <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
-              <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
-              <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt (COMMAND.COM)</div>
-              <div class="start-menu-divider"></div>
-              <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
-              <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
-              <div class="start-menu-item" id="start-bsod-prank">💀 Trigger BSOD 95 Prank</div>
-              <div class="start-menu-item" id="start-hotkeys-btn">⌨️ Keyboard Shortcuts &amp; Secrets</div>
-              <div class="start-menu-item" id="start-winver-btn">ℹ️ About Angel-OS 95 (WINVER)</div>
-            </div>
-          </div>
-
-          <div class="start-menu-divider"></div>
-          <div class="start-menu-item" data-app="chrome" data-pkg-app="chrome" id="start-menu-browser-item">🟢 Google Chrome (Web Browser)</div>
-          <div class="start-menu-item" data-app="myComputer">💻 My Gemtop Explorer</div>
-          <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
-          <div class="start-menu-divider"></div>
-          <div class="start-menu-item" id="start-run-dialog">🏃 <b>Run...</b> <span style="margin-left:auto;opacity:0.65;font-size:0.68rem">Alt+R</span></div>
-          <div class="start-menu-item" id="start-pwa-install">📲 <b>Install as Physical OS (PWA)...</b></div>
-          <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
-          <div class="start-menu-item" id="start-reboot-os">🔄 Reboot / CMOS BIOS...</div>
         </div>
       </div>
 
@@ -1925,10 +2213,10 @@
         </div>
       </div>
 
-      <!-- 6. QUICK SETTINGS & ACTION CENTER 95 (System Tray Flyout) -->
+      <!-- 6. QUICK SETTINGS & ACTION CENTER (System Tray Flyout) -->
       <div id="win11-quick-settings" class="win11-quick-settings" style="display: none">
         <div class="window-titlebar">
-          <span class="window-title">⚙️ Quick Settings 95 (Control Center)</span>
+          <span class="window-title">⚙️ Quick Settings (Control Center)</span>
           <div class="window-controls">
             <button class="window-control-button" id="qs-close-btn">✕</button>
           </div>
@@ -1948,7 +2236,7 @@
           </button>
           <button class="qs-tile" id="qs-tile-nightlight">
             <span class="qs-icon">🌙</span>
-            <span class="qs-label">Night Light 95</span>
+            <span class="qs-label">Night Light</span>
           </button>
           <button class="qs-tile active" id="qs-tile-crt">
             <span class="qs-icon">📺</span>
@@ -1973,52 +2261,78 @@
         </div>
         <div class="qs-sliders">
           <div class="qs-slider-row">
-            <span>☀️ CRT Brightness</span>
+            <span>☀️ Brightness</span>
             <input type="range" id="qs-brightness-slider" min="55" max="115" value="100" />
           </div>
         </div>
         <div class="qs-footer">
-          <span>🔋 APC Back-UPS 95: 100%</span>
+          <button class="win95-btn" id="qs-install-pwa-btn" title="Install as Standalone OS App">📲 Install OS</button>
+          <button class="win95-btn" id="qs-open-bios-btn" title="Open CMOS BIOS (5,120+ Features)">⚙️ BIOS</button>
           <button class="win95-btn" id="qs-open-themes-btn">🎨 Themes</button>
         </div>
       </div>
 
-      <!-- ==================== TASKBAR (Win10 Icon Dock + Classic Win95 Bevels) ==================== -->
+      <!-- ==================== TASKBAR (Clean Windows 11 + Left-Side Windows 10 Hybrid) ==================== -->
       <div id="taskbar">
         <div class="taskbar-left-cluster" id="taskbar-left-cluster">
-          <button id="start-button" title="Start Menu">
-            <svg class="start-win-flag" viewBox="0 0 18 18" aria-hidden="true">
-              <rect x="1" y="2" width="7" height="6" fill="#ff3b1f" stroke="#000" stroke-width="0.9" />
-              <rect x="10" y="2" width="7" height="6" fill="#32a852" stroke="#000" stroke-width="0.9" />
-              <rect x="1" y="10" width="7" height="6" fill="#0078d7" stroke="#000" stroke-width="0.9" />
-              <rect x="10" y="10" width="7" height="6" fill="#ffb900" stroke="#000" stroke-width="0.9" />
+          <button id="start-button" title="Start">
+            <svg class="start-win11-logo" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="tbWinTL" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#78dcff" />
+                  <stop offset="100%" stop-color="#1d9bf0" />
+                </linearGradient>
+                <linearGradient id="tbWinBR" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#30b0f5" />
+                  <stop offset="100%" stop-color="#005fb8" />
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="9.2" height="9.2" rx="1.2" fill="url(#tbWinTL)" />
+              <rect x="12.8" y="2" width="9.2" height="9.2" rx="1.2" fill="url(#tbWinTL)" />
+              <rect x="2" y="12.8" width="9.2" height="9.2" rx="1.2" fill="url(#tbWinBR)" />
+              <rect x="12.8" y="12.8" width="9.2" height="9.2" rx="1.2" fill="url(#tbWinBR)" />
             </svg>
-            <span>Start</span>
+            <span class="start-btn-label" id="start-button-label" style="display: none">Start</span>
           </button>
-          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-search-btn" title="Universal Search">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <circle cx="6.75" cy="6.75" r="4.5" fill="rgba(255,255,255,0.45)" stroke="#111827" stroke-width="1.5" />
-              <line x1="10.2" y1="10.2" x2="14.2" y2="14.2" stroke="#111827" stroke-width="1.8" stroke-linecap="round" />
+
+          <!-- Windows 10 Left-Side Little Search Bar (in sleek Windows 11 pill style) -->
+          <div class="taskbar-search-bar" id="taskbar-search-btn" role="search" title="Search apps, C:\ files, settings, and BIOS">
+            <svg class="taskbar-search-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="6.75" cy="6.75" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+              <line x1="10.2" y1="10.2" x2="14.2" y2="14.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
             </svg>
-          </button>
-          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-taskview-btn" title="Task View & Virtual Desktops (Desktop 1)">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="1.5" y="3" width="8.5" height="6.5" fill="#dbeafe" stroke="#1e293b" stroke-width="1.3" />
-              <rect x="5" y="6.5" width="9" height="6.5" fill="#93c5fd" stroke="#000080" stroke-width="1.3" />
+            <input
+              type="text"
+              id="taskbar-search-input"
+              class="taskbar-search-input"
+              placeholder="Search"
+              aria-label="Search apps, files, and settings"
+              autocomplete="off"
+            />
+            <button type="button" id="taskbar-search-clear" class="taskbar-search-clear" style="display: none" title="Clear search">✕</button>
+          </div>
+
+          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-taskview-btn" title="Task View &amp; Virtual Desktops (Desktop 1)">
+            <svg viewBox="0 0 18 18" aria-hidden="true">
+              <rect x="2" y="3.5" width="9.5" height="7.5" rx="1.5" fill="#e0f2fe" stroke="#334155" stroke-width="1.4" />
+              <rect x="6.5" y="7" width="9.5" height="7.5" rx="1.5" fill="#60a5fa" stroke="#005fb8" stroke-width="1.4" />
             </svg>
             <span class="taskbar-desk-badge" id="taskbar-desk-badge">1</span>
           </button>
         </div>
+
         <div class="taskbar-divider"></div>
         <div id="taskbar-apps"></div>
+
         <div class="taskbar-right-cluster" id="taskbar-right-cluster">
-          <div class="taskbar-divider"></div>
-          <button class="win95-btn taskbar-win11-btn taskbar-icon-btn" id="taskbar-widgets-btn" title="Widgets Board — Redmond, WA: 72°F">
+          <button class="win95-btn taskbar-win11-btn taskbar-widgets-pill" id="taskbar-widgets-btn" title="Widgets Board — Redmond, WA: 72°F">
             <svg viewBox="0 0 16 16" aria-hidden="true">
-              <circle cx="5.5" cy="5.5" r="3" fill="#f59e0b" stroke="#78350f" stroke-width="0.9" />
-              <path d="M5 13h7.2a2.3 2.3 0 0 0 .3-4.58A3.2 3.2 0 0 0 6.2 7.6 2.6 2.6 0 0 0 5 13Z" fill="#f8fafc" stroke="#334155" stroke-width="1.1" stroke-linejoin="round" />
+              <circle cx="5.5" cy="5.5" r="3" fill="#f59e0b" />
+              <path d="M5 13h7.2a2.3 2.3 0 0 0 .3-4.58A3.2 3.2 0 0 0 6.2 7.6 2.6 2.6 0 0 0 5 13Z" fill="#ffffff" stroke="#64748b" stroke-width="1.1" stroke-linejoin="round" />
             </svg>
+            <span class="taskbar-widgets-temp tabular-nums">72°F</span>
           </button>
+
           <button class="win95-btn taskbar-copilot-btn taskbar-icon-btn" id="taskbar-copilot-btn" title="Angel Pilot (In-Training Joke Copilot · 0% AI)">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <ellipse cx="8" cy="3.2" rx="4.2" ry="1.4" fill="none" stroke="#eab308" stroke-width="1.4" />
@@ -2027,7 +2341,8 @@
               <path d="M13.8 8.2 Q11.8 6.8 11.2 10.6 Q13.2 10.8 13.8 8.2 Z" fill="#f8fafc" stroke="#334155" stroke-width="0.9" />
             </svg>
           </button>
-          <button class="win95-btn taskbar-install-os-btn taskbar-icon-btn" id="pwa-taskbar-install-btn" title="Install Gemini 95 as a Native Standalone OS App">
+
+          <button class="win95-btn taskbar-install-os-btn taskbar-icon-btn" id="pwa-taskbar-install-btn" style="display: none" title="Install Angel-OS as a Native Standalone OS App">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="2" y="2" width="12" height="9" rx="1" fill="#0f766e" stroke="#111827" stroke-width="1.2" />
               <rect x="6.2" y="11" width="3.6" height="2" fill="#475569" />
@@ -2035,30 +2350,31 @@
               <path d="M8 3.6v4.2M6 6.2l2 2 2-2" fill="none" stroke="#fef08a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-          <!-- System Tray -->
+
+          <!-- Clean Windows 11 + 10 System Tray -->
           <div id="system-tray" class="system-tray">
+            <span id="tray-bios-pulse" class="tray-bios-pulse tabular-nums" style="display: none" title="Activated CMOS BIOS Registers">BIOS:0</span>
             <span id="tray-offline-badge" class="tray-offline-badge" style="display: none" title="Running Offline via Service Worker Cache">OFFLINE</span>
-            <button class="tray-icon-btn" id="tray-notif-btn" title="Notification History Drawer">
+            <button class="tray-icon-btn" id="tray-notif-btn" title="Action Center &amp; Notification History">
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M8 2.2a3.6 3.6 0 0 0-3.6 3.6v2.7L3.2 10.5h9.6L11.6 8.5V5.8A3.6 3.6 0 0 0 8 2.2Z" fill="#eab308" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round" />
                 <path d="M6.4 11.5a1.6 1.6 0 0 0 3.2 0" fill="none" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" />
               </svg>
               <span id="tray-notif-count" class="tray-notif-count" style="display:none">0</span>
             </button>
-            <button class="tray-icon-btn" id="tray-qs-btn" title="Network &amp; Quick Settings 95">
+            <button class="tray-icon-btn" id="tray-qs-btn" title="Network &amp; Quick Settings">
               <svg viewBox="0 0 16 16" aria-hidden="true">
-                <rect x="2" y="10" width="2.4" height="4" fill="#000080" />
-                <rect x="5.5" y="7.5" width="2.4" height="6.5" fill="#000080" />
-                <rect x="9" y="5" width="2.4" height="9" fill="#000080" />
-                <rect x="12.5" y="2.5" width="2.4" height="11.5" fill="#0078d7" />
+                <path d="M2 6.2a8.5 8.5 0 0 1 12 0" fill="none" stroke="#0078d4" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M4.3 8.8a5.2 5.2 0 0 1 7.4 0" fill="none" stroke="#0078d4" stroke-width="1.5" stroke-linecap="round" />
+                <circle cx="8" cy="12" r="1.4" fill="#1e293b" />
               </svg>
             </button>
             <button class="tray-icon-btn" id="tray-crt-btn" title="CRT Scanlines On — Click to Toggle">
               <svg viewBox="0 0 16 16" aria-hidden="true">
-                <rect x="1.5" y="2" width="13" height="9.5" rx="1" fill="#0f172a" stroke="#1e293b" stroke-width="1.2" />
+                <rect x="1.5" y="2" width="13" height="9.5" rx="1.2" fill="#0f172a" stroke="#334155" stroke-width="1.2" />
                 <line x1="3" y1="5" x2="13" y2="5" stroke="#22d3ee" stroke-width="1" />
                 <line x1="3" y1="7.5" x2="13" y2="7.5" stroke="#38bdf8" stroke-width="1" />
-                <line x1="5" y1="13.5" x2="11" y2="13.5" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" />
+                <line x1="5" y1="13.5" x2="11" y2="13.5" stroke="#334155" stroke-width="1.5" stroke-linecap="round" />
               </svg>
             </button>
             <button class="tray-icon-btn" id="tray-sound-btn" title="Sound On — Click to Mute Retro SFX">
@@ -2069,9 +2385,9 @@
                 <line class="tray-sound-mute" x1="14.8" y1="5" x2="11" y2="11" stroke="#b91c1c" stroke-width="1.6" stroke-linecap="round" />
               </svg>
             </button>
-            <div id="tray-clock" class="tray-clock" title="Date, Time &amp; Quick Settings 95">
+            <div id="tray-clock" class="tray-clock" title="Date, Time &amp; Quick Settings">
               <span class="tray-clock-time">12:00 PM</span>
-              <span class="tray-clock-date">8/24/1995</span>
+              <span class="tray-clock-date">11/24/2026</span>
             </div>
           </div>
           <button class="taskbar-peek-btn" id="show-desktop-btn" title="Show Desktop (Minimize All Windows)" aria-label="Show Desktop"></button>
@@ -2098,20 +2414,20 @@
       <div id="run-dialog-modal" class="installshield-backdrop" style="display:none">
         <div class="sfx-exe-window" style="width:420px">
           <div class="window-titlebar">
-            <span class="window-title">🏃 Run — Angel-OS 95</span>
+            <span class="window-title">🏃 Run — Angel-OS</span>
             <div class="window-controls"><button class="window-control-button" id="run-close-btn">✕</button></div>
           </div>
           <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px">
-            <div style="font-size:0.76rem;color:#000">Type the name of a program, utility, or command (e.g. <code>calc</code>, <code>sol</code>, <code>arcade</code>, <code>sndrec32</code>, <code>taskmgr</code>, <code>bsod</code>, <code>fdisk</code>):</div>
-            <input type="text" id="run-dialog-input" class="win95-text-input" value="arcade" />
+            <div style="font-size:0.76rem;color:#000">Type the name of a program, utility, or command (e.g. <code>chrome</code>, <code>bios</code>, <code>calc</code>, <code>sol</code>, <code>arcade</code>, <code>taskmgr</code>, <code>fdisk</code>):</div>
+            <input type="text" id="run-dialog-input" class="win95-text-input" value="chrome" />
             <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <button class="win95-btn run-preset-chip" data-cmd="chrome">chrome</button>
+              <button class="win95-btn run-preset-chip" data-cmd="bios">bios</button>
               <button class="win95-btn run-preset-chip" data-cmd="sol">sol</button>
               <button class="win95-btn run-preset-chip" data-cmd="arcade">arcade</button>
               <button class="win95-btn run-preset-chip" data-cmd="calc">calc</button>
-              <button class="win95-btn run-preset-chip" data-cmd="sndrec32">sndrec32</button>
               <button class="win95-btn run-preset-chip" data-cmd="taskmgr">taskmgr</button>
               <button class="win95-btn run-preset-chip" data-cmd="trophies">trophies</button>
-              <button class="win95-btn run-preset-chip" data-cmd="bsod">bsod</button>
             </div>
             <div class="sfx-exe-footer">
               <button class="win95-btn" id="run-ok-btn"><b>OK</b></button>
@@ -2121,17 +2437,21 @@
         </div>
       </div>
 
-      <!-- ABOUT ANGEL-OS 95 MODAL (WINVER.EXE) -->
+      <!-- ABOUT WINDOWS / ANGEL-OS MODAL (WINVER.EXE) -->
       <div id="winver-modal" class="installshield-backdrop" style="display:none">
-        <div class="sfx-exe-window" style="width:410px">
+        <div class="sfx-exe-window" style="width:420px">
           <div class="window-titlebar">
-            <span class="window-title">ℹ️ About Angel-OS (WINVER.EXE)</span>
+            <span class="window-title">ℹ️ About Windows — Angel-OS (WINVER.EXE)</span>
             <div class="window-controls"><button class="window-control-button" id="winver-close-btn">✕</button></div>
           </div>
           <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#000">
-            <div style="background:#000080;color:#fff;padding:10px;font-weight:700;font-size:0.95rem">Angel-OS / Remix Gemini 95 Ultra Edition</div>
-            <div><b>Build:</b> 4.00.950 B · Five Trillion Features Pack</div>
-            <div><b>Shell Features:</b> FDISK + Interactive Guide, Multi-Engine Browser, Angel Pilot (0% AI), Klondike Solitaire, 4-in-1 Arcade, 16-bit WAV Studio &amp; Trophy Vault</div>
+            <div style="background:linear-gradient(135deg,#004a99,#0078d4);color:#fff;padding:10px 12px;font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:10px;border-radius:4px">
+              <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" style="width:28px;height:28px" />
+              <span>Windows 11 + 10 Hybrid · Angel-OS</span>
+            </div>
+            <div><b>Shell:</b> Windows 11 Interface · Left-Side Windows 10 Taskbar &amp; Search</div>
+            <div><b>Browser:</b> Google Chrome v131 (Downloaded &amp; Installed on C:\)</div>
+            <div><b>BIOS Firmware:</b> <span id="winver-bios-count" class="tabular-nums">0 / 5,120 Advanced Registers Activated</span></div>
             <div><b>Session Uptime:</b> <span id="winver-uptime" class="tabular-nums">0 seconds</span></div>
             <div class="sfx-exe-footer">
               <button class="win95-btn" id="winver-ok-btn"><b>OK</b></button>
