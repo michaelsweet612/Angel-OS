@@ -2331,6 +2331,11 @@ export function executeRunCommand(raw: string): boolean {
     control: 'controlPanel',
     settings: 'controlPanel',
     sysmon: 'sysMonitor',
+    perf: 'perfAdjust',
+    perflevels: 'perfAdjust',
+    ram: 'perfAdjust',
+    fans: 'perfAdjust',
+    temps: 'perfAdjust',
     minesweeper: 'minesweeper',
     winmine: 'minesweeper',
     angelsweeper: 'minesweeper',
@@ -2362,7 +2367,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, bios, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, perf, bios, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 

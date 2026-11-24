@@ -34,6 +34,15 @@ import {
   triggerNativePwaInstall,
 } from './osDualInstall';
 import {
+  applyPerfPreset,
+  computeHardwareTelemetry,
+  detectHostHardware,
+  getEffectiveRamDisplay,
+  getEffectiveRamMB,
+  refreshPerfAdjustIfOpen,
+  registerPerfRegistryProvider,
+} from './osHardwarePerf';
+import {
   applyBios5000EffectsToOS,
   BIOS_FLAGSHIP_IDS,
   getActivatedBiosCount,
@@ -101,6 +110,7 @@ export interface OsBridgeCallbacks {
 
 // Singleton runtime state shared across OS modules
 export let systemRegistry: SystemRegistry = loadSystemRegistry();
+registerPerfRegistryProvider(() => systemRegistry);
 export let packageCatalog: SoftwarePackage[] = loadPackageCatalog();
 export let browserBookmarks: BrowserBookmark[] = loadBrowserBookmarks();
 
@@ -339,12 +349,13 @@ export function applySystemRegistryToOS(skipSave = false): void {
   }
   const biosRam = document.getElementById('bios-ram-counter');
   if (biosRam) {
-    const totalRamMb = systemRegistry.installedRamMB + getBiosRamBoostMB();
+    const totalRamMb = getEffectiveRamMB(systemRegistry, getBiosRamBoostMB());
     biosRam.textContent = `${totalRamMb * 1024}K OK${getBiosRamBoostMB() > 0 ? ' [XMP-6400]' : ''}`;
   }
   const biosFs = document.getElementById('bios-fs-label');
   if (biosFs) biosFs.textContent = systemRegistry.fileSystemFormat;
 
+  refreshPerfAdjustIfOpen();
   syncPartitionTableWithRegistry();
 
   const driveDBtn = document.getElementById('explorer-drive-d-btn');
@@ -2433,7 +2444,7 @@ export function openMasterSettingsTab(tabId: string): void {
 function refreshMasterSettingsPreview(): void {
   const statusEl = document.getElementById('settings-live-status');
   if (statusEl) {
-    statusEl.textContent = `● Live Sync OK — Theme: ${systemRegistry.useCustomColors ? 'CUSTOM HEX' : systemRegistry.themePreset.toUpperCase()} · CPU: ${systemRegistry.cpuModel} · RAM: ${systemRegistry.installedRamMB}MB`;
+    statusEl.textContent = `● Live Sync OK — Theme: ${systemRegistry.useCustomColors ? 'CUSTOM HEX' : systemRegistry.themePreset.toUpperCase()} · CPU: ${systemRegistry.cpuModel} · RAM: ${getEffectiveRamDisplay(systemRegistry)}`;
   }
 }
 
@@ -2981,14 +2992,38 @@ export function renderMasterSettingsCurrentTab(): void {
             <input type="checkbox" id="st-hw-turbo" ${r.cpuTurboBoost ? 'checked' : ''} />
           </label>
           <div class="settings-row">
-            <label>Physical RAM:</label>
+            <label>Detected Host PC:</label>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:#000080;">${detectHostHardware().cpuThreads} Threads · ${detectHostHardware().autoDetectedRamMB.toLocaleString()}MB Host RAM · ${detectHostHardware().gpuRenderer}</span>
+          </div>
+          <div class="settings-row">
+            <label>RAM Selection Mode:</label>
+            <select id="st-hw-ram-mode" class="win95-select">
+              <option value="auto" ${r.ramMode === 'auto' ? 'selected' : ''}>Auto-Detect Host PC RAM (${detectHostHardware().autoDetectedRamMB.toLocaleString()} MB)</option>
+              <option value="limited" ${r.ramMode === 'limited' ? 'selected' : ''}>Limited Pool (Cap 16–4096 MB)</option>
+              <option value="custom" ${r.ramMode === 'custom' ? 'selected' : ''}>Custom Manual MB</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label>Limited RAM Cap:</label>
             <select id="st-hw-ram" class="win95-select">
               <option value="16" ${r.installedRamMB === 16 ? 'selected' : ''}>16 MB SIMM</option>
               <option value="32" ${r.installedRamMB === 32 ? 'selected' : ''}>32 MB SIMM</option>
               <option value="64" ${r.installedRamMB === 64 ? 'selected' : ''}>64 MB EDO DRAM</option>
               <option value="128" ${r.installedRamMB === 128 ? 'selected' : ''}>128 MB PC66 SDRAM</option>
               <option value="256" ${r.installedRamMB === 256 ? 'selected' : ''}>256 MB Workstation</option>
+              <option value="512" ${r.installedRamMB === 512 ? 'selected' : ''}>512 MB Extended</option>
+              <option value="1024" ${r.installedRamMB === 1024 ? 'selected' : ''}>1,024 MB (1 GB)</option>
+              <option value="2048" ${r.installedRamMB === 2048 ? 'selected' : ''}>2,048 MB (2 GB)</option>
+              <option value="4096" ${r.installedRamMB === 4096 ? 'selected' : ''}>4,096 MB (4 GB)</option>
             </select>
+          </div>
+          <div class="settings-row">
+            <label>Custom RAM (MB):</label>
+            <input type="number" id="st-hw-ram-custom" class="win95-input" min="16" max="65536" step="16" value="${r.customRamMB}" style="width:110px;" />
+          </div>
+          <div class="settings-row">
+            <label>Performance &amp; Fans:</label>
+            <button type="button" class="win95-btn" id="st-hw-open-perf">🎛️ Open Performance &amp; Adjustment Levels</button>
           </div>
           <div class="settings-row">
             <label>WIN386.SWP Swap:</label>
@@ -3043,7 +3078,27 @@ export function renderMasterSettingsCurrentTab(): void {
 
     bindSelect('st-hw-cpu', (v) => (r.cpuModel = v as any));
     bindCheck('st-hw-turbo', (c) => (r.cpuTurboBoost = c));
-    bindSelect('st-hw-ram', (v) => (r.installedRamMB = Number(v) as any));
+    bindSelect('st-hw-ram-mode', (v) => (r.ramMode = v as any));
+    bindSelect('st-hw-ram', (v) => {
+      r.installedRamMB = Number(v) as any;
+      r.ramMode = 'limited';
+      const modeEl = container.querySelector<HTMLSelectElement>('#st-hw-ram-mode');
+      if (modeEl) modeEl.value = 'limited';
+    });
+    container.querySelector<HTMLInputElement>('#st-hw-ram-custom')?.addEventListener('change', (e) => {
+      const val = Math.max(16, Math.min(65536, Math.round(Number((e.target as HTMLInputElement).value) || 512)));
+      (e.target as HTMLInputElement).value = String(val);
+      r.customRamMB = val;
+      r.ramMode = 'custom';
+      const modeEl = container.querySelector<HTMLSelectElement>('#st-hw-ram-mode');
+      if (modeEl) modeEl.value = 'custom';
+      applySystemRegistryToOS();
+      refreshMasterSettingsPreview();
+    });
+    container.querySelector('#st-hw-open-perf')?.addEventListener('click', () => {
+      bridgeRef?.sfx.playClick();
+      bridgeRef?.openApp('perfAdjust', true);
+    });
     bindSelect('st-hw-swap', (v) => (r.virtualSwapMB = Number(v) as any));
     bindSelect('st-ss-min', (v) => (r.screensaverMinutes = Number(v) as any));
     bindSelect('st-ss-style', (v) => (r.screensaverStyle = v as any));
@@ -3497,7 +3552,8 @@ let sysmonTimerId: number | null = null;
 
 export function initSysMonitorApp(windowElement: HTMLDivElement): void {
   windowElement.querySelector('#sysmon-tune-hw-btn')?.addEventListener('click', () => {
-    openMasterSettingsTab('hardware');
+    bridgeRef?.sfx.playClick();
+    bridgeRef?.openApp('perfAdjust', true);
   });
 
   if (sysmonTimerId) clearInterval(sysmonTimerId);
@@ -3536,8 +3592,8 @@ export function initSysMonitorApp(windowElement: HTMLDivElement): void {
     if (windowElement.style.display === 'none') return;
     const cpuBase = systemRegistry.cpuModel.includes('486') ? 52 : systemRegistry.cpuModel.includes('400MHz') ? 11 : 24;
     const cpuVal = Math.min(99, Math.max(4, Math.round(cpuBase + Math.random() * 24)));
-    const usedMb = Math.min(systemRegistry.installedRamMB - 2, Math.round(14 + Math.random() * 10));
-    const totalRamMb = systemRegistry.installedRamMB + getBiosRamBoostMB();
+    const totalRamMb = getEffectiveRamMB(systemRegistry, getBiosRamBoostMB());
+    const usedMb = Math.min(totalRamMb - 2, Math.max(8, Math.round(totalRamMb * (0.24 + Math.random() * 0.08))));
     const ramPct = Math.round((usedMb / totalRamMb) * 100);
     const swapMb = Math.round(8 + Math.random() * 8);
     const kbps = ((systemRegistry.modemBaudRate / 1000) * (0.4 + Math.random() * 0.55)).toFixed(1);
@@ -3560,27 +3616,61 @@ export function initSysMonitorApp(windowElement: HTMLDivElement): void {
     setTxt('sysmon-ram-val', `${usedMb} / ${totalRamMb} MB`);
     setTxt('sysmon-swap-val', `${swapMb} / ${systemRegistry.virtualSwapMB} MB`);
     setTxt('sysmon-net-val', `${kbps} kbps`);
-    setTxt('sysmon-hw-summary', `${systemRegistry.cpuModel}${getBiosCpuLabelSuffix()} · ${totalRamMb} MB RAM · BIOS Regs: ${getActivatedBiosCount()}`);
+    const t = computeHardwareTelemetry(systemRegistry);
+    setTxt('sysmon-hw-summary', `${systemRegistry.cpuModel}${getBiosCpuLabelSuffix()} · ${totalRamMb}MB (${systemRegistry.ramMode}) · ${t.cpuTempC.toFixed(1)}°C · Fans ${t.cpuFanRpm} RPM · BIOS Regs: ${getActivatedBiosCount()}`);
   }, 700);
 }
 
 // ==================== AWARD / UEFI CMOS BIOS SETUP UTILITY (5,120+ FEATURES) ====================
+let cmosSensorsTickerId: number | null = null;
+
+function updateCmosLiveSensorsStrip(): void {
+  const t = computeHardwareTelemetry(systemRegistry);
+  const headerEl = document.getElementById('cmos-live-sensors');
+  if (headerEl) {
+    headerEl.textContent = `Vcore: ${t.vcoreV}V · CPU: ${t.cpuTempC.toFixed(1)}°C · Fan: ${t.cpuFanRpm} RPM · RAM: ${t.effectiveRamMB.toLocaleString()} MB`;
+  }
+  const panelEl = document.getElementById('cmos-panel-sensors');
+  if (panelEl) {
+    panelEl.textContent = `${t.cpuClockGHz}GHz · ${t.cpuTempC.toFixed(1)}°C · CPU Fan ${t.cpuFanRpm} RPM · RAM: ${t.effectiveRamMB.toLocaleString()}MB (${systemRegistry.ramMode.toUpperCase()})`;
+  }
+}
+
 export function openCmosBiosSetup(): void {
   const screen = document.getElementById('cmos-bios-screen');
   if (!screen) return;
   bridgeRef?.sfx.playPostBeep();
   syncCmosControlsFromRegistry();
+  updateCmosLiveSensorsStrip();
   renderCmos5000Browser();
   screen.style.display = 'flex';
+  if (cmosSensorsTickerId !== null) clearInterval(cmosSensorsTickerId);
+  cmosSensorsTickerId = window.setInterval(() => {
+    const s = document.getElementById('cmos-bios-screen');
+    if (s && s.style.display !== 'none') {
+      updateCmosLiveSensorsStrip();
+    } else if (cmosSensorsTickerId !== null) {
+      clearInterval(cmosSensorsTickerId);
+      cmosSensorsTickerId = null;
+    }
+  }, 1000);
 }
 
 function syncCmosControlsFromRegistry(): void {
   const cpuSel = document.getElementById('cmos-cpu-select') as HTMLSelectElement | null;
+  const ramModeSel = document.getElementById('cmos-ram-mode-select') as HTMLSelectElement | null;
   const ramSel = document.getElementById('cmos-ram-select') as HTMLSelectElement | null;
+  const ramCustomInp = document.getElementById('cmos-ram-custom-input') as HTMLInputElement | null;
+  const perfSel = document.getElementById('cmos-perf-select') as HTMLSelectElement | null;
+  const fanSel = document.getElementById('cmos-fan-select') as HTMLSelectElement | null;
   const bootSel = document.getElementById('cmos-bootorder-select') as HTMLSelectElement | null;
   const fsSel = document.getElementById('cmos-fs-select') as HTMLSelectElement | null;
   if (cpuSel) cpuSel.value = systemRegistry.cpuModel;
+  if (ramModeSel) ramModeSel.value = systemRegistry.ramMode;
   if (ramSel) ramSel.value = String(systemRegistry.installedRamMB);
+  if (ramCustomInp) ramCustomInp.value = String(systemRegistry.customRamMB);
+  if (perfSel) perfSel.value = systemRegistry.perfProfile;
+  if (fanSel) fanSel.value = systemRegistry.perfFanMode;
   if (bootSel) bootSel.value = systemRegistry.biosBootOrder;
   if (fsSel) fsSel.value = systemRegistry.fileSystemFormat;
 
@@ -3637,9 +3727,50 @@ export function initCmosBiosController(): void {
 
   document.getElementById('cmos-cpu-select')?.addEventListener('change', (e) => {
     systemRegistry.cpuModel = (e.target as HTMLSelectElement).value as any;
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-ram-mode-select')?.addEventListener('change', (e) => {
+    systemRegistry.ramMode = (e.target as HTMLSelectElement).value as any;
+    updateCmosLiveSensorsStrip();
   });
   document.getElementById('cmos-ram-select')?.addEventListener('change', (e) => {
     systemRegistry.installedRamMB = Number((e.target as HTMLSelectElement).value) as any;
+    systemRegistry.ramMode = 'limited';
+    const modeSel = document.getElementById('cmos-ram-mode-select') as HTMLSelectElement | null;
+    if (modeSel) modeSel.value = 'limited';
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-ram-custom-input')?.addEventListener('change', (e) => {
+    const val = Math.max(16, Math.min(65536, Math.round(Number((e.target as HTMLInputElement).value) || 512)));
+    (e.target as HTMLInputElement).value = String(val);
+    systemRegistry.customRamMB = val;
+    systemRegistry.ramMode = 'custom';
+    const modeSel = document.getElementById('cmos-ram-mode-select') as HTMLSelectElement | null;
+    if (modeSel) modeSel.value = 'custom';
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-perf-select')?.addEventListener('change', (e) => {
+    const profile = (e.target as HTMLSelectElement).value as SystemRegistry['perfProfile'];
+    if (profile === 'custom') systemRegistry.perfProfile = 'custom';
+    else applyPerfPreset(profile, systemRegistry);
+    const fanSel = document.getElementById('cmos-fan-select') as HTMLSelectElement | null;
+    if (fanSel) fanSel.value = systemRegistry.perfFanMode;
+    syncCmosControlsFromRegistry();
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-fan-select')?.addEventListener('change', (e) => {
+    const mode = (e.target as HTMLSelectElement).value as SystemRegistry['perfFanMode'];
+    systemRegistry.perfFanMode = mode;
+    if (mode === 'off') systemRegistry.perfFanDutyPct = 0;
+    else if (mode === 'silent') systemRegistry.perfFanDutyPct = 28;
+    else if (mode === 'balanced') systemRegistry.perfFanDutyPct = 54;
+    else if (mode === 'turbo') systemRegistry.perfFanDutyPct = 100;
+    updateCmosLiveSensorsStrip();
+  });
+  document.getElementById('cmos-open-perf-btn')?.addEventListener('click', () => {
+    applySystemRegistryToOS();
+    screen.style.display = 'none';
+    bridgeRef?.openApp('perfAdjust', true);
   });
   document.getElementById('cmos-bootorder-select')?.addEventListener('change', (e) => {
     systemRegistry.biosBootOrder = (e.target as HTMLSelectElement).value as any;

@@ -6,6 +6,8 @@
  * and activates one or more features.
  */
 
+import { computeHardwareTelemetry, getEffectiveRamDisplay } from './osHardwarePerf';
+
 export interface BiosCategoryDef {
   id: string;
   label: string;
@@ -696,16 +698,17 @@ function startBiosHud(fullMode: boolean): void {
 
   const updateHud = () => {
     const activeCount = getActivatedBiosCount();
+    const t = computeHardwareTelemetry();
     const fps = 60;
-    const temp = Math.round(38 + Math.min(28, activeCount * 0.08) + Math.random() * 3);
-    const ocTxt = getBiosCpuLabelSuffix() || ' Stock';
+    const ocTxt = getBiosCpuLabelSuffix() || '';
     const tpmTxt = isBiosTpmVerified() ? 'TPM 2.0 ON' : 'TPM OFF';
     hud.innerHTML = `
       <div class="bios-hud-title">⚡ BIOS TELEMETRY HUD</div>
       <div class="bios-hud-row"><span>FPS / VSYNC:</span><b>${fps} FPS</b></div>
       <div class="bios-hud-row"><span>BIOS REGS:</span><b>${activeCount.toLocaleString()} / ${TOTAL_BIOS_FEATURES.toLocaleString()}</b></div>
-      <div class="bios-hud-row"><span>CPU / TEMP:</span><b>${ocTxt.trim()} · ${temp}°C</b></div>
-      ${fullMode ? `<div class="bios-hud-row"><span>SECURITY:</span><b>${tpmTxt}</b></div>` : ''}
+      <div class="bios-hud-row"><span>CPU / TEMP:</span><b>${t.cpuClockGHz}GHz${ocTxt} · ${t.cpuTempC.toFixed(1)}°C</b></div>
+      <div class="bios-hud-row"><span>RAM / FANS:</span><b>${getEffectiveRamDisplay()} · ${t.cpuFanRpm} RPM</b></div>
+      ${fullMode ? `<div class="bios-hud-row"><span>PWR / SEC:</span><b>${t.powerDrawW}W · ${tpmTxt}</b></div>` : ''}
     `;
   };
   updateHud();
@@ -849,10 +852,8 @@ function updateBiosTelemetryStrip(): void {
 
   const sensorsEl = document.getElementById('cmos-live-sensors');
   if (sensorsEl) {
-    const vcore = (1.18 + Math.min(0.28, activeCount * 0.002)).toFixed(3);
-    const temp = Math.round(35 + Math.min(34, activeCount * 0.06));
-    const fan = 1450 + Math.min(2800, activeCount * 8);
-    sensorsEl.textContent = `Vcore: ${vcore}V · CPU: ${temp}°C · Fan: ${fan} RPM · VBAT: 3.04V · POST: 0xFF`;
+    const t = computeHardwareTelemetry();
+    sensorsEl.textContent = `Vcore: ${t.vcoreV}V · CPU: ${t.cpuTempC.toFixed(1)}°C · Fan: ${t.cpuFanRpm} RPM · RAM: ${t.effectiveRamMB.toLocaleString()} MB · VBAT: ${t.vbatV}V`;
   }
 }
 

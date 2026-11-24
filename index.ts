@@ -31,7 +31,8 @@ import {
   systemRegistry,
 } from './osExtendedApps';
 import { BIOS_FLAGSHIP_IDS, isBiosPilotOverclocked, isBiosZeroWaitPost } from './osBios5000';
-import { APP_SVG_ICONS } from './osSystemCore';
+import { detectHostHardware, getEffectiveRamDisplay, getEffectiveRamMB, initPerfAdjustApp } from './osHardwarePerf';
+import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
   downloadPortableHostApp,
@@ -453,6 +454,14 @@ const virtualFileSystem: VfsItem[] = [
     content: 'MZ Win32 Self-Extracting Installer — Google Chrome Browser',
   },
   {
+    name: 'PERFADJ95_SETUP.EXE',
+    type: 'installer_exe',
+    parent: 'C:\\Downloads',
+    pkgId: 'sys_perf_adjust',
+    sizeMB: 2.8,
+    content: 'MZ Win32 Self-Extracting Installer — Performance & Adjustment Levels (PERFLEVELS.EXE)',
+  },
+  {
     name: 'SYSMON95_SETUP.EXE',
     type: 'installer_exe',
     parent: 'C:\\Downloads',
@@ -766,6 +775,7 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     abilityToInstall: 'Ability to Install',
     controlPanel: 'Settings & Control',
     regedit: 'REGEDIT.EXE',
+    perfAdjust: 'Perf & Adjustment Levels',
     sysMonitor: 'System Monitor',
     notepad: 'GemNotes',
     paint: 'GemPaint',
@@ -1068,6 +1078,18 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
       initializedApps.add('regedit');
       initRegeditApp(windowElement);
     }
+  } else if (appName === 'perfAdjust') {
+    initPerfAdjustApp({
+      onApplyHardwareChange: () => {
+        saveSystemRegistry(systemRegistry);
+        applySystemRegistryToOS();
+        renderMasterSettingsCurrentTab();
+      },
+      onOpenBios: () => openCmosBiosSetup(),
+      onOpenSysMonitor: () => {
+        openApp('sysMonitor');
+      },
+    });
   } else if (appName === 'sysMonitor') {
     if (!initializedApps.has('sysMonitor')) {
       initializedApps.add('sysMonitor');
@@ -2849,11 +2871,15 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       return;
     }
     if (upper === 'SYSINFO' || upper === 'VER') {
+      const host = detectHostHardware();
+      const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
         `OS:         Remix Gemini 95 (4.00.950 B · ${systemRegistry.fileSystemFormat})\n` +
-          `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} + Gemini-4-Hydrogen\n` +
-          `Memory:     ${(systemRegistry.installedRamMB * 1024).toLocaleString()}K Extended RAM (${systemRegistry.virtualSwapMB}MB Swap)\n` +
+          `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
+          `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
+          `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
           `Disk 0:     Primary C: ${partitionTable.primaryC.sizeMB}MB · Logical D: ${partitionTable.logicalD.exists ? partitionTable.logicalD.sizeMB + 'MB' : 'None'}\n` +
+          `Cooling:    Fan Policy ${systemRegistry.perfFanMode.toUpperCase()} (${systemRegistry.perfFanDutyPct}% PWM)\n` +
           `Audio:      Sound Blaster 16 DSP (${systemRegistry.dacBitDepth}-bit DAC, Vol ${systemRegistry.masterVolume}%)`,
       );
       return;
@@ -3009,6 +3035,10 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         SETTINGS: 'controlPanel',
         REGEDIT: 'regedit',
         SYSMON: 'sysMonitor',
+        PERF: 'perfAdjust',
+        PERFLEVELS: 'perfAdjust',
+        RAM: 'perfAdjust',
+        FANS: 'perfAdjust',
         PAINT: 'paint',
         NOTES: 'notepad',
         AIM: 'gemini',
@@ -3579,9 +3609,9 @@ function startBootWithAudio() {
     biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOTING GEMINI 95...';
   }
 
-  const maxRamKb = systemRegistry.installedRamMB * 1024;
+  const maxRamKb = getEffectiveRamMB() * 1024;
   if (systemRegistry.biosQuickPost) {
-    if (biosRamCounter) biosRamCounter.textContent = `${maxRamKb}K OK (QUICK POST)`;
+    if (biosRamCounter) biosRamCounter.textContent = `${maxRamKb}K OK (QUICK POST · ${systemRegistry.ramMode.toUpperCase()})`;
   } else {
     let ram = Math.min(16384, maxRamKb);
     const stepInc = Math.max(8192, Math.floor(maxRamKb / 4));
@@ -4132,6 +4162,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
   { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
   { label: '🗂️ REGEDIT.EXE (Live Windows 95 Registry Editor)', kind: 'System Utility', action: () => openApp('regedit') },
+  { label: '🎛️ Performance & Adjustment Levels (Auto RAM/CPU/GPU/Fans/Temps)', kind: 'Hardware Control', action: () => openApp('perfAdjust') },
   { label: '📊 System Resource Monitor (SYSMON.EXE)', kind: 'System Utility', action: () => openApp('sysMonitor') },
   { label: '🌐 Google Chrome / Multi-Engine Browser (Chrome · Netscape · IE 3.0)', kind: 'Application', action: () => openApp('chrome') },
   { label: '💻 My Gemtop (C:\\ & D:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },

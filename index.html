@@ -196,14 +196,55 @@
                 <button id="cmos-turbo-btn" class="cmos-toggle-btn">ENABLED</button>
               </div>
               <div class="cmos-row">
-                <span>Installed EDO DRAM Bank</span>
+                <span>RAM Allocation Mode</span>
+                <select id="cmos-ram-mode-select" class="cmos-select">
+                  <option value="auto">Auto-Detect Host PC RAM</option>
+                  <option value="limited">Limited Pool Cap (16–4096 MB)</option>
+                  <option value="custom">Custom Manual Size (MB)</option>
+                </select>
+              </div>
+              <div class="cmos-row">
+                <span>Installed / Limited DRAM</span>
                 <select id="cmos-ram-select" class="cmos-select">
                   <option value="16">16 MB SIMM (16384K)</option>
                   <option value="32">32 MB SIMM (32768K)</option>
                   <option value="64">64 MB EDO (65536K)</option>
                   <option value="128">128 MB SDRAM (131072K)</option>
                   <option value="256">256 MB Workstation</option>
+                  <option value="512">512 MB Extended</option>
+                  <option value="1024">1,024 MB (1 GB)</option>
+                  <option value="2048">2,048 MB (2 GB)</option>
+                  <option value="4096">4,096 MB (4 GB)</option>
                 </select>
+              </div>
+              <div class="cmos-row">
+                <span>Custom RAM Size (MB)</span>
+                <input id="cmos-ram-custom-input" class="cmos-select" type="number" min="16" max="65536" step="16" value="4096" />
+              </div>
+              <div class="cmos-row">
+                <span>Performance Level</span>
+                <select id="cmos-perf-select" class="cmos-select">
+                  <option value="eco">Eco (70% Clock / Silent)</option>
+                  <option value="balanced">Balanced (100% Auto)</option>
+                  <option value="performance">Performance (135% Boost)</option>
+                  <option value="turbo">Turbo Overclock (185%)</option>
+                  <option value="custom">Custom Adjustment Level</option>
+                </select>
+              </div>
+              <div class="cmos-row">
+                <span>Cooling Fan Curve</span>
+                <select id="cmos-fan-select" class="cmos-select">
+                  <option value="auto">Smart Auto Curve</option>
+                  <option value="silent">Silent (28% PWM)</option>
+                  <option value="balanced">Balanced (54% PWM)</option>
+                  <option value="turbo">Turbo Full Blast (100%)</option>
+                  <option value="manual">Manual PWM Target</option>
+                  <option value="off">FANS OFF (0 RPM Passive)</option>
+                </select>
+              </div>
+              <div class="cmos-row cmos-sensors-live-row">
+                <span id="cmos-panel-sensors">CPU --°C · Fans -- RPM · RAM -- MB</span>
+                <button type="button" id="cmos-open-perf-btn" class="cmos-toggle-btn">🎛️ Perf &amp; Levels</button>
               </div>
               <div class="cmos-row">
                 <span>Quick Power On Self Test</span>
@@ -682,6 +723,14 @@
             alt="Doom II"
           />
           <span>Doom II</span>
+        </div>
+        <div class="icon" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">
+          <img
+            data-icon-key="perfAdjust"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Performance & Adjustment Levels"
+          />
+          <span>Perf &amp; Levels</span>
         </div>
         <div class="icon" data-app="sysMonitor" data-pkg-id="sys_monitor" style="display: none">
           <img
@@ -1400,6 +1449,21 @@
         </div>
       </div>
 
+      <!-- 14B. PERFORMANCE & ADJUSTMENT LEVELS (PERFLEVELS.EXE) -->
+      <div class="window resizable" id="perfAdjust" style="width: 860px; height: 660px">
+        <div class="window-titlebar">
+          <span class="window-title">🎛️ Performance &amp; Adjustment Levels — Hardware Auto-Detect &amp; Cooling</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content perf-window-body">
+          <div id="perf-adjust-body" class="perf-adjust-body"></div>
+        </div>
+      </div>
+
       <!-- 15. SCIENTIFIC & PROGRAMMER CALCULATOR 95 (CALC.EXE) -->
       <div class="window resizable" id="calcApp" style="width: 470px; height: 420px">
         <div class="window-titlebar">
@@ -1801,6 +1865,10 @@
               <img data-icon-key="controlPanel" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Settings" />
               <span>Settings</span>
             </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">
+              <img data-icon-key="perfAdjust" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Perf &amp; Levels" />
+              <span>Perf &amp; Levels</span>
+            </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="abilityToInstall">
               <img data-icon-key="abilityToInstall" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="App Installer" />
               <span>Installer</span>
@@ -1913,6 +1981,7 @@
             <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt (COMMAND.COM)</div>
             <div class="start-menu-item" data-app="taskManager">⚡ Task Manager (TASKMGR.EXE)</div>
             <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT.EXE)</div>
+            <div class="start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">🎛️ Performance &amp; Adjustment Levels</div>
             <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
             <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
             <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
