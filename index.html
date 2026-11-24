@@ -34,8 +34,8 @@
         }
       }
     </script>
-    <script type="module" crossorigin src="/Angel-OS/assets/index-Dgt7Eon2.js"></script>
-    <link rel="stylesheet" crossorigin href="/Angel-OS/assets/index-CvnDfTsL.css">
+    <script type="module" crossorigin src="/Angel-OS/assets/index-aEf9ATow.js"></script>
+    <link rel="stylesheet" crossorigin href="/Angel-OS/assets/index-u3Kmq3kj.css">
   <link rel="manifest" href="/Angel-OS/manifest.webmanifest"></head>
   <body class="crt-enabled">
     <!-- Optional CRT Scanline Overlay -->
@@ -103,6 +103,66 @@
         </div>
       </div>
 
+      <!-- Stage 1.5: Windows-Style Boot Manager (OS & Partition Selector) -->
+      <div id="boot-manager-stage" class="boot-manager-stage" style="display: none">
+        <div class="bootmgr-card">
+          <div class="bootmgr-header">
+            <div class="bootmgr-title">Angel-OS Windows Boot Manager</div>
+            <div class="bootmgr-sub">Choose an operating system or tool to start · Account Mode: <b>Local Account Always</b></div>
+          </div>
+          <div class="bootmgr-list" id="bootmgr-list">
+            <button type="button" class="bootmgr-option selected" data-boot-choice="normal">
+              <div class="bootmgr-opt-icon">🪟</div>
+              <div class="bootmgr-opt-text">
+                <b>Angel-OS (Windows 11 + 10 Hybrid OS)</b>
+                <span id="bootmgr-normal-desc">On Volume C:\ (Partition 1) · Always Local Account Sign-In</span>
+              </div>
+              <span class="bootmgr-opt-tag">DEFAULT</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="safemode">
+              <div class="bootmgr-opt-icon">🛡️</div>
+              <div class="bootmgr-opt-text">
+                <b>Angel-OS Safe Mode &amp; Recovery Diagnostics</b>
+                <span>Minimal drivers · Inspect files, Registry &amp; Partition health</span>
+              </div>
+              <span class="bootmgr-opt-tag">SAFE</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="setup">
+              <div class="bootmgr-opt-icon">💿</div>
+              <div class="bootmgr-opt-text">
+                <b>Windows-Style OS Setup &amp; Partition Options (SETUP.EXE)</b>
+                <span>Choose disk partition (C: / D:), format, configure Bootloader &amp; create Local Account</span>
+              </div>
+              <span class="bootmgr-opt-tag">INSTALL</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="physical_booter">
+              <div class="bootmgr-opt-icon">💾</div>
+              <div class="bootmgr-opt-text">
+                <b>Physical Hardware Booter (.ISO / Raw USB .IMG / Linux &amp; Win Installers)</b>
+                <span>Create real hardware boot media for bare-metal PCs, USB drives, QEMU &amp; VirtualBox</span>
+              </div>
+              <span class="bootmgr-opt-tag">BARE METAL</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="cmos">
+              <div class="bootmgr-opt-icon">⚙️</div>
+              <div class="bootmgr-opt-text">
+                <b>Enter CMOS BIOS Setup (5,120+ Features) / MS-DOS FDISK</b>
+                <span>Hardware RAM/CPU/Fan curves &amp; MBR partition table setup</span>
+              </div>
+              <span class="bootmgr-opt-tag">BIOS</span>
+            </button>
+          </div>
+          <div class="bootmgr-footer">
+            <span id="bootmgr-countdown-txt" class="tabular-nums">Starting highlighted option in 5s...</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="bootmgr-pause-btn" class="boot-skip-btn">⏸ Pause Timer</button>
+              <button type="button" id="bootmgr-continue-btn" class="boot-power-btn">▶ Boot Highlighted OS ➔</button>
+              <button type="button" id="bootmgr-skip-btn" class="boot-skip-btn">Skip to Desktop</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Stage 2: Windows 11 + 10 Boot Splash Screen with Windows Icon -->
       <div id="boot-splash-stage" class="boot-splash-stage" style="display: none">
         <div class="splash-clouds-bg"></div>
@@ -136,6 +196,61 @@
         </div>
         <button id="splash-skip-btn" class="splash-skip-btn">Skip to Desktop ➔</button>
         <div class="splash-loading-bar"></div>
+      </div>
+    </div>
+
+    <!-- WINDOWS ALWAYS-LOCAL-ACCOUNT LOCK & SIGN-IN SCREEN -->
+    <div id="os-signin-screen" class="os-signin-screen" style="display: none">
+      <div class="signin-top-strip">
+        <span class="signin-local-badge">🔒 LOCAL ACCOUNT ALWAYS · OFFLINE OS PROFILE (NO CLOUD SIGN-IN REQUIRED)</span>
+        <span id="signin-lock-clock" class="signin-lock-clock tabular-nums">10:30 AM · 11/24/2026</span>
+      </div>
+
+      <div class="signin-center-box">
+        <div class="signin-avatar-circle" id="signin-avatar">🧑‍💻</div>
+        <div class="signin-username" id="signin-displayname">Michael</div>
+        <div class="signin-user-meta" id="signin-user-meta">Local Account · Administrator · C:\Users\Michael</div>
+
+        <div class="signin-form-box" id="signin-form-box">
+          <div class="signin-input-row">
+            <input
+              type="password"
+              id="signin-secret-input"
+              class="signin-secret-input"
+              placeholder="Optional Password / PIN (leave blank for instant sign in)"
+              autocomplete="off"
+            />
+            <button type="button" id="signin-submit-btn" class="signin-submit-btn" title="Sign in">➔</button>
+          </div>
+          <div id="signin-auth-hint" class="signin-auth-hint">Local password not required — click ➔ or press Enter to sign in</div>
+          <div id="signin-error-msg" class="signin-error-msg" style="display: none">Incorrect local password or PIN. Try again.</div>
+
+          <div class="signin-actions-row">
+            <button type="button" id="signin-new-acct-btn" class="signin-link-btn">+ New Local Account</button>
+            <button type="button" id="signin-quick-desk-btn" class="signin-link-btn">Sign in immediately ➔</button>
+          </div>
+
+          <div id="signin-create-panel" class="signin-create-panel" style="display: none">
+            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.78rem">Create Always-Local Account (Stored in C:\Users\)</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap">
+              <input type="text" id="signin-create-name" class="win95-input" placeholder="Username (e.g. Alex)" style="flex: 1; min-width: 120px" />
+              <input type="password" id="signin-create-pin" class="win95-input" placeholder="Optional PIN (blank = no PIN)" style="width: 150px" />
+              <button type="button" id="signin-create-save-btn" class="win95-btn"><b>Create Local User</b></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="signin-bottom-bar">
+        <div class="signin-accounts-list" id="signin-accounts-list">
+          <!-- Populated with local accounts -->
+        </div>
+        <div class="signin-power-tools">
+          <button type="button" class="signin-tool-btn" id="signin-open-booter-btn">💾 Physical Booter</button>
+          <button type="button" class="signin-tool-btn" id="signin-open-setup-btn">💿 Partition Setup</button>
+          <button type="button" class="signin-tool-btn" id="signin-open-bootmgr-btn">🪟 Boot Manager</button>
+          <button type="button" class="signin-tool-btn" id="signin-reboot-bios-btn">🔄 BIOS / Restart</button>
+        </div>
       </div>
     </div>
 
@@ -330,39 +445,85 @@
     <div id="os-reinstall-screen" class="os-reinstall-screen" style="display: none">
       <div class="os-setup-top-banner">Gemini 95 Operating System Setup (SETUP.EXE)</div>
       <div class="os-setup-center-dialog" id="os-setup-step-select">
-        <div class="os-setup-dialog-title">Welcome to Gemini 95 Setup &amp; Recovery</div>
+        <div class="os-setup-dialog-title">Angel-OS Setup &amp; Recovery — Partition &amp; Local Account Options</div>
         <p class="os-setup-lead">
-          Setup will reinstall or repair the Gemini 95 Operating System on drive <b>C:\ (QUANTUM FIREBALL 1995MB)</b>. Choose your installation mode and bundled Web Browser below:
+          Select how to install Angel-OS, pick your target disk partition, and configure your offline <b>Local Account Always</b> profile:
         </p>
         <div class="os-setup-options">
           <label class="os-setup-radio-card">
             <input type="radio" name="os-setup-mode" value="repair" checked />
             <div>
-              <b>1. Express In-Place Repair Install (Recommended)</b>
-              <span>Verifies system `.CAB` files, reinstalls missing core applications &amp; browser engines, and preserves your saved notes/art in <code>C:\Documents</code> &amp; <code>C:\Pictures</code>.</span>
+              <b>1. Express In-Place Upgrade / Repair Install (Recommended)</b>
+              <span>Preserves your files in <code>C:\Users\</code>, <code>C:\Documents</code> &amp; <code>C:\Pictures</code> while updating system binaries and browsers.</span>
             </div>
           </label>
           <label class="os-setup-radio-card">
             <input type="radio" name="os-setup-mode" value="clean" />
             <div>
-              <b>2. Clean Format C:\ &amp; Factory OS Reinstall</b>
-              <span>Formats partition <code>C:\</code>, resets all Master Settings &amp; Registry keys (`HKEY_*`) to 1995 factory defaults, and performs a fresh OS installation from CD-ROM.</span>
+              <b>2. Custom Clean Install onto Selected Partition</b>
+              <span>Formats the selected partition cleanly, writes fresh MBR/Boot Manager records, and resets Registry keys (<code>HKEY_*</code>).</span>
             </div>
           </label>
         </div>
-        <div class="os-setup-browser-pick">
-          <label for="os-setup-browser-select"><b>Bundle Default Web Browser Engine During OS Setup:</b></label>
-          <select id="os-setup-browser-select" class="win95-select">
-            <option value="chrome" selected>🟢 Google Chrome (Default Desktop Engine)</option>
-            <option value="netscape">🌐 Netscape Navigator 95 Gold (v3.04)</option>
-            <option value="ie3">📘 Microsoft Internet Explorer 3.0 (Plus! 95)</option>
-            <option value="all">💿 Install All 3 Browser Engines Together</option>
-          </select>
+
+        <div class="os-setup-part-panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <b>Where do you want to install Angel-OS? (Partition Options)</b>
+            <span id="os-setup-selected-part-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:#000080;">Selected: Partition 1 (C:\)</span>
+          </div>
+          <table class="os-setup-part-table tabular-nums">
+            <thead>
+              <tr>
+                <th>Partition</th>
+                <th>Status</th>
+                <th>Size / FS</th>
+                <th>Install Target</th>
+              </tr>
+            </thead>
+            <tbody id="os-setup-partitions-tbody"></tbody>
+          </table>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <button type="button" id="os-setup-part-new-btn" class="win95-btn">+ Ensure C: &amp; D: Dual Partitions</button>
+            <button type="button" id="os-setup-part-fmt-btn" class="win95-btn">⚡ Format Selected Partition</button>
+            <button type="button" id="os-setup-part-active-btn" class="win95-btn">✓ Set Primary Active (0x80)</button>
+            <select id="os-setup-fs-select" class="win95-select" title="Partition File System">
+              <option value="FAT32">FAT32 (Modern Large Volume)</option>
+              <option value="FAT16">FAT16 (1995 Classic)</option>
+            </select>
+            <select id="os-setup-bootloader-select" class="win95-select" title="Bootloader Option">
+              <option value="win_hybrid_mbr">Windows Boot Manager + Local Sign-In</option>
+              <option value="legacy_95_mbr">Classic Award 95 Direct Boot</option>
+            </select>
+          </div>
         </div>
-        <div class="os-setup-btn-row">
-          <button id="os-setup-fdisk-btn" class="win95-btn">🔧 Partition Disk (FDISK.EXE)</button>
-          <button id="os-setup-begin-btn" class="win95-btn"><b>▶ Begin OS Installation ➔</b></button>
-          <button id="os-setup-cancel-btn" class="win95-btn">Cancel &amp; Return to Desktop</button>
+
+        <div class="os-setup-acct-grid">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="os-setup-username"><b>Local Account Username (Always Local):</b></label>
+            <input type="text" id="os-setup-username" class="win95-input" value="Michael" placeholder="e.g. Michael" />
+            <span style="font-size:0.68rem;color:#1e293b;">🔒 Local Account Always — no online cloud sign-in needed.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="os-setup-pin"><b>Optional Local PIN / Password:</b></label>
+            <input type="password" id="os-setup-pin" class="win95-input" value="" placeholder="Leave blank for 1-click Local Sign-In" />
+            <select id="os-setup-browser-select" class="win95-select" style="margin-top:2px;">
+              <option value="chrome" selected>🟢 Bundle Google Chrome (Default)</option>
+              <option value="netscape">🌐 Netscape Navigator 95 Gold</option>
+              <option value="ie3">📘 Microsoft Internet Explorer 3.0</option>
+              <option value="all">💿 Bundle All 3 Browsers</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="os-setup-btn-row" style="justify-content:space-between;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" id="os-setup-fdisk-btn" class="win95-btn">🔧 Full FDISK.EXE</button>
+            <button type="button" id="os-setup-physical-btn" class="win95-btn" style="background:#e0f2fe;font-weight:700;">💾 Physical Hardware Booter (.ISO / USB .IMG)</button>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button type="button" id="os-setup-begin-btn" class="win95-btn"><b>▶ Install Angel-OS Now ➔</b></button>
+            <button type="button" id="os-setup-cancel-btn" class="win95-btn">Cancel</button>
+          </div>
         </div>
       </div>
 
@@ -600,6 +761,57 @@
           <div class="sfx-exe-footer">
             <button class="win95-btn" id="pwa-modal-portable-btn">💻 Download Portable App (.HTML) Now</button>
             <button class="win95-btn" id="pwa-ios-ok-btn"><b>OK</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHYSICAL HARDWARE BOOTER & BARE-METAL OS MEDIA BUILDER MODAL -->
+    <div id="physical-booter-modal" class="installshield-backdrop" style="display: none">
+      <div class="sfx-exe-window" style="width: 780px; max-width: 96vw">
+        <div class="window-titlebar">
+          <span class="window-title">💾 Angel-OS Physical Hardware Booter &amp; Real OS Installer</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="phys-booter-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="sfx-exe-body" style="max-height: 82vh; overflow-y: auto">
+          <div style="background:#000080;color:#fff;padding:7px 10px;font-weight:700;font-size:0.8rem;margin-bottom:8px;">
+            Real Bare-Metal Boot Images, USB/MBR Partition Writer &amp; Host OS Kiosk Installers (Local Account Always)
+          </div>
+          <div id="phys-booter-live-summary" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:#dfdfdf;border:1px inset #808080;padding:6px 8px;margin-bottom:8px;">
+            Target Partition: C: · Account Policy: Local Account Always
+          </div>
+          <div class="phys-booter-grid">
+            <div style="background:#d4d0c8;border:2px groove #fff;padding:9px;">
+              <b style="color:#000080;">1. Raw Hardware Bootable Images (x86 / BIOS)</b>
+              <p style="font-size:0.72rem;margin:4px 0 8px;">Assembled 16-bit x86 real-mode interactive bootloader (<code>0x7C00</code>) + real 64-byte MBR Partition Table &amp; El Torito CD Catalog:</p>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <button type="button" class="win95-btn" id="phys-booter-dl-iso" style="background:#e0f2fe;font-weight:700;">💿 Download Interactive Bootable .ISO (El Torito x86)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-usb" style="background:#ffffcc;font-weight:700;">🔌 Download Partitioned USB / HDD Disk .IMG (MBR 0x55AA)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-py">🐍 Download Python USB/ISO Builder (.PY)</button>
+              </div>
+            </div>
+            <div style="background:#d4d0c8;border:2px groove #fff;padding:9px;">
+              <b style="color:#000080;">2. Install Directly on Real Linux / Windows PCs</b>
+              <p style="font-size:0.72rem;margin:4px 0 8px;">Configures <code>/opt/angel-os</code> or <code>C:\Angel-OS</code> with offline <b>Local Account Always</b> &amp; fullscreen boot launcher:</p>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <button type="button" class="win95-btn" id="phys-booter-dl-linux" style="background:#dcfce7;font-weight:700;">🐧 Linux Bare-Metal &amp; GRUB2 Installer (.SH)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-win" style="background:#e0e7ff;font-weight:700;">🪟 Windows Partition &amp; Local Shell Installer (.PS1)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-pwa">📲 Install Standalone PWA App</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-html">🌐 Portable Desktop Container (.HTML)</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <b style="font-size:0.73rem;">Hardware Flash &amp; VM Boot Commands:</b>
+            <pre class="phys-booter-cmd">Boot ISO in VM  : qemu-system-x86_64 -cdrom ANGELOS_BOOT_BOOTCD.ISO
+Boot USB in VM  : qemu-system-x86_64 -hda ANGELOS_USB_DISK.img
+Write USB Linux : sudo dd if=ANGELOS_USB_DISK.img of=/dev/sdX bs=4M status=progress conv=fsync
+Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtcher on Windows)</pre>
+          </div>
+          <div class="sfx-exe-footer" style="margin-top:8px;">
+            <button type="button" class="win95-btn" id="phys-booter-ok-btn"><b>Close</b></button>
           </div>
         </div>
       </div>
@@ -2003,7 +2215,8 @@
             <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
             <div class="start-menu-item" id="start-run-dialog">🏃 Run... (Alt+R)</div>
             <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
-            <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
+            <div class="start-menu-item" id="start-physical-booter">💾 Physical Hardware Booter...</div>
+            <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS &amp; Partition Setup...</div>
             <div class="start-menu-item" id="start-pwa-install">📲 Install as Physical OS (PWA)...</div>
             <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
             <div class="start-menu-item" id="start-hotkeys-btn">⌨️ Keyboard Shortcuts &amp; Secrets</div>
@@ -2014,19 +2227,20 @@
 
         <!-- Bottom Windows 11 Profile & Power Footer -->
         <div class="start-footer-bar">
-          <div class="start-user-pill">
+          <div class="start-user-pill clickable-acct" id="start-user-pill-btn" title="Always Local Account — Click to Switch User or Lock Screen">
             <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" class="start-user-win-icon" />
-            <span>Angel-OS · Win11+10</span>
+            <span id="start-user-label">Michael · Local Account</span>
           </div>
           <div class="start-power-wrap">
             <button type="button" class="start-power-btn" id="start-power-btn" title="Power, BIOS &amp; Restart Options">
               ⏻
             </button>
             <div class="start-power-menu" id="start-power-menu" style="display: none">
+              <div class="start-power-item" id="start-lock-signin">🔒 Lock / Switch Local Account</div>
               <div class="start-power-item" id="start-open-bios-menu">⚙️ Enter CMOS BIOS (5,120+ Features)</div>
-              <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Enter BIOS POST</div>
+              <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Boot Manager</div>
               <div class="start-power-item" id="start-sleep-saver">🌙 Sleep (Screensaver)</div>
-              <div class="start-power-item" id="start-power-reinstall">💿 Reinstall OS (SETUP.EXE)</div>
+              <div class="start-power-item" id="start-power-reinstall">💿 Partition Setup (SETUP.EXE)</div>
             </div>
           </div>
         </div>
