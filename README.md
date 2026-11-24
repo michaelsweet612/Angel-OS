@@ -4,7 +4,7 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Latest Release (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.1.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, and the Google Gemini API.
 
@@ -17,7 +17,7 @@ Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, and the Googl
 ## Download & Play Locally
 
 1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)**.
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **`Angel-OS-v1.1.0-portable-web.zip`** from the **[GitHub Releases page](https://github.com/michaelsweet612/Angel-OS/releases)**, unzip it, and run `npx serve .` or `python3 -m http.server 3000` in that folder to run Angel-OS locally.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.1.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.1.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run Angel-OS locally for personal use.
 3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
