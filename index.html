@@ -34,8 +34,8 @@
         }
       }
     </script>
-    <script type="module" crossorigin src="/Angel-OS/assets/index-Ch2lsgDA.js"></script>
-    <link rel="stylesheet" crossorigin href="/Angel-OS/assets/index-GrXUe1V8.css">
+    <script type="module" crossorigin src="/Angel-OS/assets/index-BQ9rf9eP.js"></script>
+    <link rel="stylesheet" crossorigin href="/Angel-OS/assets/index-Czji24RA.css">
   <link rel="manifest" href="/Angel-OS/manifest.webmanifest"></head>
   <body class="crt-enabled">
     <!-- Optional CRT Scanline Overlay -->
@@ -1058,6 +1058,14 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="icon" data-app="recycleBin">
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #334155, #94a3b8)">🗑️</div>
           <span>Recycle Bin</span>
+        </div>
+        <div class="icon" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">
+          <img
+            data-icon-key="javaCreatorApp"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Old Java Creator"
+          />
+          <span>Old Java Creator</span>
         </div>
       </div>
 
@@ -2190,6 +2198,105 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
       </div>
 
+      <!-- 25. OLD JAVA CREATOR 1995 + BILLY AI (OLDJAVA.EXE — INSTALLABLE VIA ABILITY TO INSTALL) -->
+      <div class="window resizable" id="javaCreatorApp" style="width: 868px; height: 585px">
+        <div class="window-titlebar">
+          <span class="window-title">☕ Old Java Creator 1995 — Powered by Billy AI (OLDJAVA.EXE)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content java-ide-shell">
+          <!-- Top 10-Interaction Progression Bar -->
+          <div class="billy-top-bar">
+            <div class="billy-progress-left">
+              <span class="billy-interaction-label" id="billy-interaction-label">Billy Interactions: 0 / 10</span>
+              <div class="billy-interaction-pips" id="billy-interaction-pips"></div>
+            </div>
+            <div class="billy-progress-right">
+              <span class="billy-errors-stat" id="billy-errors-stat">Bugs Created by Billy: 14</span>
+              <button type="button" class="win95-btn" id="billy-reset-btn" title="Reset Billy's 10-interaction counter">↻ Reset 0/10</button>
+            </div>
+          </div>
+
+          <!-- Hidden 10/10 Milestone Celebration Banner -->
+          <div class="billy-milestone-banner" id="billy-milestone-banner" style="display: none">
+            <span>🏆 10 / 10 CERTIFIED BILLY JAVA SURVIVOR! Trophy Unlocked &amp; ULTRA TRASH MODE (JDK -0.5) Ready!</span>
+            <span>☕ IQ -4 Master</span>
+          </div>
+
+          <!-- Main Split Workspace: Left Code IDE + Console | Right Billy AI Agent -->
+          <div class="java-split-body">
+            <div class="java-editor-pane">
+              <div class="java-editor-toolbar">
+                <span class="java-filename-tag" id="java-active-filename">HeloWroldMaybe.java</span>
+                <div class="java-toolbar-btns">
+                  <button type="button" class="win95-btn" id="java-compile-btn" style="background:#fef3c7;font-weight:700;">🔨 Compile (javac)</button>
+                  <button type="button" class="win95-btn" id="java-run-btn" style="background:#dcfce7;font-weight:700;">▶ Run (java)</button>
+                  <button type="button" class="win95-btn" id="java-billy-fix-btn" style="background:#fee2e2;color:#7f1d1d;font-weight:700;">🩹 Ask Billy to Fix</button>
+                  <button type="button" class="win95-btn" id="java-save-vfs-btn">💾 Save C:\</button>
+                  <button type="button" class="win95-btn" id="java-download-btn">⬇ .java</button>
+                </div>
+              </div>
+              <textarea
+                id="java-code-editor"
+                class="java-code-editor"
+                spellcheck="false"
+                aria-label="Old Java 1995 source code editor"
+              ></textarea>
+              <div class="java-console-hdr">
+                <span>📟 Trash JVM &amp; javac 0.01a Compiler Console</span>
+                <span>C:\JDK1995\BIN</span>
+              </div>
+              <pre id="java-console-out" class="java-console-out">C:\JDK1995\BIN&gt; Ready! Ask Billy AI to create Java from scratch (trash), then Compile or Run!</pre>
+            </div>
+
+            <div class="billy-agent-pane">
+              <div class="billy-card-hdr">
+                <div class="billy-avatar-face" id="billy-avatar-face">🤪</div>
+                <div class="billy-card-meta">
+                  <b>Billy AI — Certified Horrible Java Agent</b>
+                  <span>0% Coding Knowledge · 100% Confidence · Breaks Code On Purpose</span>
+                </div>
+                <button type="button" class="win95-btn" id="billy-poke-btn" title="Poke Billy for an interaction">👆 Poke</button>
+              </div>
+
+              <button type="button" class="win95-btn billy-ultra-btn" id="billy-ultra-trash-btn" disabled>
+                🔒 Ultra Trash Mode (Interact 10 more times)
+              </button>
+
+              <div class="billy-presets-row">
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="hello world">☕ Hello World</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="calculator">🧮 Calculator</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="3d game">🎮 3D Game</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="login security">🔐 Login</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="for loop sort array">🔁 For Loop</button>
+              </div>
+
+              <div class="billy-chat-log" id="billy-chat-log"></div>
+
+              <div class="billy-input-row">
+                <input
+                  type="text"
+                  id="billy-prompt-input"
+                  class="win95-input"
+                  placeholder="Ask Billy to make any Java app from trash..."
+                  autocomplete="off"
+                />
+                <button type="button" class="win95-btn" id="billy-send-btn" style="background:#fef08a;font-weight:700;">Ask Billy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="window-statusbar">
+            <span id="java-status-text">Ready — Interact with Billy 10 times to unlock Ultra Trash Mode (JDK -0.5)!</span>
+            <span>OLDJAVA.EXE · JDK 0.01 Trash Edition</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
         <div class="ctx-item" data-action="open-camera">📷 Open Camera App (CAMERA.EXE)</div>
@@ -2209,7 +2316,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
         <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
         <div class="ctx-divider"></div>
-        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (16 Secrets)</div>
+        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (18 Secrets)</div>
         <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
         <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
@@ -2311,6 +2418,10 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
               <img data-icon-key="minesweeper" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="GemSweeper" />
               <span>Sweeper</span>
             </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">
+              <img data-icon-key="javaCreatorApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Old Java Creator" />
+              <span>Old Java</span>
+            </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="trophiesApp">
               <img data-icon-key="trophiesApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Trophies" />
               <span>Trophies</span>
@@ -2373,6 +2484,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT.EXE)</div>
             <div class="start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">🎛️ Performance &amp; Adjustment Levels</div>
             <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
+            <div class="start-menu-item" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">☕ Old Java Creator 1995 (Billy AI · 10 Interactions)</div>
             <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
             <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
             <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
@@ -2386,7 +2498,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="arcadeApp">🕹️ Arcade 95 (Snake/Breakout/Blocks/Ski)</div>
             <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
             <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
-            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (16 Achievements)</div>
+            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (18 Achievements)</div>
             <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
             <div class="start-menu-divider"></div>
             <div class="start-menu-item" id="start-media-perms">🎤📷 Camera &amp; Mic Access Permissions...</div>
