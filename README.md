@@ -4,7 +4,7 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.6.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.7.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaDevices (Camera & Microphone), 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
 
@@ -17,7 +17,7 @@ Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaD
 ## Download & Play Locally
 
 1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)** (**AngelOS-web**).
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.6.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.6.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.7.0-portable-web.zip`](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.7.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
 3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
@@ -60,7 +60,7 @@ It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you c
 - **GemPaint 95**: 16-color pixel canvas with brush, airbrush spray, flood-fill bucket, shapes, eraser, 15-step undo, drawing prompts, PNG saving to `C:\Pictures`, and **Clippy / Robot AI Art Critic** multimodal canvas critiques.
 - **Gemini AIM (Instant Messenger)**: Chat with 1995 personas (`SmarterChild_95`, `ZeroCool_1337`, `Clippy_Pro`, `Win95_Guru`), trigger quick prompts, and save chat transcripts to GemNotes.
 - **GemSweeper Deluxe**: Classic Minesweeper (`9×9`, `12×12`, `14×16`) with chord-clicking, timer/flag counters, and AI tactical hints.
-- **GemPlayer 95**: 4-track 16-bit Web Audio FM Chiptune Synthesizer (`Canyon.mid`, `CyberWave 95`, `DOOM Boss Riff`, `Teal Desktop Dreams`) with a live spectrum visualizer and tempo control, plus **YouTube Retro CRT TV** playback.
+- **GemPlayer 95 (5,009-Track Mega Chiptune Jukebox & Retro TV)**: 4-channel Web Audio synthesizer (lead + celesta shimmer + harmony + bass + retro drums) with **9 hand-crafted Featured Themes** (*Mario Theme Music*, *Legend of Z Intro*, *Hello Neighbor Chase Music*, *Big Boy Jim Boss Battle Music*, *Harry Potter Theme Music*, *Canyon.mid*, *CyberWave 95*, *DOOM Boss Riff*, *Teal Desktop Dreams*) plus a searchable, paginated **5,000-track Random Music Library** (`#0001`–`#5000`, each with a unique procedural name, key, BPM, genre, and melody), **`🎲 Random (1–5000)`**, **`🔦 Random Chase Mix`** (random surprise jumps including Hello Neighbor Chase / Big Boy Jim Boss ambushes), **Auto-Shuffle**, dynamic spectrum visualizer, live BPM/volume sliders, and **YouTube Retro CRT TV** playback.
 - **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `JAVA`, `OLDJAVA`, `JAVAC`, `BILLY`, `CAMERA`, `WEBCAM`, `MIC`, `PERMISSIONS`, `FDISK`, `ISO`, `USBBOOT`, `BOOTER`, `SIGNIN`, `LOCK`, `SWITCHUSER`, `INSTALL`, `SETUP`, `PERF`, `PERFLEVELS`, `RAM`, `FANS`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
 - **DOOM II**: Protected-mode MS-DOS DOOM II embed (`js-dos`).
 - **Master System Settings & Control Panel (`CONTROL.EXE`)**: 8-tab configuration suite covering **Display & CRT**, **Windows & Fonts**, **Taskbar & Snap**, **Sound DSP**, **Browser & Modem**, **CPU, RAM & Power**, **Boot, Accounts, Install & Physical Booter**, and **Registry & BIOS**—including 7 built-in themes (*Standard Teal*, *Hot Dog Stand*, *Cyberpunk*, *Vaporwave*, *Matrix*, *Win 3.1*, *High Contrast*), custom hex palettes, CRT scanline/calibration sliders, idle screensavers (*3D Starfield* / *Matrix*), and `.REG` JSON import/export.
@@ -141,6 +141,7 @@ Angel-OS/
 ├── osPhysicalBooter.ts # Windows Boot Manager helper, Always-Local Sign-In, Partition Setup & Booter modal
 ├── osMediaDevices.ts   # Real Camera & Microphone permission manager, Camera App (CAMERA.EXE) & live mic capture
 ├── osOldJavaCreator.ts # Old Java Creator 1995 IDE, clueless Billy AI agent, 10-interaction arc & Trash JVM
+├── osGemPlayerLibrary.ts # GemPlayer 95 Mega Jukebox (9 featured themes + 5,000 unique procedural random tracks)
 ├── osExtendedApps.ts   # Multi-engine browser, InstallShield 95, 8-tab Control Panel, REGEDIT, SYSMON & BIOS
 ├── osDualInstall.ts    # .EXE SFX runner, Tucows depot, FDISK, ISO-9660/El Torito & Raw USB .IMG builders
 ├── osMegaFeatures.ts   # Classic Win95 accessories, Arcade games, Run dialog & MegaBridge shell API
