@@ -1430,9 +1430,14 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
         tab.url = res.finalUrl || url;
         tab.title = (res.title || domain).slice(0, 26);
         tab.cachedHtml = res.html;
-        tab.embedUrl = undefined;
-        iframe.removeAttribute('src');
-        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(res.html) : res.html;
+        tab.embedUrl = res.embedUrl;
+        if (res.embedUrl) {
+          iframe.removeAttribute('srcdoc');
+          iframe.src = res.embedUrl;
+        } else {
+          iframe.removeAttribute('src');
+          iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(res.html) : res.html;
+        }
         if (pushHistory && tab.history[tab.historyIdx] !== tab.url) {
           tab.history[tab.historyIdx] = tab.url;
         }

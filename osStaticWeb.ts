@@ -23,6 +23,8 @@ export interface StaticWebResult {
   title: string;
   via: string;
   error?: string;
+  /** When set, the page is shown by pointing the iframe at this frameable URL. */
+  embedUrl?: string;
 }
 
 const FETCH_TIMEOUT_MS = 9000;
@@ -333,6 +335,28 @@ export async function fetchLivePageClientSide(url: string, onProgress?: (msg: st
     errors.push(`Reader View: HTTP ${resp.status}`);
   } catch (e: any) {
     errors.push(`Reader View: ${e?.name === 'AbortError' ? 'timeout' : e?.message || 'failed'}`);
+  }
+
+  // 5. Internet Archive Wayback Machine snapshot (availability API is CORS-enabled; snapshots allow framing)
+  try {
+    onProgress?.('Looking up Internet Archive snapshot…');
+    const resp = await timedFetch(`https://archive.org/wayback/available?url=${encodeURIComponent(url)}`);
+    const data = resp.ok ? await resp.json() : null;
+    const snap = data?.archived_snapshots?.closest;
+    if (snap?.available && snap.timestamp) {
+      const embedUrl = `https://web.archive.org/web/${snap.timestamp}/${url}`;
+      return {
+        ok: true,
+        html: `<!DOCTYPE html><html><body style="margin:0;"><iframe src="${esc(embedUrl)}" style="width:100%;height:100vh;border:0;"></iframe></body></html>`,
+        finalUrl: url,
+        title: `${parsed.hostname} (Archive)`,
+        via: `Internet Archive snapshot ${snap.timestamp}`,
+        embedUrl,
+      };
+    }
+    errors.push('Wayback: no snapshot');
+  } catch (e: any) {
+    errors.push(`Wayback: ${e?.name === 'AbortError' ? 'timeout' : e?.message || 'failed'}`);
   }
 
   return { ok: false, html: '', finalUrl: url, title: url, via: 'none', error: errors.join(' · ') || 'All static Live Web routes failed' };
