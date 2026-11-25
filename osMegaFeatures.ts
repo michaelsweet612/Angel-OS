@@ -186,6 +186,7 @@ const TROPHY_CATALOG: TrophyDef[] = [
   { id: 'bios_tinkerer', icon: '⚙️', title: 'Silicon Whisperer', desc: 'Activated advanced firmware registers inside CMOS BIOS Setup.', points: 25 },
   { id: 'billy_java_10', icon: '☕', title: '10 Rounds with Billy', desc: 'Interacted 10 times with Billy AI in Old Java Creator 1995 and unlocked Ultra Trash Mode.', points: 30 },
   { id: 'gemplayer_dj_5000', icon: '🎹', title: '5,000-Track DJ', desc: 'Spun themes and random selections inside GemPlayer 95 Mega Jukebox.', points: 20 },
+  { id: 'hockey_cards_obliterate', icon: '🏒', title: 'McGee Card Obliterator', desc: 'Obliterated a goofy non-4K hockey card in Hockey Cards 95 (McGee & Obliterate Edition).', points: 25 },
 ];
 
 const TROPHY_LS_KEY = 'gemini95_trophies_v1';
@@ -2384,6 +2385,11 @@ export function executeRunCommand(raw: string): boolean {
     oldjava: 'javaCreatorApp',
     javac: 'javaCreatorApp',
     billy: 'javaCreatorApp',
+    hockey: 'hockeyCardsApp',
+    hockeycards: 'hockeyCardsApp',
+    mcgee: 'hockeyCardsApp',
+    obliterate: 'hockeyCardsApp',
+    cards: 'hockeyCardsApp',
   };
 
   if (map[cmd]) {
@@ -2405,7 +2411,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try oldjava, billy, camera, mic, chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try hockey, mcgee, oldjava, billy, camera, mic, chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 

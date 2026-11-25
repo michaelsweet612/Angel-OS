@@ -59,6 +59,7 @@ import {
   RANDOM_MUSIC_GENRES,
   SynthTrack,
 } from './osGemPlayerLibrary';
+import { initHockeyCardsApp, registerHockeyCardsBridge } from './osHockeyCards';
 import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
@@ -850,6 +851,7 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     clipViewer: 'Clipboard 95',
     trophiesApp: 'Trophy Vault',
     javaCreatorApp: 'Old Java Creator',
+    hockeyCardsApp: 'Hockey Cards 95',
   };
   return {
     icon: APP_SVG_ICONS[appName] || APP_SVG_ICONS.appExe,

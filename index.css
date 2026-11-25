@@ -8632,3 +8632,242 @@ body.bios-rgb-trim .window.active-window {
   text-overflow: ellipsis;
   min-width: 0;
 }
+
+/* ==================== HOCKEY CARDS 95 (MCGEE & OBLITERATE EDITION) ==================== */
+.hockey-app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #c0c0c0;
+  color: #000000;
+  gap: 5px;
+  padding: 5px;
+  overflow: hidden;
+  font-size: 0.74rem;
+}
+
+.hockey-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  background: linear-gradient(90deg, #0f172a, #1e3a8a 60%, #7f1d1d);
+  padding: 5px 7px;
+  border: 2px inset #808080;
+  flex-shrink: 0;
+}
+
+.hockey-action-bar .win95-btn {
+  font-size: 0.69rem;
+  padding: 3px 7px;
+}
+
+.hockey-split-body {
+  display: grid;
+  grid-template-columns: 344px 1fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hockey-left-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.hockey-card-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+  border: 2px inset #808080;
+  flex-shrink: 0;
+}
+
+#hockey-card-canvas {
+  display: block;
+  width: 288px;
+  height: 378px;
+  image-rendering: pixelated;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+@keyframes obliterateShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-7px, 4px) rotate(-2deg); }
+  40% { transform: translate(7px, -5px) rotate(2.5deg); }
+  60% { transform: translate(-5px, -3px) rotate(-1.5deg); }
+  80% { transform: translate(5px, 4px) rotate(1.5deg); }
+}
+
+.hockey-card-stage.obliterate-shake {
+  animation: obliterateShake 0.42s ease-in-out;
+}
+
+.hockey-scouting-box {
+  width: 100%;
+  background: #ffffff;
+  border: 2px inset #808080;
+  padding: 5px 7px;
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.hockey-scout-title {
+  font-weight: 700;
+  color: #000080;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.hockey-rarity-pill {
+  background: #0f172a;
+  color: #fde047;
+  padding: 1px 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+}
+
+.hockey-scout-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.63rem;
+  color: #334155;
+  margin-bottom: 3px;
+}
+
+.hockey-scout-note {
+  color: #1e293b;
+  font-style: italic;
+}
+
+.hockey-binder-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 6px;
+}
+
+.hockey-binder-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #000080;
+  color: #ffff55;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.hockey-binder-controls {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.hockey-binder-controls input {
+  flex: 1;
+  min-width: 0;
+}
+
+.hockey-binder-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #0b1120;
+  border: 2px inset #808080;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  align-content: start;
+}
+
+.hockey-mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 7px;
+  background: #1e293b;
+  color: #f8fafc;
+  border: 2px outset #475569;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hockey-mini-card:hover {
+  background: #334155;
+  border-color: #38bdf8;
+}
+
+.hockey-mini-card.active {
+  background: #1d4ed8;
+  border-color: #facc15;
+  color: #fef08a;
+}
+
+.hockey-mini-card.is-obliterated {
+  background: #450a0a;
+  border-color: #ef4444;
+  color: #fecaca;
+}
+
+.hockey-mini-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: #38bdf8;
+}
+
+.hockey-mini-name {
+  font-weight: 700;
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hockey-mini-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: #cbd5e1;
+}
+
+.hockey-empty-binder {
+  grid-column: 1 / -1;
+  color: #94a3b8;
+  text-align: center;
+  padding: 16px;
+}
+
+.hockey-app-shell .window-statusbar {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.hockey-app-shell .window-statusbar span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
