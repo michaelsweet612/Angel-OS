@@ -34,8 +34,8 @@
         }
       }
     </script>
-    <script type="module" crossorigin src="/Angel-OS/assets/index-DReuvbP4.js"></script>
-    <link rel="stylesheet" crossorigin href="/Angel-OS/assets/index-u3Kmq3kj.css">
+    <script type="module" crossorigin src="/Angel-OS/assets/index-Ch2lsgDA.js"></script>
+    <link rel="stylesheet" crossorigin href="/Angel-OS/assets/index-GrXUe1V8.css">
   <link rel="manifest" href="/Angel-OS/manifest.webmanifest"></head>
   <body class="crt-enabled">
     <!-- Optional CRT Scanline Overlay -->
@@ -295,6 +295,22 @@
             </div>
           </div>
 
+          <!-- Bulk Select, Activate & Deactivate Controls -->
+          <div class="cmos-bulk-bar">
+            <div class="cmos-bulk-group">
+              <span id="cmos-selected-counter" class="cmos-sel-counter tabular-nums">0 selected</span>
+              <button type="button" id="cmos-select-filtered-btn" class="cmos-mini-btn" title="Select all registers in current category/search">☑ Select View</button>
+              <button type="button" id="cmos-select-all-5120-btn" class="cmos-mini-btn" title="Select all 5,120 BIOS registers">☑ Select All 5,120</button>
+              <button type="button" id="cmos-clear-selection-btn" class="cmos-mini-btn" title="Clear current selection">☐ Clear</button>
+              <button type="button" id="cmos-activate-selected-btn" class="cmos-mini-btn cmos-bulk-activate" disabled title="Activate all selected registers">⚡ Activate Selected</button>
+              <button type="button" id="cmos-deactivate-selected-btn" class="cmos-mini-btn cmos-bulk-deactivate" disabled title="Deactivate all selected registers">⊘ Deactivate Selected</button>
+            </div>
+            <div class="cmos-bulk-group">
+              <button type="button" id="cmos-activate-all-btn" class="cmos-mini-btn cmos-bulk-all-on" title="Activate all 5,120 BIOS features at once">⚡⚡ Activate ALL 5,120</button>
+              <button type="button" id="cmos-deactivate-all-btn" class="cmos-mini-btn cmos-bulk-all-off" title="Deactivate all 5,120 BIOS features back to dormant">↺ Deactivate ALL</button>
+            </div>
+          </div>
+
           <!-- Standard 9 Classic Hardware Controls (Shown on Main Category) -->
           <div id="cmos-standard-panel" class="cmos-standard-panel">
             <div class="cmos-std-col">
@@ -405,6 +421,7 @@
             <table class="cmos-features-table">
               <thead>
                 <tr>
+                  <th style="width: 32px; text-align: center"><input type="checkbox" id="cmos-select-page-chk" title="Select/Deselect All on Page" /></th>
                   <th>Reg / ID</th>
                   <th>Advanced BIOS Feature</th>
                   <th>Subsystem</th>
@@ -427,7 +444,7 @@
           </div>
 
           <div id="cmos-item-help-box" class="cmos-help-box">
-            <b>ITEM HELP:</b> Select any of the 5,120 advanced firmware registers above to inspect its documentation. Nothing is activated unless you enable it here!
+            <b>ITEM HELP:</b> Select any of the 5,120 advanced firmware registers above to inspect its documentation. Use checkboxes to select &amp; activate/deactivate batches, or click "Activate ALL 5,120"!
           </div>
         </div>
       </div>
@@ -435,8 +452,9 @@
       <div class="cmos-footer-actions">
         <button id="cmos-save-exit-btn" class="cmos-action-btn primary">F10: Save to CMOS &amp; Reboot</button>
         <button id="cmos-apply-desktop-btn" class="cmos-action-btn" style="background: #86efac">✓ Apply &amp; Return to Desktop</button>
+        <button id="cmos-footer-activate-all-btn" class="cmos-action-btn" style="background: #fde047">⚡ F6: Activate ALL 5,120 Features</button>
         <button id="cmos-os-setup-btn" class="cmos-action-btn">💿 Boot CD-ROM (OS Reinstall)</button>
-        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Reset All 5,120+ to Inactive</button>
+        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Deactivate ALL 5,120+</button>
         <button id="cmos-cancel-btn" class="cmos-action-btn">ESC: Exit</button>
       </div>
     </div>
@@ -817,6 +835,49 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
       </div>
     </div>
 
+    <!-- CAMERA & MICROPHONE HARDWARE PERMISSIONS MODAL -->
+    <div id="media-perm-modal" class="installshield-backdrop" style="display: none">
+      <div class="sfx-exe-window" style="width: 520px; max-width: 95vw">
+        <div class="window-titlebar">
+          <span class="window-title">🎤📷 AngelOS-web — Camera &amp; Microphone Access Permissions</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="media-perm-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:10px;font-size:0.78rem;color:#000">
+          <div style="background:#000080;color:#fff;padding:7px 10px;font-weight:700;">
+            Hardware Privacy Control — Real Browser Camera &amp; Microphone Access
+          </div>
+          <p style="margin:0;line-height:1.4;">
+            Grant browser permission below to allow <b>AngelOS-web</b> to use your real webcam and microphone inside <b>Camera App (CAMERA.EXE)</b> and <b>Sound Studio (SNDREC32.EXE)</b>. Streams remain strictly local in your browser and can be released anytime.
+          </p>
+          <div class="media-perm-card">
+            <div class="media-perm-row">
+              <div><b>📷 Camera (Webcam)</b><br /><small>Live viewfinder, filters, PNG snapshots &amp; video capture</small></div>
+              <span id="perm-modal-cam-state" class="media-perm-pill perm-prompt">ASK / PROMPT</span>
+              <button type="button" class="win95-btn" id="perm-ask-cam-btn" style="background:#e0f2fe;font-weight:700;">📷 Allow Camera</button>
+            </div>
+            <div class="media-perm-row">
+              <div><b>🎤 Microphone (Audio Input)</b><br /><small>Live voice oscilloscope, mic recording &amp; video sound</small></div>
+              <span id="perm-modal-mic-state" class="media-perm-pill perm-prompt">ASK / PROMPT</span>
+              <button type="button" class="win95-btn" id="perm-ask-mic-btn" style="background:#dcfce7;font-weight:700;">🎤 Allow Mic</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="win95-btn" id="perm-ask-both-btn" style="background:#fef08a;font-weight:700;">📷+🎤 Allow Camera &amp; Mic Together</button>
+            <button type="button" class="win95-btn" id="perm-stop-all-btn" style="color:#991b1b;">⏹ Stop / Release Active Hardware</button>
+          </div>
+          <div class="sfx-exe-footer" style="justify-content:space-between;">
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="win95-btn" id="perm-launch-camera-btn">📷 Open Camera App</button>
+              <button type="button" class="win95-btn" id="perm-launch-sound-btn">🎚️ Open Sound Studio</button>
+            </div>
+            <button type="button" class="win95-btn" id="media-perm-ok-btn"><b>Done</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Desktop Selection Marquee -->
     <div id="selection-marquee" class="selection-marquee"></div>
 
@@ -969,6 +1030,14 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="icon" data-app="soundRecorder">
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #312e81, #8b5cf6)">🎚️</div>
           <span>Sound Studio</span>
+        </div>
+        <div class="icon" data-app="cameraApp">
+          <img
+            data-icon-key="cameraApp"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Camera App"
+          />
+          <span>Camera App</span>
         </div>
         <div class="icon" data-app="calendarApp">
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #991b1b, #ef4444)">📅</div>
@@ -1843,6 +1912,15 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
         <div class="window-content sndrec-wrapper">
           <canvas id="sndrec-scope" class="sndrec-scope" width="540" height="72"></canvas>
+          <div class="sndrec-mic-bar">
+            <span style="font-size:0.72rem;font-weight:700;">🎤 Live Microphone:</span>
+            <span id="sndrec-mic-perm-badge" class="media-perm-pill perm-prompt">ASK / PROMPT</span>
+            <button type="button" class="win95-btn" id="sndrec-ask-mic-btn" style="background:#dcfce7;font-weight:700;">🎤 Allow Mic Access</button>
+            <button type="button" class="win95-btn" id="sndrec-rec-mic-btn" style="background:#fee2e2;font-weight:700;">⏺ Rec Mic</button>
+            <button type="button" class="win95-btn" id="sndrec-play-mic-btn" disabled>▶ Play Mic</button>
+            <button type="button" class="win95-btn" id="sndrec-dl-mic-btn" disabled>⬇ Save Clip</button>
+            <audio id="sndrec-mic-playback" controls style="display:none;height:24px;max-width:190px;"></audio>
+          </div>
           <div class="sndrec-transport">
             <button class="win95-btn" id="sndrec-play-btn">▶ Play Loop</button>
             <button class="win95-btn" id="sndrec-stop-btn">⏹ Stop</button>
@@ -2024,8 +2102,102 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
       </div>
 
+      <!-- 24. CAMERA APP (CAMERA.EXE — LIVE WEBCAM, MIC AUDIO, FILTERS, PHOTO & VIDEO CAPTURE) -->
+      <div class="window resizable" id="cameraApp" style="width: 720px; height: 590px">
+        <div class="window-titlebar">
+          <span class="window-title">📷 Camera App — AngelOS-web (CAMERA.EXE)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content camera-app-wrapper">
+          <!-- Hardware Permission & Device Bar -->
+          <div class="camera-perm-bar">
+            <div class="camera-perm-group">
+              <span>📷 Cam: <span id="camera-perm-cam-badge" class="media-perm-pill perm-prompt">ASK / PROMPT</span></span>
+              <span>🎤 Mic: <span id="camera-perm-mic-badge" class="media-perm-pill perm-prompt">ASK / PROMPT</span></span>
+            </div>
+            <div class="camera-perm-group">
+              <button type="button" class="win95-btn" id="camera-allow-cam-btn" style="background:#e0f2fe;font-weight:700;">📷 Allow Camera</button>
+              <button type="button" class="win95-btn" id="camera-allow-mic-btn" style="background:#dcfce7;font-weight:700;">🎤 Allow Mic</button>
+              <button type="button" class="win95-btn" id="camera-allow-both-btn" style="background:#fef08a;font-weight:700;">📷+🎤 Allow Both</button>
+              <button type="button" class="win95-btn" id="camera-test-btn" title="Preview animated test pattern if no physical webcam is attached">🎞️ Test Pattern</button>
+              <button type="button" class="win95-btn" id="camera-stop-btn" style="color:#991b1b;">⏹ Stop</button>
+            </div>
+          </div>
+
+          <!-- Viewfinder Stage -->
+          <div class="camera-stage">
+            <video id="camera-video" class="camera-video" autoplay playsinline muted style="display:none"></video>
+            <canvas id="camera-test-canvas" class="camera-test-canvas" width="640" height="360" style="display:none"></canvas>
+            <div id="camera-shutter-flash" class="camera-shutter-flash"></div>
+            <span id="camera-rec-badge" class="camera-rec-badge tabular-nums" style="display:none">● REC 00:00</span>
+            <div id="camera-idle-overlay" class="camera-idle-overlay">
+              <div style="font-size:2.4rem">📷</div>
+              <div style="font-weight:700;font-size:0.95rem">AngelOS-web Camera Ready</div>
+              <div style="font-size:0.76rem;color:#cbd5e1;max-width:420px;text-align:center">
+                Click <b>Allow Camera</b> or <b>Allow Both (Cam + Mic)</b> above to grant browser hardware access — or try <b>Test Pattern</b> for instant offline snapshot testing.
+              </div>
+            </div>
+          </div>
+
+          <!-- Capture Controls, Filters, Devices & Mic Level -->
+          <div class="camera-controls-bar">
+            <div class="camera-ctrl-left">
+              <button type="button" class="win95-btn camera-shutter-btn" id="camera-snap-btn">📸 Take Photo</button>
+              <button type="button" class="win95-btn camera-record-btn" id="camera-record-btn">⏺ Record Video</button>
+              <label style="font-size:0.72rem;display:flex;align-items:center;gap:4px">
+                Filter:
+                <select id="camera-filter-select" class="win95-select">
+                  <option value="none">Normal</option>
+                  <option value="crt95">CRT 95</option>
+                  <option value="noir">B&amp;W Noir</option>
+                  <option value="sepia">1995 Sepia</option>
+                  <option value="matrix">Matrix Green</option>
+                  <option value="vapor">Vaporwave</option>
+                  <option value="thermal">Thermal Vision</option>
+                </select>
+              </label>
+              <label style="font-size:0.72rem;display:flex;align-items:center;gap:3px;cursor:pointer">
+                <input type="checkbox" id="camera-mirror-chk" checked /> Mirror
+              </label>
+            </div>
+            <div class="camera-ctrl-right">
+              <select id="camera-device-select" class="win95-select" title="Select Camera Device" style="max-width:140px">
+                <option value="">Default Camera</option>
+              </select>
+              <select id="camera-mic-select" class="win95-select" title="Select Microphone Device" style="max-width:140px">
+                <option value="">Default Mic</option>
+              </select>
+              <div class="camera-mic-vu" title="Live Microphone Audio Level">
+                <span>🎤</span>
+                <div class="camera-mic-vu-track"><div id="camera-mic-vu-fill" class="camera-mic-vu-fill"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filmstrip Camera Roll -->
+          <div class="camera-gallery-strip" id="camera-gallery-strip">
+            <div class="camera-gallery-empty">Photos &amp; video clips captured here are saved to <b>C:\Pictures</b> and downloadable directly.</div>
+          </div>
+
+          <div class="window-statusbar">
+            <span id="camera-status-text">Ready — Click "Allow Camera" or "Allow Mic" to request browser access.</span>
+            <span>CAMERA.EXE · C:\Pictures</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
+        <div class="ctx-item" data-action="open-camera">📷 Open Camera App (CAMERA.EXE)</div>
+        <div class="ctx-item" data-action="open-media-perms">🎤 Camera &amp; Mic Permissions...</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" data-action="toggle-snap-grid" id="ctx-snap-grid-item">⊞ Snap Desktop Icons to Grid: ON</div>
+        <div class="ctx-item" data-action="reset-icon-layout">↻ Auto-Arrange / Reset App Icons</div>
+        <div class="ctx-divider"></div>
         <div class="ctx-item" data-action="open-installer">💿 Ability to Install (Software &amp; OS)</div>
         <div class="ctx-item" data-action="open-display">⚙️ Master Settings &amp; Control Panel...</div>
         <div class="ctx-item" data-action="open-regedit">🗂️ Open REGEDIT.EXE</div>
@@ -2119,6 +2291,10 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
               <img data-icon-key="soundRecorder" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Sound Studio" />
               <span>Sound Studio</span>
             </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="cameraApp">
+              <img data-icon-key="cameraApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Camera App" />
+              <span>Camera</span>
+            </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="calendarApp">
               <img data-icon-key="calendarApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Calendar" />
               <span>Calendar</span>
@@ -2201,7 +2377,8 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
             <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
             <div class="start-menu-item" data-app="calendarApp">📅 Calendar, Clock &amp; Alarms</div>
-            <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (.WAV Export)</div>
+            <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (Live Mic + .WAV Export)</div>
+            <div class="start-menu-item" data-app="cameraApp">📷 Camera App (Live Webcam, Mic &amp; Filters)</div>
             <div class="start-menu-item" data-app="clipViewer">📋 Clipboard &amp; Snipping Studio</div>
             <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
             <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
@@ -2212,6 +2389,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (16 Achievements)</div>
             <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
             <div class="start-menu-divider"></div>
+            <div class="start-menu-item" id="start-media-perms">🎤📷 Camera &amp; Mic Access Permissions...</div>
             <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
             <div class="start-menu-item" id="start-run-dialog">🏃 Run... (Alt+R)</div>
             <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
@@ -2473,6 +2651,14 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
           <button class="qs-tile" id="qs-tile-tilewin">
             <span class="qs-icon">⊞</span>
             <span class="qs-label">Tile Windows</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-camera" title="Open Camera App &amp; Camera Access">
+            <span class="qs-icon">📷</span>
+            <span class="qs-label">Camera App</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-mic" title="Allow / Manage Microphone Access">
+            <span class="qs-icon">🎤</span>
+            <span class="qs-label">Mic Access</span>
           </button>
         </div>
         <div class="qs-sliders">
