@@ -2352,6 +2352,69 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
       </div>
 
+      <!-- 26. HOCKEY CARDS 95 — MCGEE & OBLITERATE EDITION (HOCKEY95.EXE — 0% 4K REALISM) -->
+      <div class="window resizable" id="hockeyCardsApp" style="width: 895px; height: 625px">
+        <div class="window-titlebar">
+          <span class="window-title">🏒 Hockey Cards 95 — McGee &amp; Obliterate Edition (HOCKEY95.EXE · 0% 4K Realism)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content hockey-app-shell">
+          <!-- Top Pack Ripper & Obliterate Toolbar -->
+          <div class="hockey-action-bar">
+            <button type="button" class="win95-btn" id="hockey-rip-pack-btn" style="background:#fef08a;font-weight:700;">📦 Rip 5-Card Pack!</button>
+            <button type="button" class="win95-btn" id="hockey-gen-mcgee-btn" style="background:#dbeafe;font-weight:700;">🎲 Random McGee</button>
+            <button type="button" class="win95-btn" id="hockey-gen-oblit-btn" style="background:#ffedd5;color:#7c2d12;font-weight:700;">🔥 Random Obliterate</button>
+            <button type="button" class="win95-btn" id="hockey-mutate-face-btn" style="background:#f3e8ff;color:#581c87;font-weight:700;">🤪 Mutate Face (0% 4K)</button>
+            <button type="button" class="win95-btn" id="hockey-obliterate-btn" style="background:#dc2626;color:#fef08a;font-weight:700;">💥 OBLITERATE CARD!</button>
+            <button type="button" class="win95-btn" id="hockey-save-vfs-btn" style="margin-left:auto;" title="Save card PNG to C:\Pictures">💾 Save C:\</button>
+            <button type="button" class="win95-btn" id="hockey-download-btn">⬇ .PNG</button>
+          </div>
+
+          <!-- Main Split: Left Non-4K Card Canvas + Scouting | Right Binder Collection -->
+          <div class="hockey-split-body">
+            <div class="hockey-left-pane">
+              <div class="hockey-card-stage" id="hockey-card-stage">
+                <canvas id="hockey-card-canvas" width="320" height="420"></canvas>
+              </div>
+              <div class="hockey-scouting-box" id="hockey-scouting-box"></div>
+            </div>
+
+            <div class="hockey-binder-pane">
+              <div class="hockey-binder-hdr">
+                <span>📚 McGee &amp; Obliterate Card Binder</span>
+                <span id="hockey-stats-summary" class="tabular-nums">Cards: 7 · Packs Ripped: 1 · 💥 Obliterated: 0</span>
+              </div>
+              <div class="hockey-binder-controls">
+                <input
+                  type="text"
+                  id="hockey-search-input"
+                  class="win95-input"
+                  placeholder="Search Thomas Mamas McGee, Thomas Robins, McGee, Obliterate..."
+                  autocomplete="off"
+                />
+                <select id="hockey-filter-select" class="win95-input" aria-label="Filter hockey cards">
+                  <option value="all">All Cards</option>
+                  <option value="featured">👑 Featured Legends</option>
+                  <option value="thomas">🏒 Thomas Squad</option>
+                  <option value="mcgee">⭐ McGee Clan</option>
+                  <option value="obliterate">💥 Obliterate</option>
+                </select>
+              </div>
+              <div class="hockey-binder-grid" id="hockey-binder-grid"></div>
+            </div>
+          </div>
+
+          <div class="window-statusbar">
+            <span id="hockey-status-text">Ready — Rip a 5-Card Pack, inspect Thomas Mamas McGee &amp; Thomas Robins, or 💥 OBLITERATE a card!</span>
+            <span>HOCKEY95.EXE · 🚫 0% 4K Realism</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
         <div class="ctx-item" data-action="open-camera">📷 Open Camera App (CAMERA.EXE)</div>
@@ -2371,7 +2434,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
         <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
         <div class="ctx-divider"></div>
-        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (19 Secrets)</div>
+        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (20 Secrets)</div>
         <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
         <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
@@ -2477,6 +2540,10 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
               <img data-icon-key="javaCreatorApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Old Java Creator" />
               <span>Old Java</span>
             </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="hockeyCardsApp" data-pkg-id="app_hockey_cards">
+              <img data-icon-key="hockeyCardsApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Hockey Cards 95" />
+              <span>Hockey 95</span>
+            </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="trophiesApp">
               <img data-icon-key="trophiesApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Trophies" />
               <span>Trophies</span>
@@ -2540,6 +2607,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">🎛️ Performance &amp; Adjustment Levels</div>
             <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
             <div class="start-menu-item" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">☕ Old Java Creator 1995 (Billy AI · 10 Interactions)</div>
+            <div class="start-menu-item" data-app="hockeyCardsApp" data-pkg-id="app_hockey_cards">🏒 Hockey Cards 95 (McGee &amp; Obliterate · 0% 4K)</div>
             <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
             <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
             <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
@@ -2553,7 +2621,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="arcadeApp">🕹️ Arcade 95 (Snake/Breakout/Blocks/Ski)</div>
             <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
             <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
-            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (19 Achievements)</div>
+            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (20 Achievements)</div>
             <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
             <div class="start-menu-divider"></div>
             <div class="start-menu-item" id="start-media-perms">🎤📷 Camera &amp; Mic Access Permissions...</div>

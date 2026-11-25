@@ -8658,13 +8658,13 @@ body.bios-rgb-trim .window.active-window {
 }
 
 .hockey-action-bar .win95-btn {
-  font-size: 0.69rem;
-  padding: 3px 7px;
+  font-size: 0.67rem;
+  padding: 3px 6px;
 }
 
 .hockey-split-body {
   display: grid;
-  grid-template-columns: 344px 1fr;
+  grid-template-columns: 332px 1fr;
   gap: 6px;
   flex: 1;
   min-height: 0;
@@ -8695,8 +8695,8 @@ body.bios-rgb-trim .window.active-window {
 
 #hockey-card-canvas {
   display: block;
-  width: 288px;
-  height: 378px;
+  width: 280px;
+  height: 368px;
   image-rendering: pixelated;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
@@ -8771,9 +8771,10 @@ body.bios-rgb-trim .window.active-window {
   background: #000080;
   color: #ffff55;
   padding: 4px 8px;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .hockey-binder-controls {

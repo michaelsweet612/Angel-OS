@@ -1252,6 +1252,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   } else if (appName === 'javaCreatorApp' && !initializedApps.has('javaCreatorApp')) {
     initializedApps.add('javaCreatorApp');
     initOldJavaCreatorApp(windowElement);
+  } else if (appName === 'hockeyCardsApp' && !initializedApps.has('hockeyCardsApp')) {
+    initializedApps.add('hockeyCardsApp');
+    initHockeyCardsApp(windowElement);
   }
 }
 
@@ -3302,7 +3305,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         AngelOS-web (v1.7.0 · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.8.0 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -3441,6 +3444,11 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       OLDJAVA: 'javaCreatorApp',
       'OLDJAVA.EXE': 'javaCreatorApp',
       BILLY: 'javaCreatorApp',
+      HOCKEY: 'hockeyCardsApp',
+      'HOCKEY95.EXE': 'hockeyCardsApp',
+      MCGEE: 'hockeyCardsApp',
+      OBLITERATE: 'hockeyCardsApp',
+      CARDS: 'hockeyCardsApp',
     };
     if (dosDirectMap[upper]) {
       openApp(dosDirectMap[upper]);
@@ -3483,7 +3491,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.7.0 · GemPlayer 95 5,009-Track Mega Jukebox)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.8.0 · Hockey Cards 95 McGee & Obliterate Edition)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -3520,6 +3528,10 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         JAVA: 'javaCreatorApp',
         OLDJAVA: 'javaCreatorApp',
         BILLY: 'javaCreatorApp',
+        HOCKEY: 'hockeyCardsApp',
+        MCGEE: 'hockeyCardsApp',
+        OBLITERATE: 'hockeyCardsApp',
+        CARDS: 'hockeyCardsApp',
         CALENDAR: 'calendarApp',
         TASKMGR: 'taskManager',
         RECYCLE: 'recycleBin',
@@ -5153,6 +5165,7 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '🏒 Hockey Cards 95 (Thomas Mamas McGee · Thomas · Thomas Robins · Random McGees & Obliterate · 0% 4K)', kind: 'Trading Cards App', action: () => openApp('hockeyCardsApp') },
   { label: '☕ Old Java Creator 1995 (Billy AI — Install via Ability to Install · 10 Interactions)', kind: 'Java-from-Trash IDE', action: () => openApp('javaCreatorApp') },
   { label: '📷 Camera App (CAMERA.EXE — Live Webcam, Mic Audio, Filters & Capture)', kind: 'Hardware App', action: () => openApp('cameraApp') },
   { label: '🎤 Camera & Microphone Access Permissions (Allow Mic & Webcam)', kind: 'Privacy & Hardware', action: () => openMediaPermissionsModal() },
@@ -5198,7 +5211,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
   { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
   { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
-  { label: '🏆 Angel-OS Trophy Vault (19 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
+  { label: '🏆 Angel-OS Trophy Vault (20 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
   { label: '🏃 Run Command... Dialog (Alt+R)', kind: 'Shell Tool', action: () => openRunDialog() },
   { label: '📌 Spawn New Desktop Sticky Note', kind: 'Desktop Toy', action: () => spawnCustomStickyNote() },
   { label: '💀 Trigger Blue Screen of Death (BSOD Prank)', kind: 'Easter Egg', action: () => triggerBsodPrank() },
@@ -5753,6 +5766,17 @@ registerJavaCreatorBridge({
   pushToast: pushBalloonToast,
   sfx,
 });
+registerHockeyCardsBridge({
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  unlockAchievement,
+  pushToast: pushBalloonToast,
+  sfx,
+});
 applySystemRegistryToOS(true);
 syncTaskbarDock();
 syncLocalAccountStartPill();
@@ -5760,9 +5784,9 @@ layoutDesktopIcons(false);
 initStartTileReordering();
 resetIdleTimer();
 pushBalloonToast(
-  'AngelOS-web v1.7.0 Ready!',
-  'Open GemPlayer 95 for Mario, Legend of Z, Hello Neighbor Chase, Big Boy Jim Boss, Harry Potter & 5,000 unique random songs!',
-  '🎹',
+  'AngelOS-web v1.8.0 Ready!',
+  'Open Hockey Cards 95 to collect Thomas Mamas McGee, Thomas, Thomas Robins, random McGee & Obliterate players (0% 4K Realism)!',
+  '🏒',
 );
 
 window.addEventListener('angelos:icons-changed', () => {

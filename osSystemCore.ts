@@ -364,7 +364,7 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     name: 'Hockey Cards 95 (McGee & Obliterate)',
     version: '1.95',
     publisher: 'McGee 144p Trading Cards Inc.',
-    category: 'games',
+    category: 'multimedia',
     sizeMB: 3.8,
     installDir: 'C:\\Program Files\\HockeyCards95',
     exeName: 'HOCKEY95.EXE',
