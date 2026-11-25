@@ -1,3 +1,4 @@
+import { fetchLivePageClientSide, isBrowseBackendMissing, markBrowseBackend, type StaticWebResult } from './osStaticWeb';
 import {
   APP_SVG_ICONS,
   BrowserAiEra,
@@ -811,7 +812,7 @@ function buildChromeNewTabHtml(): string {
 
   <div class="ntp-footer">
     <span>Google Chrome · Angel-OS Edition</span>
-    <span>Type any URL above for real Live Web via /api/browse, or toggle ✨ AI for Time-Machine pages</span>
+    <span>Type any URL or search — Live Web works with or without a backend (static Wikipedia + relay engine), or toggle ✨ AI for Time-Machine pages</span>
   </div>
 
   <script>
@@ -927,7 +928,7 @@ function buildChromeErrorPageHtml(url: string, reason: string): string {
   <div class="err-wrap">
     <div class="dino">🦖</div>
     <h1>This site can’t be reached in Live Web mode</h1>
-    <p><b>${safeUrl}</b> could not be loaded cleanly through the Live Web proxy.</p>
+    <p><b>${safeUrl}</b> could not be loaded through any Live Web route (backend proxy, Wikipedia API, direct CORS, public relays, Reader View).</p>
     <div class="reason">${safeReason}</div>
     <p>You can synthesize a working version of this destination with <b>✨ AI Web</b> or try reloading it.</p>
     <div class="actions">
@@ -1425,12 +1426,64 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
       loadingEl.innerHTML = `<div style="border:1px solid #dadce0;border-radius:8px;background:#ffffff;padding:16px 20px;color:#202124;box-shadow:0 4px 14px rgba(0,0,0,0.12);"><b>🌐 Fetching Live Page...</b><br/><small style="color:#5f6368;">${escapeHtml(domain)}</small></div>`;
       loadingEl.style.display = 'flex';
 
+      const showStaticResult = (res: StaticWebResult): void => {
+        tab.url = res.finalUrl || url;
+        tab.title = (res.title || domain).slice(0, 26);
+        tab.cachedHtml = res.html;
+        tab.embedUrl = undefined;
+        iframe.removeAttribute('src');
+        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(res.html) : res.html;
+        if (pushHistory && tab.history[tab.historyIdx] !== tab.url) {
+          tab.history[tab.historyIdx] = tab.url;
+        }
+        renderTabsBar();
+        updateToolbarFromTab(tab);
+        if (statusText) statusText.textContent = `Loaded Live: ${tab.url} (via ${res.via})`;
+      };
+      const showLiveError = (reason: string): void => {
+        tab.title = 'Site Unreachable';
+        tab.embedUrl = undefined;
+        tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
+        iframe.removeAttribute('src');
+        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
+        renderTabsBar();
+        updateToolbarFromTab(tab);
+        if (statusText) statusText.textContent = `Live Web could not reach ${domain} — Click "Load with ✨ AI Web" inside page.`;
+      };
+      const runStaticEngine = async (): Promise<void> => {
+        const res = await fetchLivePageClientSide(url, (msg) => {
+          if (statusText) statusText.textContent = `${domain}: ${msg}`;
+        });
+        if (res.ok) showStaticResult(res);
+        else showLiveError(`Every browser-side route was tried (no backend needed): ${res.error || 'unreachable'}`);
+      };
+
       try {
         if (simulatedDelayMs > 0) {
           await new Promise((r) => setTimeout(r, simulatedDelayMs));
         }
-        const resp = await fetch(`/api/browse?url=${encodeURIComponent(url)}`);
-        const data = await resp.json().catch(() => null);
+
+        // Static hosting (GitHub Pages, portable ZIP, file://): no Express backend -> browser-side engine.
+        if (isBrowseBackendMissing() || window.location.protocol === 'file:') {
+          await runStaticEngine();
+          return;
+        }
+
+        let resp: Response | null = null;
+        let data: any = null;
+        try {
+          resp = await fetch(`/api/browse?url=${encodeURIComponent(url)}`);
+          const ct = (resp.headers.get('content-type') || '').toLowerCase();
+          data = ct.includes('application/json') ? await resp.json().catch(() => null) : null;
+        } catch {
+          resp = null;
+        }
+        if (!resp || !data || typeof data.ok !== 'boolean') {
+          markBrowseBackend('missing');
+          await runStaticEngine();
+          return;
+        }
+        markBrowseBackend('present');
         if (resp.ok && data && data.ok && typeof data.html === 'string') {
           if (typeof data.finalUrl === 'string' && data.finalUrl) tab.url = data.finalUrl;
           if (typeof data.title === 'string' && data.title) tab.title = data.title.slice(0, 26);
@@ -1442,30 +1495,16 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
           updateToolbarFromTab(tab);
           if (statusText) statusText.textContent = `Loaded Live: ${tab.url} (HTTP ${data.status || 200})`;
         } else {
-          const isStaticHost = !['localhost', '127.0.0.1'].includes(window.location.hostname);
-          const reason =
-            resp.status === 404 && isStaticHost
-              ? 'Static GitHub Pages hosting has no backend /api/browse proxy — use built-in chrome:// pages, local files, or run `npm run dev` locally for external Live URLs.'
-              : data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
-          tab.title = 'Site Unreachable';
-          tab.embedUrl = undefined;
-          tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
-          iframe.removeAttribute('src');
-          iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
-          renderTabsBar();
-          updateToolbarFromTab(tab);
-          if (statusText) statusText.textContent = `Live Web could not reach ${domain} (${reason}) — Click "Load with ✨ AI Web" inside page.`;
+          const backendReason = data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
+          const res = await fetchLivePageClientSide(url, (msg) => {
+            if (statusText) statusText.textContent = `${domain}: ${msg}`;
+          });
+          if (res.ok) showStaticResult(res);
+          else showLiveError(`${backendReason} · ${res.error || ''}`);
         }
       } catch (err: any) {
-        const reason = String(err?.message || 'Network connection error');
-        tab.title = 'Site Unreachable';
-        tab.embedUrl = undefined;
-        tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
-        iframe.removeAttribute('src');
-        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
-        renderTabsBar();
-        updateToolbarFromTab(tab);
-        if (statusText) statusText.textContent = `Live Web error: ${reason}`;
+        showLiveError(String(err?.message || 'Network connection error'));
+        if (statusText) statusText.textContent = `Live Web error: ${String(err?.message || 'Network connection error')}`;
       } finally {
         loadingEl.style.display = 'none';
       }

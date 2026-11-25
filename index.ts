@@ -3305,7 +3305,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         AngelOS-web (v1.8.0 · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.8.1 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -3491,7 +3491,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.8.0 · Hockey Cards 95 McGee & Obliterate Edition)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.8.1 · Static Live Web Engine)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -5784,7 +5784,7 @@ layoutDesktopIcons(false);
 initStartTileReordering();
 resetIdleTimer();
 pushBalloonToast(
-  'AngelOS-web v1.8.0 Ready!',
+  'AngelOS-web v1.8.1 Ready!',
   'Open Hockey Cards 95 to collect Thomas Mamas McGee, Thomas, Thomas Robins, random McGee & Obliterate players (0% 4K Realism)!',
   '🏒',
 );
