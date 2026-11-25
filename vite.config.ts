@@ -53,9 +53,9 @@ export default defineConfig({
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
       manifest: {
         id: basePath,
-        name: 'Angel-OS (Windows 11 + 10 Hybrid)',
-        short_name: 'Angel-OS',
-        description: 'Installable Windows 11 + 10 hybrid desktop OS with Google Chrome, left-side search bar, and 5,120+ BIOS features.',
+        name: 'AngelOS-web (Windows 11 + 10 Hybrid)',
+        short_name: 'AngelOS-web',
+        description: 'AngelOS-web — Installable Windows 11 + 10 hybrid web OS with Google Chrome, left-side search bar, physical booter, local accounts, and 5,120+ BIOS features.',
         theme_color: '#0078d4',
         background_color: '#008080',
         display: 'standalone',

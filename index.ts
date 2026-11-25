@@ -390,7 +390,7 @@ class RetroSoundEngine {
 const sfx = new RetroSoundEngine();
 
 // --- In-OS Retro Dialog (Replaces window.alert) ---
-function showOsDialog(message: string, title = 'Gemini 95 System') {
+function showOsDialog(message: string, title = 'AngelOS-web System') {
   const toast = document.getElementById('os-toast') as HTMLDivElement | null;
   const titleEl = document.getElementById('os-toast-title');
   const textEl = document.getElementById('os-toast-text');
@@ -2883,7 +2883,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         Remix Gemini 95 (4.00.950 B · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.4.1 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -2900,7 +2900,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'SETUP' || upper === 'SETUP.EXE' || upper === 'FORMAT C:' || upper === 'FORMAT C: /S') {
       openOsReinstallScreen();
-      appendLine('Launching Gemini 95 OS Setup & Reinstallation Utility...');
+      appendLine('Launching AngelOS-web OS Setup & Reinstallation Utility...');
       return;
     }
     if (upper === 'SETTINGS' || upper === 'CONTROL' || upper === 'CONTROL.EXE') {
@@ -3051,7 +3051,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('Angel-OS Windows 11+10 Hybrid (Version 1.4.0 · Physical Booter & Local Account Always)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.4.1 · Physical Booter & Local Account Always)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -4378,7 +4378,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '💿 Ability to Install (.EXE Installers & Physical OS Setup)', kind: 'Dual Installer', action: () => openApp('abilityToInstall', true) },
   { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen(false) },
   { label: '📖 Interactive FDISK Guide (Step-by-Step 90s Partitioning Coach)', kind: 'FDISK Tutorial', action: () => openFdiskScreen(true) },
-  { label: '📲 Install Gemini 95 onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
+  { label: '📲 Install AngelOS-web onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
   { label: '💿 Export Bootable x86 CD-ROM Image (ANGELOS_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
   { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
   { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
@@ -4395,7 +4395,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '📟 MS-DOS Prompt (COMMAND.COM + AI Kernel)', kind: 'Application', action: () => openApp('dosPrompt') },
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
   { label: '⚙️ Award / UEFI CMOS BIOS Setup (5,120+ Advanced Features)', kind: 'Firmware', action: () => openCmosBiosSetup() },
-  { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
+  { label: '🔄 Reinstall AngelOS-web OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
   { label: '🏷️ Toggle Taskbar App Labels (Icon-Only vs Win95 Text)', kind: 'Taskbar Style', action: () => toggleTaskbarLabels() },
   { label: '👼 Angel Pilot (In-Training Joke Copilot · 0% AI)', kind: 'Unhelpful Bot', action: () => {
     if (copilotSidebar) copilotSidebar.style.display = 'flex';

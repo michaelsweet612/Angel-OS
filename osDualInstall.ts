@@ -385,9 +385,9 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
   if (format === 'bat') {
     const batLines = [
       '@ECHO OFF',
-      'TITLE Gemini 95 Portable Desktop OS Launcher',
+      'TITLE AngelOS-web Portable Desktop OS Launcher',
       'ECHO ========================================================',
-      'ECHO   LAUNCHING GEMINI 95 IN NATIVE CHROMELESS DESKTOP MODE',
+      'ECHO   LAUNCHING ANGELOS-WEB IN NATIVE CHROMELESS DESKTOP MODE',
       'ECHO ========================================================',
       `SET TARGET_URL=${appOrigin}`,
       'IF EXIST "%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe" (',
@@ -401,9 +401,9 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
       'START "" "%TARGET_URL%"',
     ].join('\r\n');
     const blob = new Blob([batLines], { type: 'application/x-bat;charset=utf-8' });
-    triggerBrowserBlobDownload(blob, 'Gemini95_Portable_Launcher.bat');
+    triggerBrowserBlobDownload(blob, 'AngelOS-web_Portable_Launcher.bat');
     bridge?.showOsDialog(
-      'Downloaded "Gemini95_Portable_Launcher.bat" to your real computer! Double-clicking it on Windows launches Gemini 95 in a chromeless native Win32 desktop window.',
+      'Downloaded "AngelOS-web_Portable_Launcher.bat" to your real computer! Double-clicking it on Windows launches AngelOS-web in a chromeless native Win32 desktop window.',
       'Portable .BAT Launcher Saved',
     );
     return;
@@ -427,7 +427,7 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini 95 — Portable Desktop Edition</title>
+  <title>AngelOS-web — Portable Desktop Edition</title>
   <style>
     html, body { margin:0; padding:0; height:100%; background:#008080; font-family:'Segoe UI', Tahoma, sans-serif; overflow:hidden; display:flex; flex-direction:column; }
     .portable-bar { background:#c0c0c0; border-bottom:2px solid #000; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; font-size:12px; }
@@ -439,7 +439,7 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
 </head>
 <body>
   <div class="portable-bar">
-    <div><b>💾 Gemini 95 Portable Desktop Container</b> · Bound Host: <code>${appOrigin}</code></div>
+    <div><b>💾 AngelOS-web Portable Desktop Container</b> · Bound Host: <code>${appOrigin}</code></div>
     <div style="display:flex;gap:6px;">
       <button class="btn95" onclick="document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()">⛶ Fullscreen Hardware Lock</button>
       <button class="btn95" onclick="toggleSnap()">📋 Embedded Registry Snapshot</button>
@@ -447,7 +447,7 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
   </div>
   <iframe src="${appOrigin}" allow="autoplay; fullscreen; clipboard-write"></iframe>
   <div class="modal" id="snap-modal">
-    <div style="background:#000080;color:#fff;font-weight:bold;padding:4px 8px;margin-bottom:8px;">Exported Gemini 95 Registry &amp; Disk Snapshot</div>
+    <div style="background:#000080;color:#fff;font-weight:bold;padding:4px 8px;margin-bottom:8px;">Exported AngelOS-web Registry &amp; Disk Snapshot</div>
     <p style="font-size:12px;margin:4px 0;">Copy this JSON into <b>Master Settings → Tab 7 (Install &amp; OS Setup)</b> anytime to restore this exact hardware/theme profile:</p>
     <textarea readonly>${safeJson}</textarea>
     <div style="text-align:right;margin-top:8px;"><button class="btn95" onclick="toggleSnap()">Close</button></div>
@@ -462,9 +462,9 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
 </html>`;
 
   const blob = new Blob([portableHtml], { type: 'text/html;charset=utf-8' });
-  triggerBrowserBlobDownload(blob, 'Gemini95_Portable_App.html');
+  triggerBrowserBlobDownload(blob, 'AngelOS-web_Portable_App.html');
   bridge?.showOsDialog(
-    'Downloaded "Gemini95_Portable_App.html" to your computer! Open it from your Desktop anytime for an instant portable Gemini 95 container with your embedded Registry snapshot.',
+    'Downloaded "AngelOS-web_Portable_App.html" to your computer! Open it from your Desktop anytime for an instant portable AngelOS-web container with your embedded Registry snapshot.',
     'Portable App Downloaded',
   );
 }
@@ -1589,7 +1589,7 @@ export async function triggerNativePwaInstall(): Promise<void> {
 
   if (state.isInstalledStandalone) {
     bridge?.showOsDialog(
-      'Gemini 95 is currently running as a Standalone Installed OS App on your device! Use "Fullscreen Hardware Lock" for 100% edge-to-edge CRT immersion.',
+      'AngelOS-web is currently running as a Standalone Installed OS App on your device! Use "Fullscreen Hardware Lock" for 100% edge-to-edge CRT immersion.',
       'Standalone OS Active',
     );
     return;
@@ -1612,15 +1612,15 @@ export async function triggerNativePwaInstall(): Promise<void> {
     return;
   }
 
-  // Helpful guidance when inside AI Studio preview iframe or browser where prompt hasn't fired yet
+  // Helpful guidance when inside preview iframe or browser where prompt hasn't fired yet
   const iosModal = document.getElementById('pwa-ios-modal');
   const bodyEl = document.getElementById('pwa-guide-body');
   if (iosModal && bodyEl) {
     bodyEl.innerHTML = `
-      <p style="margin:0 0 8px 0;">To install <b>Gemini 95</b> directly onto your computer's Desktop / Start Menu / Dock as a native standalone OS app:</p>
+      <p style="margin:0 0 8px 0;">To install <b>AngelOS-web</b> directly onto your computer's Desktop / Start Menu / Dock as a native standalone OS app:</p>
       <ol style="margin:0 0 10px 18px;padding:0;line-height:1.5;">
         <li>Open this app's URL in its own top-level browser tab (click the <b>Open in New Tab ↗</b> icon in the top-right preview header if viewing inside an iframe).</li>
-        <li>Click the <b>Install Gemini 95 (🖥️ / ⊕)</b> icon in Chrome or Edge's address bar — or click <b>📲 Install OS</b> on the Gemini 95 taskbar!</li>
+        <li>Click the <b>Install AngelOS-web (🖥️ / ⊕)</b> icon in Chrome or Edge's address bar — or click <b>📲 Install OS</b> on the AngelOS-web taskbar!</li>
         <li>Alternatively, click <b>Download Portable App (.HTML / .BAT)</b> below for an instant desktop launcher file right now.</li>
       </ol>
     `;
