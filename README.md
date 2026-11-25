@@ -4,7 +4,7 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.8.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.8.1-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaDevices (Camera & Microphone), 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
 
@@ -17,7 +17,7 @@ Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaD
 ## Download & Play Locally
 
 1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)** (**AngelOS-web**).
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.8.0-portable-web.zip`](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.8.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.8.1-portable-web.zip`](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.8.1-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
 3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
