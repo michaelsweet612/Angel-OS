@@ -8058,6 +8058,355 @@ body.bios-rgb-trim .window.active-window {
   background: rgba(250, 204, 21, 0.16);
 }
 
+/* ==================== OLD JAVA CREATOR 1995 + BILLY AI ==================== */
+.java-ide-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #c0c0c0;
+  color: #000000;
+  gap: 5px;
+  padding: 5px;
+  overflow: hidden;
+  font-size: 0.74rem;
+}
 
+.billy-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: linear-gradient(90deg, #2c1a12, #451a03 55%, #78350f);
+  color: #fef3c7;
+  padding: 6px 8px;
+  border: 2px inset #808080;
+  flex-shrink: 0;
+}
 
+.billy-progress-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 
+.billy-interaction-label {
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: #fde047;
+  letter-spacing: 0.01em;
+}
+
+.billy-interaction-pips {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.billy-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #1c1917;
+  color: #a8a29e;
+  border: 1px solid #78716c;
+}
+
+.billy-pip.done {
+  background: #f59e0b;
+  color: #1c1917;
+  border-color: #fef08a;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.55);
+}
+
+.billy-progress-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.billy-errors-stat {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.65);
+  border: 1px solid #ef4444;
+  padding: 2px 6px;
+}
+
+.billy-milestone-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: linear-gradient(90deg, #854d0e, #ca8a04, #a16207);
+  color: #ffffff;
+  border: 2px outset #fef08a;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+
+.java-split-body {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.java-editor-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 5px;
+}
+
+.java-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.java-filename-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #000080;
+  color: #ffff55;
+  padding: 2px 7px;
+  border: 1px solid #000000;
+}
+
+.java-toolbar-btns {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.java-toolbar-btns .win95-btn {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+}
+
+.java-code-editor {
+  flex: 1.45;
+  min-height: 150px;
+  width: 100%;
+  resize: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  line-height: 1.42;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 2px inset #808080;
+  padding: 7px 8px;
+  tab-size: 2;
+  outline: none;
+}
+
+.java-console-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #7f1d1d;
+  flex-shrink: 0;
+}
+
+.java-console-out {
+  flex: 0.85;
+  min-height: 82px;
+  max-height: 135px;
+  margin: 0;
+  overflow-y: auto;
+  background: #09090b;
+  color: #f87171;
+  border: 2px inset #808080;
+  padding: 6px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.38;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.billy-agent-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 5px;
+}
+
+.billy-card-hdr {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 5px 7px;
+  border: 1px solid #000000;
+  flex-shrink: 0;
+}
+
+.billy-avatar-face {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  background: #fef3c7;
+  border: 2px outset #f59e0b;
+  flex-shrink: 0;
+}
+
+.billy-card-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.billy-card-meta b {
+  font-size: 0.76rem;
+  color: #fde047;
+}
+
+.billy-card-meta span {
+  font-size: 0.64rem;
+  color: #cbd5e1;
+}
+
+.billy-ultra-btn {
+  width: 100%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+
+.billy-ultra-btn:disabled {
+  opacity: 0.92;
+  background: #cbd5e1;
+  color: #334155;
+  cursor: not-allowed;
+}
+
+.billy-ultra-btn.ultra-on {
+  background: linear-gradient(90deg, #b91c1c, #ea580c) !important;
+  color: #fef08a !important;
+  border-color: #facc15 !important;
+}
+
+.billy-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.billy-preset-btn {
+  font-size: 0.64rem;
+  padding: 2px 5px;
+  height: auto;
+}
+
+.billy-chat-log {
+  flex: 1;
+  min-height: 110px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 2px inset #808080;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.billy-msg {
+  padding: 5px 7px;
+  border-radius: 3px;
+  font-size: 0.71rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.billy-msg-who {
+  font-size: 0.63rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+  opacity: 0.85;
+}
+
+.billy-msg-user {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1e3a8a;
+  align-self: flex-end;
+  max-width: 92%;
+}
+
+.billy-msg-billy {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #451a03;
+  align-self: flex-start;
+  max-width: 96%;
+}
+
+.billy-msg-system {
+  background: #dcfce7;
+  border: 1px solid #16a34a;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.billy-input-row {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.billy-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.java-ide-shell .window-statusbar {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.java-ide-shell .window-statusbar span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}

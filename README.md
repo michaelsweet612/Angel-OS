@@ -4,7 +4,7 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.5.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.6.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaDevices (Camera & Microphone), 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
 
@@ -17,7 +17,7 @@ Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaD
 ## Download & Play Locally
 
 1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)** (**AngelOS-web**).
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.5.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.5.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.6.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.6.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
 3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
@@ -52,6 +52,7 @@ It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you c
 - **Ability to Install (Dual-Mode Installer)**:
   - **Way 1 — `.EXE` Setup Files & Portable App**: Drop or run `*_SETUP.EXE` packages in `C:\Downloads`, browse the built-in **Tucows 95 Shareware Depot**, unpack `MZ 0x5A4D` self-extracting cabinets, walk through the 5-step **InstallShield 95 Wizard**, or download a portable `.HTML` (with embedded Registry snapshot) / `.BAT` desktop launcher.
   - **Way 2 — Physical OS & Hardware Boot Media**: Open the **Physical Hardware Booter**, install as a standalone offline **PWA**, lock hardware fullscreen, download raw USB `.IMG` (`ANGELOS_USB_DISK.img`), El Torito `.ISO` (`ANGELOS_BOOTCD.ISO`), or native Linux/Windows installer scripts.
+- **Old Java Creator 1995 — Powered by Billy AI (`OLDJAVA95_SETUP.EXE` / `OLDJAVA.EXE`)**: Installable directly from **Ability to Install** into `C:\JDK1995`; pairs a retro 1995 Java-from-scratch IDE, Trash `javac 0.01a` compiler, and fake JVM crash console with **Billy AI**—an intentionally clueless tiny AI agent who invents broken Java syntax on purpose, breaks code further when asked to fix it, tracks a **10-interaction progression arc (`0 / 10` → `10 / 10`)**, unlocks **🏆 ULTRA TRASH MODE (`JDK -0.5`)** and the **`10 Rounds with Billy`** Trophy (`+30 pts`), and exports `.java` files to `C:\Documents` or your host computer.
 - **Performance & Adjustment Levels (`PERFLEVELS.EXE`)**: Available inside **Ability to Install** (`PERFADJ95_SETUP.EXE`) and integrated directly with **CMOS BIOS Setup**; detects host CPU threads, platform, WebGL GPU, physical RAM (`navigator.deviceMemory` / JS heap), network, and battery status, lets you switch between **Auto-Detect**, **Limited (`16`–`4,096 MB`)**, and **Custom** RAM pools, tune CPU clock scaling, core voltage, and TDP limits, toggle individual **CPU / Intake / Exhaust / GPU cooling fans** (including `0 RPM` passive thermal tests), and monitor real-time die/VRM temperatures (`°C`/`°F`).
 - **Multi-Engine Web Browser**: Multi-tab browser supporting three swappable/reinstallable engines (**Netscape Navigator 95 Gold**, **Microsoft Internet Explorer 3.0**, **Google Chrome**), **✨ AI Web Synthesis** (`1996`, `2001`, or `modern` eras), **🌐 Live URL** iframe browsing, local `file:///C:/` HTML/text viewing, simulated modem speeds (`14.4k` to `T1 1.0 Mbps`), bookmarks, and a live **HTML Source Inspector & Editor**.
 - **My Gemtop (`Explorer`)**: Virtual file system across `C:\` (`Downloads`, `Documents`, `Pictures`, `System95`, `Users\<Account>`) and `D:\` (`Installers`) with live disk usage tracking.
@@ -60,7 +61,7 @@ It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you c
 - **Gemini AIM (Instant Messenger)**: Chat with 1995 personas (`SmarterChild_95`, `ZeroCool_1337`, `Clippy_Pro`, `Win95_Guru`), trigger quick prompts, and save chat transcripts to GemNotes.
 - **GemSweeper Deluxe**: Classic Minesweeper (`9×9`, `12×12`, `14×16`) with chord-clicking, timer/flag counters, and AI tactical hints.
 - **GemPlayer 95**: 4-track 16-bit Web Audio FM Chiptune Synthesizer (`Canyon.mid`, `CyberWave 95`, `DOOM Boss Riff`, `Teal Desktop Dreams`) with a live spectrum visualizer and tempo control, plus **YouTube Retro CRT TV** playback.
-- **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `CAMERA`, `WEBCAM`, `MIC`, `PERMISSIONS`, `FDISK`, `ISO`, `USBBOOT`, `BOOTER`, `SIGNIN`, `LOCK`, `SWITCHUSER`, `INSTALL`, `SETUP`, `PERF`, `PERFLEVELS`, `RAM`, `FANS`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
+- **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `JAVA`, `OLDJAVA`, `JAVAC`, `BILLY`, `CAMERA`, `WEBCAM`, `MIC`, `PERMISSIONS`, `FDISK`, `ISO`, `USBBOOT`, `BOOTER`, `SIGNIN`, `LOCK`, `SWITCHUSER`, `INSTALL`, `SETUP`, `PERF`, `PERFLEVELS`, `RAM`, `FANS`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
 - **DOOM II**: Protected-mode MS-DOS DOOM II embed (`js-dos`).
 - **Master System Settings & Control Panel (`CONTROL.EXE`)**: 8-tab configuration suite covering **Display & CRT**, **Windows & Fonts**, **Taskbar & Snap**, **Sound DSP**, **Browser & Modem**, **CPU, RAM & Power**, **Boot, Accounts, Install & Physical Booter**, and **Registry & BIOS**—including 7 built-in themes (*Standard Teal*, *Hot Dog Stand*, *Cyberpunk*, *Vaporwave*, *Matrix*, *Win 3.1*, *High Contrast*), custom hex palettes, CRT scanline/calibration sliders, idle screensavers (*3D Starfield* / *Matrix*), and `.REG` JSON import/export.
 - **Registry Editor (`REGEDIT.EXE`)**: Hierarchical live editor for 60+ `HKEY_CURRENT_USER` and `HKEY_LOCAL_MACHINE` keys with instant search and `REGEDIT4` file export to `C:\System95`.
@@ -139,6 +140,7 @@ Angel-OS/
 ├── osHardwarePerf.ts   # Host hardware auto-detect, Auto/Limited/Custom RAM modes & fan/thermal engine
 ├── osPhysicalBooter.ts # Windows Boot Manager helper, Always-Local Sign-In, Partition Setup & Booter modal
 ├── osMediaDevices.ts   # Real Camera & Microphone permission manager, Camera App (CAMERA.EXE) & live mic capture
+├── osOldJavaCreator.ts # Old Java Creator 1995 IDE, clueless Billy AI agent, 10-interaction arc & Trash JVM
 ├── osExtendedApps.ts   # Multi-engine browser, InstallShield 95, 8-tab Control Panel, REGEDIT, SYSMON & BIOS
 ├── osDualInstall.ts    # .EXE SFX runner, Tucows depot, FDISK, ISO-9660/El Torito & Raw USB .IMG builders
 ├── osMegaFeatures.ts   # Classic Win95 accessories, Arcade games, Run dialog & MegaBridge shell API

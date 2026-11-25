@@ -47,6 +47,7 @@ import {
   registerMediaBridge,
   stopCameraAppStreams,
 } from './osMediaDevices';
+import { initOldJavaCreatorApp, registerJavaCreatorBridge } from './osOldJavaCreator';
 import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
@@ -837,6 +838,7 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     recycleBin: 'Recycle Bin',
     clipViewer: 'Clipboard 95',
     trophiesApp: 'Trophy Vault',
+    javaCreatorApp: 'Old Java Creator',
   };
   return {
     icon: APP_SVG_ICONS[appName] || APP_SVG_ICONS.appExe,
@@ -1234,6 +1236,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   } else if (appName === 'cameraApp' && !initializedApps.has('cameraApp')) {
     initializedApps.add('cameraApp');
     initCameraApp(windowElement);
+  } else if (appName === 'javaCreatorApp' && !initializedApps.has('javaCreatorApp')) {
+    initializedApps.add('javaCreatorApp');
+    initOldJavaCreatorApp(windowElement);
   }
 }
 
@@ -2962,7 +2967,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         AngelOS-web (v1.5.0 · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.6.0 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -3096,6 +3101,11 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       CAMERA: 'cameraApp',
       'CAMERA.EXE': 'cameraApp',
       WEBCAM: 'cameraApp',
+      JAVA: 'javaCreatorApp',
+      JAVAC: 'javaCreatorApp',
+      OLDJAVA: 'javaCreatorApp',
+      'OLDJAVA.EXE': 'javaCreatorApp',
+      BILLY: 'javaCreatorApp',
     };
     if (dosDirectMap[upper]) {
       openApp(dosDirectMap[upper]);
@@ -3138,7 +3148,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.5.0 · Camera, Mic, Movable Apps & Bulk BIOS)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.6.0 · Old Java Creator 1995 & Billy AI)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -3172,6 +3182,9 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         SOUND: 'soundRecorder',
         CAMERA: 'cameraApp',
         WEBCAM: 'cameraApp',
+        JAVA: 'javaCreatorApp',
+        OLDJAVA: 'javaCreatorApp',
+        BILLY: 'javaCreatorApp',
         CALENDAR: 'calendarApp',
         TASKMGR: 'taskManager',
         RECYCLE: 'recycleBin',
@@ -3320,19 +3333,61 @@ function layoutDesktopIcons(resetSaved = false): void {
   const availH = Math.max(300, window.innerHeight - tbH - 24);
   const rowsPerCol = Math.max(4, Math.min(6, Math.floor(availH / GRID_Y)));
 
-  let autoSlot = 0;
+  const visibleIcons: HTMLElement[] = [];
+  const hiddenIcons: HTMLElement[] = [];
   icons.forEach((icon) => {
-    const appKey = icon.getAttribute('data-app') || `icon_${autoSlot}`;
-    const isHidden = icon.style.display === 'none';
-    let pos = desktopIconPositions[appKey];
-    if (!pos) {
+    if (icon.style.display === 'none') {
+      hiddenIcons.push(icon);
+    } else {
+      visibleIcons.push(icon);
+    }
+  });
+
+  const occupied = new Set<string>();
+  const keyOf = (x: number, y: number) => `${Math.round(x / 32)}_${Math.round(y / 32)}`;
+  let autoSlot = 0;
+
+  const nextFreeSlot = (): { x: number; y: number } => {
+    for (let guard = 0; guard < 200; guard++) {
       const col = Math.floor(autoSlot / rowsPerCol);
       const row = autoSlot % rowsPerCol;
-      pos = clampDesktopIconCoords(PAD_X + col * GRID_X, PAD_Y + row * GRID_Y);
-      if (!isHidden) autoSlot++;
-    } else {
-      pos = clampDesktopIconCoords(pos.x, pos.y);
+      autoSlot++;
+      const candidate = clampDesktopIconCoords(PAD_X + col * GRID_X, PAD_Y + row * GRID_Y);
+      const k = keyOf(candidate.x, candidate.y);
+      if (!occupied.has(k)) {
+        occupied.add(k);
+        return candidate;
+      }
     }
+    return clampDesktopIconCoords(PAD_X, PAD_Y);
+  };
+
+  // Reserve explicitly saved positions of visible icons first
+  visibleIcons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || '';
+    const saved = appKey ? desktopIconPositions[appKey] : undefined;
+    if (saved) {
+      const pos = clampDesktopIconCoords(saved.x, saved.y);
+      occupied.add(keyOf(pos.x, pos.y));
+      icon.style.left = `${pos.x}px`;
+      icon.style.top = `${pos.y}px`;
+    }
+  });
+
+  // Place visible icons without saved positions into open slots
+  visibleIcons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || '';
+    if (appKey && desktopIconPositions[appKey]) return;
+    const pos = nextFreeSlot();
+    icon.style.left = `${pos.x}px`;
+    icon.style.top = `${pos.y}px`;
+  });
+
+  // Pre-assign distinct open slots for hidden installable icons so they never collide on install
+  hiddenIcons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || '';
+    const saved = appKey ? desktopIconPositions[appKey] : undefined;
+    const pos = saved ? clampDesktopIconCoords(saved.x, saved.y) : nextFreeSlot();
     icon.style.left = `${pos.x}px`;
     icon.style.top = `${pos.y}px`;
   });
@@ -4763,6 +4818,7 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '☕ Old Java Creator 1995 (Billy AI — Install via Ability to Install · 10 Interactions)', kind: 'Java-from-Trash IDE', action: () => openApp('javaCreatorApp') },
   { label: '📷 Camera App (CAMERA.EXE — Live Webcam, Mic Audio, Filters & Capture)', kind: 'Hardware App', action: () => openApp('cameraApp') },
   { label: '🎤 Camera & Microphone Access Permissions (Allow Mic & Webcam)', kind: 'Privacy & Hardware', action: () => openMediaPermissionsModal() },
   { label: '↻ Auto-Arrange / Reset Desktop App Positions', kind: 'Desktop Layout', action: () => layoutDesktopIcons(true) },
@@ -4807,7 +4863,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
   { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
   { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
-  { label: '🏆 Angel-OS Trophy Vault (17 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
+  { label: '🏆 Angel-OS Trophy Vault (18 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
   { label: '🏃 Run Command... Dialog (Alt+R)', kind: 'Shell Tool', action: () => openRunDialog() },
   { label: '📌 Spawn New Desktop Sticky Note', kind: 'Desktop Toy', action: () => spawnCustomStickyNote() },
   { label: '💀 Trigger Blue Screen of Death (BSOD Prank)', kind: 'Easter Egg', action: () => triggerBsodPrank() },
@@ -5351,18 +5407,35 @@ registerMediaBridge({
   sfx,
 });
 initMediaPermissionsController();
+registerJavaCreatorBridge({
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  unlockAchievement,
+  pushToast: pushBalloonToast,
+  sfx,
+});
 applySystemRegistryToOS(true);
 syncTaskbarDock();
 syncLocalAccountStartPill();
 layoutDesktopIcons(false);
 initStartTileReordering();
 resetIdleTimer();
-pushBalloonToast('AngelOS-web Ready!', 'Camera App, Mic/Camera Permissions, draggable movable apps (Desktop, Taskbar & Start), and BIOS Bulk Activate/Deactivate ready!', '🪟');
+pushBalloonToast(
+  'AngelOS-web v1.6.0 Ready!',
+  'Install "Old Java Creator 1995 (Billy AI)" inside Ability to Install and interact with Billy 10 times to unlock Ultra Trash Mode!',
+  '☕',
+);
 
+window.addEventListener('angelos:icons-changed', () => {
+  layoutDesktopIcons(false);
+});
 window.addEventListener('resize', () => {
   openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
   layoutDesktopIcons(false);
 });
 window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
 window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });
-

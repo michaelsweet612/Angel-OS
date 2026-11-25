@@ -184,6 +184,7 @@ const TROPHY_CATALOG: TrophyDef[] = [
   { id: 'calendar_planner', icon: '📅', title: 'Y2K Scheduler', desc: 'Saved a schedule note or set an alarm in Calendar 95.', points: 15 },
   { id: 'recycle_cleaner', icon: '🗑️', title: 'Disk Clean Freak', desc: 'Restored or emptied items inside Recycle Bin 95.', points: 10 },
   { id: 'bios_tinkerer', icon: '⚙️', title: 'Silicon Whisperer', desc: 'Activated advanced firmware registers inside CMOS BIOS Setup.', points: 25 },
+  { id: 'billy_java_10', icon: '☕', title: '10 Rounds with Billy', desc: 'Interacted 10 times with Billy AI in Old Java Creator 1995 and unlocked Ultra Trash Mode.', points: 30 },
 ];
 
 const TROPHY_LS_KEY = 'gemini95_trophies_v1';
@@ -246,7 +247,7 @@ export function initTrophiesApp(windowElement: HTMLDivElement): void {
       localStorage.removeItem(TROPHY_LS_KEY);
     } catch {}
     renderTrophiesUI();
-    pushBalloonToast('Trophy Case Reset', 'All 16 Angel-OS achievements cleared.', '🏆');
+    pushBalloonToast('Trophy Case Reset', `All ${TROPHY_CATALOG.length} Angel-OS achievements cleared.`, '🏆');
   });
 }
 
@@ -2378,6 +2379,10 @@ export function executeRunCommand(raw: string): boolean {
     camera: 'cameraApp',
     webcam: 'cameraApp',
     cam: 'cameraApp',
+    java: 'javaCreatorApp',
+    oldjava: 'javaCreatorApp',
+    javac: 'javaCreatorApp',
+    billy: 'javaCreatorApp',
   };
 
   if (map[cmd]) {
@@ -2399,7 +2404,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try camera, mic, chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try oldjava, billy, camera, mic, chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 

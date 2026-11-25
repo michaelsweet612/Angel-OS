@@ -401,6 +401,7 @@ export function syncInstalledShortcutsToDesktop(): void {
     const shouldShow = pkg.installed && (isDesktopIcon ? pkg.desktopShortcut : pkg.startMenuShortcut);
     el.style.display = shouldShow ? '' : 'none';
   });
+  window.dispatchEvent(new CustomEvent('angelos:icons-changed'));
 
   // Browser desktop & start menu shortcut (visible if ANY browser engine is installed)
   const installedBrowsers = getInstalledBrowsers();
@@ -1929,6 +1930,7 @@ export function renderAbilityToInstallUI(): void {
   filtered.forEach((pkg) => {
     const row = document.createElement('div');
     row.className = `ability-pkg-row${pkg.pkgId === selectedInstallerPkgId ? ' selected' : ''}`;
+    row.dataset.pkgId = pkg.pkgId;
     const hasExeOnDisk = vfsExes.some((f) => f.name.toUpperCase() === pkg.setupExeFileName.toUpperCase());
     const statusText = pkg.installed ? '● INSTALLED' : hasExeOnDisk ? '📦 .EXE ON C:\\' : '○ NOT INSTALLED';
     const statusColor = pkg.installed

@@ -341,6 +341,25 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     canUninstall: true,
   },
   {
+    pkgId: 'app_old_java_creator',
+    name: 'Old Java Creator 1995 (Billy AI)',
+    version: '0.01a',
+    publisher: 'Sun Micro-Trash / Billy AI',
+    category: 'core',
+    sizeMB: 4.2,
+    installDir: 'C:\\JDK1995',
+    exeName: 'OLDJAVA.EXE',
+    setupExeFileName: 'OLDJAVA95_SETUP.EXE',
+    appWindowId: 'javaCreatorApp',
+    iconHtml: '☕',
+    description:
+      'Retro 1995 Java-from-scratch (trash) IDE powered by Billy AI — an intentionally clueless tiny AI agent who gets Java completely wrong on purpose, features a 10-interaction progression arc, Trash javac compiler, fake JVM crash console & unlockable Ultra Trash Mode (JDK -0.5).',
+    installed: false,
+    desktopShortcut: true,
+    startMenuShortcut: true,
+    canUninstall: true,
+  },
+  {
     pkgId: 'browser_netscape',
     name: 'Netscape Navigator 95 Gold',
     version: '3.04',
@@ -651,6 +670,9 @@ export const APP_SVG_ICONS: Record<string, string> = {
   ),
   cameraApp: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="7" y="18" width="50" height="34" rx="5" fill="#1e293b" stroke="#000" stroke-width="2.2"/><path d="M22 18 L26 11 H38 L42 18 Z" fill="#334155" stroke="#000" stroke-width="2"/><circle cx="32" cy="35" r="12" fill="#0f172a" stroke="#94a3b8" stroke-width="2.5"/><circle cx="32" cy="35" r="7.5" fill="#0284c7"/><circle cx="29" cy="32" r="2.4" fill="#e0f2fe"/><circle cx="48" cy="24" r="3" fill="#ef4444"/><rect x="13" y="23" width="6" height="3.5" rx="1" fill="#facc15"/></svg>',
+  ),
+  javaCreatorApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="52" rx="6" fill="#2c1a12" stroke="#000" stroke-width="2.2"/><path d="M22 16 Q25 11 22 7 M31 16 Q34 11 31 7 M40 16 Q43 11 40 7" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/><rect x="15" y="21" width="28" height="23" rx="4" fill="#fef3c7" stroke="#000" stroke-width="2"/><path d="M43 25 H50 C53 25 53 38 43 38" fill="none" stroke="#fef3c7" stroke-width="4"/><path d="M43 25 H50 C53 25 53 38 43 38" fill="none" stroke="#000" stroke-width="1.5"/><text x="29" y="36" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="11" fill="#b91c1c">{;?}</text><rect x="12" y="46" width="38" height="6" rx="2" fill="#f59e0b" stroke="#000" stroke-width="1.5"/></svg>',
   ),
 };
 
