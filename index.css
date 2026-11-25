@@ -1057,18 +1057,32 @@ body.theme-hotdog .icon span {
   flex-shrink: 0;
 }
 
+.media-tab-badge {
+  margin-left: auto;
+  background: #b91c1c;
+  color: #fef08a;
+  border: 1px solid #facc15;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .media-synth-panel {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
-  padding: 6px;
+  flex: 1;
+  min-height: 0;
+  padding: 5px;
   background: #c0c0c0;
-  gap: 6px;
+  gap: 5px;
+  overflow: hidden;
 }
 
 #synth-visualizer {
   width: 100%;
-  flex-grow: 1;
+  height: 98px;
+  flex-shrink: 0;
   background: #050811;
   border: 2px inset #808080;
   display: block;
@@ -1077,25 +1091,233 @@ body.theme-hotdog .icon span {
 .synth-track-info {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   background: #000000;
   color: #00ff66;
   font-family: 'VT323', 'IBM Plex Mono', monospace;
-  font-size: 1rem;
+  font-size: 0.98rem;
   padding: 3px 8px;
   border: 1px inset #808080;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+#synth-now-playing {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.synth-featured-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.synth-section-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .synth-track-selector {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.synth-track-btn {
+  font-size: 0.68rem;
+  padding: 3px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.synth-track-btn.active {
+  background: #000080 !important;
+  color: #ffff55 !important;
+  font-weight: 700;
+}
+
+.synth-chase-btn:not(.active) {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.synth-boss-btn:not(.active) {
+  background: #ffedd5;
+  color: #7c2d12;
+}
+
+.synth-magic-btn:not(.active) {
+  background: #f3e8ff;
+  color: #581c87;
 }
 
 .synth-controls-row {
   display: flex;
   align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+  flex-shrink: 0;
+}
+
+.synth-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.synth-sliders-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 0.69rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.synth-library-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 155px;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 4px;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.synth-lib-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.synth-lib-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000080;
+  white-space: nowrap;
+}
+
+.synth-lib-search {
+  flex: 1;
+  min-width: 165px;
+  font-size: 0.72rem;
+}
+
+.synth-lib-genre {
+  font-size: 0.7rem;
+  height: 24px;
+  padding: 1px 4px;
+}
+
+.synth-lib-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.synth-lib-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #0b1120;
+  border: 2px inset #808080;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  align-content: start;
+}
+
+.synth-lib-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 4px 6px;
+  background: #111827;
+  color: #e2e8f0;
+  border: 1px solid #1e293b;
+  cursor: pointer;
+  font-size: 0.68rem;
+  text-align: left;
+  min-width: 0;
+}
+
+.synth-lib-row:hover {
+  background: #1e293b;
+  border-color: #38bdf8;
+}
+
+.synth-lib-row.active {
+  background: #1d4ed8;
+  border-color: #facc15;
+  color: #fef08a;
+  font-weight: 700;
+}
+
+.synth-lib-row-main {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.synth-lib-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.64rem;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.synth-lib-row.active .synth-lib-num {
+  color: #fde047;
+}
+
+.synth-lib-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.synth-lib-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.61rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.synth-lib-row.active .synth-lib-meta {
+  color: #fef9c3;
+}
+
+.synth-lib-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  padding-top: 2px;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .yt-preset-channels {
@@ -4354,7 +4576,7 @@ body.taskbar-is-top .window.maximized {
 .cmos-bios-screen {
   position: fixed;
   inset: 0;
-  z-index: 9700;
+  z-index: 9750;
   background: #00009a;
   color: #ffffff;
   font-family: 'IBM Plex Mono', monospace;
@@ -4816,8 +5038,10 @@ body.taskbar-is-top .window.maximized {
 }
 
 .os-setup-center-dialog {
-  width: 610px;
-  max-width: 95vw;
+  width: 780px;
+  max-width: 96vw;
+  max-height: 92vh;
+  overflow-y: auto;
   background: #c0c0c0;
   color: #000000;
   border-top: 3px solid #ffffff;
@@ -4828,7 +5052,7 @@ body.taskbar-is-top .window.maximized {
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .os-setup-dialog-title {
@@ -7209,5 +7433,1442 @@ body.bios-rgb-trim .window.active-window {
   }
 }
 
+/* ==================== BOOT MANAGER, ALWAYS-LOCAL SIGN-IN & PHYSICAL BOOTER ==================== */
+.boot-manager-stage {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, #0f4c9a 0%, #062863 60%, #031538 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 3;
+}
 
+.bootmgr-card {
+  width: 720px;
+  max-width: 95vw;
+  background: rgba(7, 29, 73, 0.92);
+  border: 2px solid #60a5fa;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bootmgr-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bootmgr-sub {
+  font-size: 0.82rem;
+  color: #bae6fd;
+  margin-top: 4px;
+}
+
+.bootmgr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bootmgr-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(147, 197, 253, 0.35);
+  color: #ffffff;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.bootmgr-option:hover,
+.bootmgr-option.selected {
+  background: rgba(37, 99, 235, 0.55);
+  border-color: #fde047;
+}
+
+.bootmgr-opt-icon {
+  font-size: 1.55rem;
+  flex-shrink: 0;
+}
+
+.bootmgr-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.bootmgr-opt-text b {
+  font-size: 0.92rem;
+}
+
+.bootmgr-opt-text span {
+  font-size: 0.74rem;
+  color: #dbeafe;
+}
+
+.bootmgr-opt-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid #93c5fd;
+  color: #fde047;
+}
+
+.bootmgr-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(147, 197, 253, 0.35);
+  padding-top: 12px;
+  font-size: 0.8rem;
+  color: #e0f2fe;
+}
+
+/* Windows Always-Local-Account Lock & Sign-In Screen */
+.os-signin-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9650;
+  background: radial-gradient(circle at 25% 20%, #0c4a6e 0%, #0f172a 55%, #020617 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 28px;
+  backdrop-filter: blur(18px);
+}
+
+.signin-top-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.signin-local-badge {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid #34d399;
+  color: #a7f3d0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.signin-lock-clock {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.signin-center-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin: auto 0;
+}
+
+.signin-avatar-circle {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #38bdf8, #1d4ed8);
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.1rem;
+}
+
+.signin-username {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.signin-user-meta {
+  font-size: 0.82rem;
+  color: #bae6fd;
+}
+
+.signin-form-box {
+  width: 440px;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.signin-input-row {
+  display: flex;
+  gap: 0;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.signin-secret-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.signin-submit-btn {
+  width: 46px;
+  background: #0078d4;
+  color: #ffffff;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.signin-submit-btn:hover {
+  background: #1084e0;
+}
+
+.signin-auth-hint {
+  font-size: 0.74rem;
+  color: #cbd5e1;
+}
+
+.signin-error-msg {
+  font-size: 0.76rem;
+  color: #fecaca;
+  background: rgba(185, 28, 28, 0.45);
+  border: 1px solid #f87171;
+  padding: 5px 8px;
+}
+
+.signin-actions-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.signin-link-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-link-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.signin-create-panel {
+  background: #c0c0c0;
+  color: #000000;
+  border: 2px outset #ffffff;
+  padding: 10px;
+  text-align: left;
+  margin-top: 6px;
+}
+
+.signin-bottom-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.signin-accounts-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.signin-acct-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  padding: 6px 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.signin-acct-chip.active {
+  background: rgba(0, 120, 212, 0.7);
+  border-color: #fde047;
+}
+
+.signin-acct-chip-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: block;
+}
+
+.signin-acct-chip-sub {
+  font-size: 0.67rem;
+  color: #e0f2fe;
+}
+
+.signin-power-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.signin-tool-btn {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  color: #f8fafc;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-tool-btn:hover {
+  background: rgba(30, 64, 175, 0.85);
+  border-color: #93c5fd;
+}
+
+/* OS Setup Partition Options Table & Physical Booter Modal */
+.os-setup-part-panel {
+  background: #dfdfdf;
+  border: 2px inset #808080;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.os-setup-part-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  font-size: 0.73rem;
+}
+
+.os-setup-part-table th {
+  background: #000080;
+  color: #ffffff;
+  text-align: left;
+  padding: 4px 6px;
+}
+
+.os-setup-part-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.os-setup-part-row {
+  cursor: pointer;
+}
+
+.os-setup-part-row:hover {
+  background: #e0f2fe;
+}
+
+.os-setup-part-row.selected {
+  background: #000080;
+  color: #ffffff;
+}
+
+.win95-input {
+  background: #ffffff;
+  color: #000000;
+  border: 2px inset #808080;
+  padding: 3px 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  box-sizing: border-box;
+  height: 25px;
+}
+
+.os-setup-acct-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #d4d0c8;
+  border: 1px solid #808080;
+  padding: 8px 10px;
+  font-size: 0.74rem;
+}
+
+.phys-booter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.phys-booter-grid > div {
+  min-width: 0;
+}
+
+.phys-booter-grid .win95-btn {
+  width: 100%;
+  height: auto;
+  min-height: 27px;
+  padding: 5px 8px;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.phys-booter-cmd {
+  background: #0f172a;
+  color: #86efac;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.69rem;
+  padding: 8px;
+  border: 2px inset #808080;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 4px 0 0;
+}
+
+.start-user-pill.clickable-acct {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.start-user-pill.clickable-acct:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 120, 212, 0.35);
+}
+
+#physical-booter-modal,
+#pwa-ios-modal,
+#media-perm-modal {
+  z-index: 9900;
+}
+
+/* ==================== MOVABLE DESKTOP ICONS, TASKBAR & START REORDERING ==================== */
+.desktop-icons.free-position-mode {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.desktop-icons.free-position-mode .icon {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  transition: box-shadow 0.12s ease;
+}
+
+.desktop-icons.free-position-mode .icon.is-dragging-icon {
+  cursor: grabbing;
+  z-index: 16;
+  opacity: 0.92;
+  background-color: rgba(0, 120, 212, 0.45);
+  border: 1px dashed #fde047;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  transform: scale(1.04);
+}
+
+.taskbar-app.is-dragging-dock {
+  opacity: 0.45;
+}
+
+.taskbar-app.dock-drop-target {
+  outline: 2px solid #0078d4;
+  outline-offset: -2px;
+  background: rgba(0, 120, 212, 0.22) !important;
+}
+
+.start-tile-btn.is-dragging-tile {
+  opacity: 0.45;
+}
+
+.start-tile-btn.tile-drop-target {
+  outline: 2px dashed #0078d4;
+  background: rgba(0, 120, 212, 0.16) !important;
+}
+
+/* ==================== HARDWARE PERMISSIONS MODAL & LIVE MIC BAR ==================== */
+.media-perm-card {
+  background: #dfdfdf;
+  border: 2px inset #808080;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.media-perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #bdbdbd;
+}
+
+.media-perm-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.media-perm-pill {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid #64748b;
+  background: #e2e8f0;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.media-perm-pill.perm-live {
+  background: #16a34a;
+  border-color: #14532d;
+  color: #ffffff;
+}
+
+.media-perm-pill.perm-granted {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #14532d;
+}
+
+.media-perm-pill.perm-denied {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+
+.media-perm-pill.perm-prompt {
+  background: #fef9c3;
+  border-color: #ca8a04;
+  color: #713f12;
+}
+
+.sndrec-mic-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #d4d0c8;
+  border: 1px inset #808080;
+  padding: 5px 8px;
+}
+
+/* ==================== CAMERA APP (CAMERA.EXE) ==================== */
+.camera-app-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #c0c0c0;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.camera-perm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #d4d0c8;
+  border: 1px inset #808080;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+}
+
+.camera-perm-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.camera-stage {
+  position: relative;
+  flex: 1;
+  min-height: 180px;
+  background: #020617;
+  border: 2px inset #808080;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-video,
+.camera-test-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-idle-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #f8fafc;
+  padding: 16px;
+  background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+}
+
+.camera-shutter-flash {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease-out;
+}
+
+.camera-shutter-flash.flash {
+  opacity: 0.85;
+}
+
+.camera-rec-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(185, 28, 28, 0.92);
+  color: #ffffff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid #fecaca;
+}
+
+.camera-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #d4d0c8;
+  border: 1px inset #808080;
+  padding: 5px 8px;
+}
+
+.camera-ctrl-left,
+.camera-ctrl-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.camera-shutter-btn {
+  background: #0078d4 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.camera-record-btn {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  font-weight: 700;
+}
+
+.camera-mic-vu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+}
+
+.camera-mic-vu-track {
+  width: 64px;
+  height: 10px;
+  background: #0f172a;
+  border: 1px inset #808080;
+  overflow: hidden;
+}
+
+.camera-mic-vu-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+  transition: width 0.06s linear;
+}
+
+.camera-gallery-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  min-height: 98px;
+  max-height: 112px;
+  background: #1e293b;
+  border: 2px inset #808080;
+  padding: 6px 8px;
+  align-items: center;
+}
+
+.camera-gallery-empty {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  margin: auto;
+  text-align: center;
+}
+
+.camera-shot-card {
+  flex: 0 0 132px;
+  background: #c0c0c0;
+  border: 2px outset #ffffff;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.camera-shot-card img {
+  width: 100%;
+  height: 68px;
+  object-fit: cover;
+  background: #000;
+  display: block;
+}
+
+.camera-shot-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 0.62rem;
+  color: #000;
+}
+
+.camera-shot-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 72px;
+}
+
+.camera-dl-link {
+  text-decoration: none;
+  color: #000;
+  font-size: 0.62rem;
+  padding: 1px 4px;
+  height: auto;
+}
+
+.camera-app-wrapper .window-statusbar {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.camera-app-wrapper .window-statusbar span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ==================== CMOS BIOS BULK SELECT / ACTIVATE / DEACTIVATE BAR ==================== */
+.cmos-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  padding: 6px 8px;
+}
+
+.cmos-bulk-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.cmos-sel-counter {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fde047;
+  padding: 2px 6px;
+  background: rgba(250, 204, 21, 0.14);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+}
+
+.cmos-mini-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cmos-bulk-activate {
+  background: #14532d !important;
+  border-color: #4ade80 !important;
+  color: #dcfce7 !important;
+  font-weight: 700;
+}
+
+.cmos-bulk-deactivate {
+  background: #450a0a !important;
+  border-color: #f87171 !important;
+  color: #fee2e2 !important;
+  font-weight: 700;
+}
+
+.cmos-bulk-all-on {
+  background: #facc15 !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 700;
+}
+
+.cmos-bulk-all-off {
+  background: #b91c1c !important;
+  border-color: #fecaca !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.cmos-td-chk {
+  text-align: center;
+  width: 32px;
+}
+
+.cmos-row-chk {
+  width: 14px;
+  height: 14px;
+  accent-color: #facc15;
+  cursor: pointer;
+}
+
+.cmos-feat-row.is-checked {
+  background: rgba(250, 204, 21, 0.16);
+}
+
+/* ==================== OLD JAVA CREATOR 1995 + BILLY AI ==================== */
+.java-ide-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #c0c0c0;
+  color: #000000;
+  gap: 5px;
+  padding: 5px;
+  overflow: hidden;
+  font-size: 0.74rem;
+}
+
+.billy-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: linear-gradient(90deg, #2c1a12, #451a03 55%, #78350f);
+  color: #fef3c7;
+  padding: 6px 8px;
+  border: 2px inset #808080;
+  flex-shrink: 0;
+}
+
+.billy-progress-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.billy-interaction-label {
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: #fde047;
+  letter-spacing: 0.01em;
+}
+
+.billy-interaction-pips {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.billy-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #1c1917;
+  color: #a8a29e;
+  border: 1px solid #78716c;
+}
+
+.billy-pip.done {
+  background: #f59e0b;
+  color: #1c1917;
+  border-color: #fef08a;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.55);
+}
+
+.billy-progress-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.billy-errors-stat {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.65);
+  border: 1px solid #ef4444;
+  padding: 2px 6px;
+}
+
+.billy-milestone-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: linear-gradient(90deg, #854d0e, #ca8a04, #a16207);
+  color: #ffffff;
+  border: 2px outset #fef08a;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+
+.java-split-body {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.java-editor-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 5px;
+}
+
+.java-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.java-filename-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #000080;
+  color: #ffff55;
+  padding: 2px 7px;
+  border: 1px solid #000000;
+}
+
+.java-toolbar-btns {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.java-toolbar-btns .win95-btn {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+}
+
+.java-code-editor {
+  flex: 1.45;
+  min-height: 150px;
+  width: 100%;
+  resize: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+  line-height: 1.42;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 2px inset #808080;
+  padding: 7px 8px;
+  tab-size: 2;
+  outline: none;
+}
+
+.java-console-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #7f1d1d;
+  flex-shrink: 0;
+}
+
+.java-console-out {
+  flex: 0.85;
+  min-height: 82px;
+  max-height: 135px;
+  margin: 0;
+  overflow-y: auto;
+  background: #09090b;
+  color: #f87171;
+  border: 2px inset #808080;
+  padding: 6px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.38;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.billy-agent-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 5px;
+}
+
+.billy-card-hdr {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 5px 7px;
+  border: 1px solid #000000;
+  flex-shrink: 0;
+}
+
+.billy-avatar-face {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  background: #fef3c7;
+  border: 2px outset #f59e0b;
+  flex-shrink: 0;
+}
+
+.billy-card-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.billy-card-meta b {
+  font-size: 0.76rem;
+  color: #fde047;
+}
+
+.billy-card-meta span {
+  font-size: 0.64rem;
+  color: #cbd5e1;
+}
+
+.billy-ultra-btn {
+  width: 100%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+
+.billy-ultra-btn:disabled {
+  opacity: 0.92;
+  background: #cbd5e1;
+  color: #334155;
+  cursor: not-allowed;
+}
+
+.billy-ultra-btn.ultra-on {
+  background: linear-gradient(90deg, #b91c1c, #ea580c) !important;
+  color: #fef08a !important;
+  border-color: #facc15 !important;
+}
+
+.billy-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.billy-preset-btn {
+  font-size: 0.64rem;
+  padding: 2px 5px;
+  height: auto;
+}
+
+.billy-chat-log {
+  flex: 1;
+  min-height: 110px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 2px inset #808080;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.billy-msg {
+  padding: 5px 7px;
+  border-radius: 3px;
+  font-size: 0.71rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.billy-msg-who {
+  font-size: 0.63rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+  opacity: 0.85;
+}
+
+.billy-msg-user {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1e3a8a;
+  align-self: flex-end;
+  max-width: 92%;
+}
+
+.billy-msg-billy {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #451a03;
+  align-self: flex-start;
+  max-width: 96%;
+}
+
+.billy-msg-system {
+  background: #dcfce7;
+  border: 1px solid #16a34a;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.billy-input-row {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.billy-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.java-ide-shell .window-statusbar {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.java-ide-shell .window-statusbar span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ==================== HOCKEY CARDS 95 (MCGEE & OBLITERATE EDITION) ==================== */
+.hockey-app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #c0c0c0;
+  color: #000000;
+  gap: 5px;
+  padding: 5px;
+  overflow: hidden;
+  font-size: 0.74rem;
+}
+
+.hockey-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  background: linear-gradient(90deg, #0f172a, #1e3a8a 60%, #7f1d1d);
+  padding: 5px 7px;
+  border: 2px inset #808080;
+  flex-shrink: 0;
+}
+
+.hockey-action-bar .win95-btn {
+  font-size: 0.67rem;
+  padding: 3px 6px;
+}
+
+.hockey-split-body {
+  display: grid;
+  grid-template-columns: 332px 1fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hockey-left-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.hockey-card-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+  border: 2px inset #808080;
+  flex-shrink: 0;
+}
+
+#hockey-card-canvas {
+  display: block;
+  width: 280px;
+  height: 368px;
+  image-rendering: pixelated;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+@keyframes obliterateShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-7px, 4px) rotate(-2deg); }
+  40% { transform: translate(7px, -5px) rotate(2.5deg); }
+  60% { transform: translate(-5px, -3px) rotate(-1.5deg); }
+  80% { transform: translate(5px, 4px) rotate(1.5deg); }
+}
+
+.hockey-card-stage.obliterate-shake {
+  animation: obliterateShake 0.42s ease-in-out;
+}
+
+.hockey-scouting-box {
+  width: 100%;
+  background: #ffffff;
+  border: 2px inset #808080;
+  padding: 5px 7px;
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.hockey-scout-title {
+  font-weight: 700;
+  color: #000080;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.hockey-rarity-pill {
+  background: #0f172a;
+  color: #fde047;
+  padding: 1px 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+}
+
+.hockey-scout-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.63rem;
+  color: #334155;
+  margin-bottom: 3px;
+}
+
+.hockey-scout-note {
+  color: #1e293b;
+  font-style: italic;
+}
+
+.hockey-binder-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  background: #d4d0c8;
+  border: 2px inset #808080;
+  padding: 6px;
+}
+
+.hockey-binder-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #000080;
+  color: #ffff55;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.hockey-binder-controls {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.hockey-binder-controls input {
+  flex: 1;
+  min-width: 0;
+}
+
+.hockey-binder-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #0b1120;
+  border: 2px inset #808080;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  align-content: start;
+}
+
+.hockey-mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 7px;
+  background: #1e293b;
+  color: #f8fafc;
+  border: 2px outset #475569;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hockey-mini-card:hover {
+  background: #334155;
+  border-color: #38bdf8;
+}
+
+.hockey-mini-card.active {
+  background: #1d4ed8;
+  border-color: #facc15;
+  color: #fef08a;
+}
+
+.hockey-mini-card.is-obliterated {
+  background: #450a0a;
+  border-color: #ef4444;
+  color: #fecaca;
+}
+
+.hockey-mini-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: #38bdf8;
+}
+
+.hockey-mini-name {
+  font-weight: 700;
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hockey-mini-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: #cbd5e1;
+}
+
+.hockey-empty-binder {
+  grid-column: 1 / -1;
+  color: #94a3b8;
+  text-align: center;
+  padding: 16px;
+}
+
+.hockey-app-shell .window-statusbar {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.hockey-app-shell .window-statusbar span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 

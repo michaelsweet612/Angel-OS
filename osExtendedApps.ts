@@ -1,3 +1,4 @@
+import { fetchLivePageClientSide, isBrowseBackendMissing, markBrowseBackend, type StaticWebResult } from './osStaticWeb';
 import {
   APP_SVG_ICONS,
   BrowserAiEra,
@@ -21,6 +22,7 @@ import {
 import {
   buildSharewareDepotHtml,
   downloadBootableIsoImage,
+  downloadBootableUsbDiskImage,
   downloadPortableHostApp,
   dropSetupExeToVfs,
   executeVfsSetupExe,
@@ -33,6 +35,15 @@ import {
   toggleHardwareFullscreen,
   triggerNativePwaInstall,
 } from './osDualInstall';
+import {
+  getActiveLocalUser,
+  openLocalSignInScreen,
+  openPhysicalBooterModal,
+  renderBootManagerOptions,
+  renderOsSetupPartitionOptionsUI,
+  syncLocalAccountStartPill,
+  upsertLocalAccount,
+} from './osPhysicalBooter';
 import {
   applyPerfPreset,
   computeHardwareTelemetry,
@@ -375,6 +386,7 @@ export function applySystemRegistryToOS(skipSave = false): void {
   // 7. Synchronize Installed Package Icons, Browser Engine Branding & Dormant BIOS 5,120 Effects
   syncInstalledShortcutsToDesktop();
   syncBrowserChromeToEngine();
+  syncLocalAccountStartPill();
   applyBios5000EffectsToOS();
   refreshRegeditIfOpen();
   refreshMasterSettingsPreview();
@@ -390,6 +402,7 @@ export function syncInstalledShortcutsToDesktop(): void {
     const shouldShow = pkg.installed && (isDesktopIcon ? pkg.desktopShortcut : pkg.startMenuShortcut);
     el.style.display = shouldShow ? '' : 'none';
   });
+  window.dispatchEvent(new CustomEvent('angelos:icons-changed'));
 
   // Browser desktop & start menu shortcut (visible if ANY browser engine is installed)
   const installedBrowsers = getInstalledBrowsers();
@@ -799,7 +812,7 @@ function buildChromeNewTabHtml(): string {
 
   <div class="ntp-footer">
     <span>Google Chrome · Angel-OS Edition</span>
-    <span>Type any URL above for real Live Web via /api/browse, or toggle ✨ AI for Time-Machine pages</span>
+    <span>Type any URL or search — Live Web works with or without a backend (static Wikipedia + relay engine), or toggle ✨ AI for Time-Machine pages</span>
   </div>
 
   <script>
@@ -915,7 +928,7 @@ function buildChromeErrorPageHtml(url: string, reason: string): string {
   <div class="err-wrap">
     <div class="dino">🦖</div>
     <h1>This site can’t be reached in Live Web mode</h1>
-    <p><b>${safeUrl}</b> could not be loaded cleanly through the Live Web proxy.</p>
+    <p><b>${safeUrl}</b> could not be loaded through any Live Web route (backend proxy, Wikipedia API, direct CORS, public relays, Reader View).</p>
     <div class="reason">${safeReason}</div>
     <p>You can synthesize a working version of this destination with <b>✨ AI Web</b> or try reloading it.</p>
     <div class="actions">
@@ -1413,12 +1426,69 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
       loadingEl.innerHTML = `<div style="border:1px solid #dadce0;border-radius:8px;background:#ffffff;padding:16px 20px;color:#202124;box-shadow:0 4px 14px rgba(0,0,0,0.12);"><b>🌐 Fetching Live Page...</b><br/><small style="color:#5f6368;">${escapeHtml(domain)}</small></div>`;
       loadingEl.style.display = 'flex';
 
+      const showStaticResult = (res: StaticWebResult): void => {
+        tab.url = res.finalUrl || url;
+        tab.title = (res.title || domain).slice(0, 26);
+        tab.cachedHtml = res.html;
+        tab.embedUrl = res.embedUrl;
+        if (res.embedUrl) {
+          iframe.removeAttribute('srcdoc');
+          iframe.src = res.embedUrl;
+        } else {
+          iframe.removeAttribute('src');
+          iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(res.html) : res.html;
+        }
+        if (pushHistory && tab.history[tab.historyIdx] !== tab.url) {
+          tab.history[tab.historyIdx] = tab.url;
+        }
+        renderTabsBar();
+        updateToolbarFromTab(tab);
+        if (statusText) statusText.textContent = `Loaded Live: ${tab.url} (via ${res.via})`;
+      };
+      const showLiveError = (reason: string): void => {
+        tab.title = 'Site Unreachable';
+        tab.embedUrl = undefined;
+        tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
+        iframe.removeAttribute('src');
+        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
+        renderTabsBar();
+        updateToolbarFromTab(tab);
+        if (statusText) statusText.textContent = `Live Web could not reach ${domain} — Click "Load with ✨ AI Web" inside page.`;
+      };
+      const runStaticEngine = async (): Promise<void> => {
+        const res = await fetchLivePageClientSide(url, (msg) => {
+          if (statusText) statusText.textContent = `${domain}: ${msg}`;
+        });
+        if (res.ok) showStaticResult(res);
+        else showLiveError(`Every browser-side route was tried (no backend needed): ${res.error || 'unreachable'}`);
+      };
+
       try {
         if (simulatedDelayMs > 0) {
           await new Promise((r) => setTimeout(r, simulatedDelayMs));
         }
-        const resp = await fetch(`/api/browse?url=${encodeURIComponent(url)}`);
-        const data = await resp.json().catch(() => null);
+
+        // Static hosting (GitHub Pages, portable ZIP, file://): no Express backend -> browser-side engine.
+        if (isBrowseBackendMissing() || window.location.protocol === 'file:') {
+          await runStaticEngine();
+          return;
+        }
+
+        let resp: Response | null = null;
+        let data: any = null;
+        try {
+          resp = await fetch(`/api/browse?url=${encodeURIComponent(url)}`);
+          const ct = (resp.headers.get('content-type') || '').toLowerCase();
+          data = ct.includes('application/json') ? await resp.json().catch(() => null) : null;
+        } catch {
+          resp = null;
+        }
+        if (!resp || !data || typeof data.ok !== 'boolean') {
+          markBrowseBackend('missing');
+          await runStaticEngine();
+          return;
+        }
+        markBrowseBackend('present');
         if (resp.ok && data && data.ok && typeof data.html === 'string') {
           if (typeof data.finalUrl === 'string' && data.finalUrl) tab.url = data.finalUrl;
           if (typeof data.title === 'string' && data.title) tab.title = data.title.slice(0, 26);
@@ -1430,30 +1500,16 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
           updateToolbarFromTab(tab);
           if (statusText) statusText.textContent = `Loaded Live: ${tab.url} (HTTP ${data.status || 200})`;
         } else {
-          const isStaticHost = !['localhost', '127.0.0.1'].includes(window.location.hostname);
-          const reason =
-            resp.status === 404 && isStaticHost
-              ? 'Static GitHub Pages hosting has no backend /api/browse proxy — use built-in chrome:// pages, local files, or run `npm run dev` locally for external Live URLs.'
-              : data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
-          tab.title = 'Site Unreachable';
-          tab.embedUrl = undefined;
-          tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
-          iframe.removeAttribute('src');
-          iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
-          renderTabsBar();
-          updateToolbarFromTab(tab);
-          if (statusText) statusText.textContent = `Live Web could not reach ${domain} (${reason}) — Click "Load with ✨ AI Web" inside page.`;
+          const backendReason = data?.error || `HTTP ${resp.status || 'Error'} from proxy`;
+          const res = await fetchLivePageClientSide(url, (msg) => {
+            if (statusText) statusText.textContent = `${domain}: ${msg}`;
+          });
+          if (res.ok) showStaticResult(res);
+          else showLiveError(`${backendReason} · ${res.error || ''}`);
         }
       } catch (err: any) {
-        const reason = String(err?.message || 'Network connection error');
-        tab.title = 'Site Unreachable';
-        tab.embedUrl = undefined;
-        tab.cachedHtml = buildChromeErrorPageHtml(url, reason);
-        iframe.removeAttribute('src');
-        iframe.srcdoc = bridgeRef ? bridgeRef.injectShimIntoHtml(tab.cachedHtml) : tab.cachedHtml;
-        renderTabsBar();
-        updateToolbarFromTab(tab);
-        if (statusText) statusText.textContent = `Live Web error: ${reason}`;
+        showLiveError(String(err?.message || 'Network connection error'));
+        if (statusText) statusText.textContent = `Live Web error: ${String(err?.message || 'Network connection error')}`;
       } finally {
         loadingEl.style.display = 'none';
       }
@@ -1852,24 +1908,30 @@ function renderPhysicalOsDeckUI(): void {
     </div>
 
     <div class="phys-os-card">
-      <div class="phys-os-card-hdr">📲 B. Onto Your Real Device — Native PWA &amp; Bootable .ISO</div>
+      <div class="phys-os-card-hdr">📲 B. Physical Hardware Booter, Bare-Metal Install &amp; Real OS Media</div>
       <p style="margin:0;line-height:1.4;">
-        Install Gemini 95 directly onto your real computer or phone as a <b>Standalone Offline-Capable OS App (PWA)</b>, lock hardware fullscreen, or export a real <b>x86 El Torito Bootable .ISO</b>!
+        Install Angel-OS as an actual operating system via <b>Physical Bootable Media (.ISO / Raw USB .IMG / Linux GRUB2 / Windows Local Shell)</b> or Standalone PWA with <b>Local Account Always</b> (<code>${getActiveLocalUser().displayName}</code>).
       </p>
       <div class="phys-os-kv tabular-nums">
         PWA SHELL  : ${pwa.isInstalledStandalone ? 'INSTALLED (STANDALONE OS)' : pwa.canPromptInstall ? 'READY FOR 1-CLICK INSTALL' : 'BROWSER / IFRAME MODE'}<br/>
-        SW CACHE   : ${pwa.isOffline ? '⚡ OFFLINE CACHE ACTIVE' : 'ONLINE · WORKBOX READY'}<br/>
-        ISO VOLUME : ${(systemRegistry.isoVolumeLabel || 'GEMINI95_OS').toUpperCase()}_BOOTCD.ISO
+        ACCOUNT    : 🔒 ${getActiveLocalUser().displayName} (LOCAL ACCOUNT ALWAYS)<br/>
+        TARGET     : ${systemRegistry.selectedInstallTargetPartition || 'C:'}\\ · ${(systemRegistry.isoVolumeLabel || 'ANGELOS_BOOT').toUpperCase()}_BOOTCD.ISO
       </div>
       <div class="phys-os-actions">
-        <button class="win95-btn" id="phys-btn-pwa-install" style="height:27px;background:#dcfce7;font-weight:700;">
-          ${pwa.isInstalledStandalone ? '✓ Installed as Native OS (View Info)' : '📲 Install Gemini 95 as Native OS App (PWA)'}
+        <button class="win95-btn" id="phys-btn-open-booter" style="height:27px;background:#ffffcc;font-weight:700;">
+          💾 Open Physical Booter &amp; Real OS Media Wizard
         </button>
-        <button class="win95-btn" id="phys-btn-fullscreen" style="height:26px;">
+        <button class="win95-btn" id="phys-btn-export-iso" style="height:26px;background:#e0f2fe;font-weight:700;">
+          💿 Download Interactive x86 Bootable (.ISO)
+        </button>
+        <button class="win95-btn" id="phys-btn-export-usb" style="height:26px;background:#fef3c7;font-weight:700;">
+          🔌 Download Partitioned USB / HDD Disk (.IMG)
+        </button>
+        <button class="win95-btn" id="phys-btn-pwa-install" style="height:26px;background:#dcfce7;font-weight:700;">
+          ${pwa.isInstalledStandalone ? '✓ Installed as Native OS (View Info)' : '📲 Install Standalone OS App (PWA)'}
+        </button>
+        <button class="win95-btn" id="phys-btn-fullscreen" style="height:25px;">
           ${pwa.isFullscreen ? '❐ Exit Fullscreen Hardware Lock' : '⛶ Enter Fullscreen Hardware Lock (F11)'}
-        </button>
-        <button class="win95-btn" id="phys-btn-export-iso" style="height:27px;background:#e0f2fe;font-weight:700;">
-          💿 Download Bootable x86 CD-ROM (.ISO)
         </button>
       </div>
     </div>
@@ -1887,9 +1949,11 @@ function renderPhysicalOsDeckUI(): void {
       );
     }
   });
+  deck.querySelector('#phys-btn-open-booter')?.addEventListener('click', () => openPhysicalBooterModal());
+  deck.querySelector('#phys-btn-export-iso')?.addEventListener('click', () => downloadBootableIsoImage());
+  deck.querySelector('#phys-btn-export-usb')?.addEventListener('click', () => downloadBootableUsbDiskImage());
   deck.querySelector('#phys-btn-pwa-install')?.addEventListener('click', () => triggerNativePwaInstall());
   deck.querySelector('#phys-btn-fullscreen')?.addEventListener('click', () => toggleHardwareFullscreen());
-  deck.querySelector('#phys-btn-export-iso')?.addEventListener('click', () => downloadBootableIsoImage());
 }
 
 export function renderAbilityToInstallUI(): void {
@@ -1910,6 +1974,7 @@ export function renderAbilityToInstallUI(): void {
   filtered.forEach((pkg) => {
     const row = document.createElement('div');
     row.className = `ability-pkg-row${pkg.pkgId === selectedInstallerPkgId ? ' selected' : ''}`;
+    row.dataset.pkgId = pkg.pkgId;
     const hasExeOnDisk = vfsExes.some((f) => f.name.toUpperCase() === pkg.setupExeFileName.toUpperCase());
     const statusText = pkg.installed ? '● INSTALLED' : hasExeOnDisk ? '📦 .EXE ON C:\\' : '○ NOT INSTALLED';
     const statusColor = pkg.installed
@@ -2321,6 +2386,7 @@ export function openOsReinstallScreen(): void {
   if (!screen || !selectStep || !progStep) return;
 
   if (osSetupTimerId) clearInterval(osSetupTimerId);
+  renderOsSetupPartitionOptionsUI();
   selectStep.style.display = 'flex';
   progStep.style.display = 'none';
   screen.style.display = 'flex';
@@ -2352,23 +2418,26 @@ export function initOsReinstallerController(): void {
     const modeRadio = document.querySelector<HTMLInputElement>('input[name="os-setup-mode"]:checked');
     const setupMode = modeRadio?.value === 'clean' ? 'clean' : 'repair';
     const chosenBrowser = browserPick?.value || 'chrome';
+    const targetPartition = systemRegistry.selectedInstallTargetPartition || 'C:';
+    const userInp = (document.getElementById('os-setup-username') as HTMLInputElement | null)?.value.trim() || systemRegistry.activeLocalAccount || 'Michael';
+    const pinInp = (document.getElementById('os-setup-pin') as HTMLInputElement | null)?.value || '';
 
     selectStep.style.display = 'none';
     progStep.style.display = 'flex';
 
     const cabSteps = [
-      { pct: 8, stage: setupMode === 'clean' ? 'Formatting Partition C:\\ (QUANTUM FIREBALL 1995MB)...' : 'Running ScanDisk surface check on C:\\...', file: 'FORMAT C: /Q /V:GEMINI_95' },
-      { pct: 22, stage: 'Copying MS-DOS 7.0 & Kernel Boot Sector...', file: 'WIN95_01.CAB -> C:\\System95\\IO.SYS, MSDOS.SYS' },
-      { pct: 38, stage: 'Extracting 32-Bit Window Manager & Win11 Shell Backports...', file: 'WIN95_04.CAB -> C:\\System95\\EXPLORER.EXE, WINSNAP.DRV' },
-      { pct: 56, stage: 'Installing Sound Blaster 16 DSP & Eno Synthesizer...', file: 'WIN95_07.CAB -> C:\\System95\\SB16SND.DRV' },
-      { pct: 74, stage: `Installing Bundled Web Browser (${chosenBrowser.toUpperCase()})...`, file: 'WIN95_10.CAB -> C:\\Program Files\\Internet\\BROWSER.DLL' },
-      { pct: 90, stage: 'Building HKEY_LOCAL_MACHINE & HKEY_CURRENT_USER Registry...', file: 'WIN95_13.CAB -> C:\\System95\\SYSTEM.DAT, USER.DAT' },
-      { pct: 100, stage: 'OS Installation Complete! Rebooting into BIOS POST...', file: 'Rebooting System...' },
+      { pct: 8, stage: setupMode === 'clean' ? `Formatting Partition ${targetPartition}\\ (${systemRegistry.fileSystemFormat})...` : `Running ScanDisk check on ${targetPartition}\\...`, file: `FORMAT ${targetPartition} /Q /FS:${systemRegistry.fileSystemFormat}` },
+      { pct: 22, stage: `Writing MBR & ${systemRegistry.selectedBootloaderMode === 'win_hybrid_mbr' ? 'Windows Boot Manager' : 'DOS Boot Sector'}...`, file: `BOOTREC.EXE -> ${targetPartition}\\BOOTMGR` },
+      { pct: 38, stage: 'Extracting 32-Bit Window Manager & Win11+10 Shell...', file: `WIN95_04.CAB -> ${targetPartition}\\System95\\EXPLORER.EXE` },
+      { pct: 56, stage: `Provisioning Always-Local Account "${userInp}" (Offline Profile)...`, file: `NETUSER /ADD ${userInp} -> C:\\Users\\${userInp}` },
+      { pct: 74, stage: `Installing Bundled Web Browser (${chosenBrowser.toUpperCase()})...`, file: `WIN95_10.CAB -> C:\\Program Files\\Internet\\BROWSER.DLL` },
+      { pct: 90, stage: 'Building HKEY_LOCAL_MACHINE & HKEY_CURRENT_USER Registry...', file: 'WIN95_13.CAB -> C:\\System95\\SYSTEM.DAT' },
+      { pct: 100, stage: 'OS Installation Complete! Booting via Boot Manager & Local Sign-In...', file: 'Rebooting System...' },
     ];
 
     let idx = 0;
     if (progTitle) {
-      progTitle.textContent = setupMode === 'clean' ? 'Clean Formatting C:\\ & Reinstalling Gemini 95...' : 'Repairing & Reinstalling Gemini 95 System Files...';
+      progTitle.textContent = setupMode === 'clean' ? `Clean Installing Angel-OS onto ${targetPartition}\\...` : `Upgrading & Repairing Angel-OS on ${targetPartition}\\...`;
     }
 
     osSetupTimerId = window.setInterval(() => {
@@ -2384,21 +2453,30 @@ export function initOsReinstallerController(): void {
         if (osSetupTimerId) clearInterval(osSetupTimerId);
         osSetupTimerId = null;
 
+        const preservedAccounts = (systemRegistry.localAccounts || []).map((a) => ({ ...a }));
         if (setupMode === 'clean') {
-          // Factory reset registry, bookmarks, and VFS
-          systemRegistry = { ...DEFAULT_SYSTEM_REGISTRY };
+          const keptBootMode = systemRegistry.selectedBootloaderMode;
+          const keptTarget = systemRegistry.selectedInstallTargetPartition;
+          const keptFs = systemRegistry.fileSystemFormat;
+          systemRegistry = {
+            ...DEFAULT_SYSTEM_REGISTRY,
+            selectedBootloaderMode: keptBootMode,
+            selectedInstallTargetPartition: keptTarget,
+            fileSystemFormat: keptFs,
+            localAccounts: preservedAccounts.length ? preservedAccounts : DEFAULT_SYSTEM_REGISTRY.localAccounts.map((a) => ({ ...a })),
+          };
           browserBookmarks = DEFAULT_BOOKMARKS.map((b) => ({ ...b }));
           saveBrowserBookmarks(browserBookmarks);
           bridgeRef?.resetVfsToFactory();
           packageCatalog = DEFAULT_PACKAGE_CATALOG.map((p) => ({ ...p }));
         } else {
-          // Repair mode: restore core apps while preserving user settings & C:\Documents
           packageCatalog.forEach((p) => {
-            if (p.category === 'core' || p.pkgId === 'sys_regedit') p.installed = true;
+            if (p.category === 'core' || p.pkgId === 'sys_regedit' || p.pkgId === 'sys_perf_adjust') p.installed = true;
           });
         }
 
-        // Configure selected browser engine(s)
+        upsertLocalAccount(userInp, pinInp, 'Administrator');
+
         packageCatalog.forEach((p) => {
           if (p.category === 'browser') {
             if (chosenBrowser === 'all') {
@@ -2415,18 +2493,18 @@ export function initOsReinstallerController(): void {
           systemRegistry.biosBootOrder = 'C_A_CDROM';
         }
 
-        // Ensure Primary Partition C:\ & MBR 0x55AA are formatted and bootable after OS Setup!
         repairBootablePrimaryPartition();
-
         savePackageCatalog(packageCatalog);
         applySystemRegistryToOS();
+        syncLocalAccountStartPill();
+        renderBootManagerOptions();
         renderAbilityToInstallUI();
         renderMasterSettingsCurrentTab();
 
         screen.style.display = 'none';
         bridgeRef?.rebootGemini95();
       }
-    }, 480);
+    }, 440);
   });
 }
 
@@ -3110,6 +3188,40 @@ export function renderMasterSettingsCurrentTab(): void {
     const installedCount = packageCatalog.filter((p) => p.installed).length;
     container.innerHTML = `
       <fieldset class="settings-fieldset">
+        <legend>Boot Manager, Always-Local Accounts &amp; Physical Booter (Multi-OS Boot)</legend>
+        <div class="settings-grid-2col">
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Show Windows Boot Manager on Boot</span>
+            <input type="checkbox" id="st-boot-mgr" ${r.enableBootManagerOnBoot ? 'checked' : ''} />
+          </label>
+          <label class="settings-row" style="cursor:pointer;">
+            <span>Require Local Account Sign-In on Boot</span>
+            <input type="checkbox" id="st-boot-signin" ${r.requireSignInOnBoot ? 'checked' : ''} />
+          </label>
+          <div class="settings-row">
+            <label>Bootloader Style:</label>
+            <select id="st-boot-loader" class="win95-select">
+              <option value="win_hybrid_mbr" ${r.selectedBootloaderMode === 'win_hybrid_mbr' ? 'selected' : ''}>Win Boot Mgr + Local Sign-In</option>
+              <option value="legacy_95_mbr" ${r.selectedBootloaderMode === 'legacy_95_mbr' ? 'selected' : ''}>Classic 95 Direct MBR</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <span>Active Profile: <b>${getActiveLocalUser().avatar} ${getActiveLocalUser().displayName}</b> <small>(Local Always)</small></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+          <input type="text" id="st-local-name" class="win95-text-input" placeholder="New Local Username..." style="width:140px;" />
+          <input type="password" id="st-local-pin" class="win95-text-input" placeholder="Optional PIN" style="width:105px;" />
+          <button class="win95-btn" id="st-local-add-btn"><b>+ Create &amp; Switch Local User</b></button>
+          <button class="win95-btn" id="st-act-signin" style="background:#fef3c7;">🔒 Lock / Switch Local Account</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button class="win95-btn" id="st-act-booter" style="background:#dcfce7;font-weight:700;">💾 Physical Hardware Booter (.ISO / .IMG / Scripts)</button>
+          <button class="win95-btn" id="st-act-usb-img" style="background:#e0e7ff;font-weight:700;">🔌 Export Bootable USB Disk (.IMG)</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="settings-fieldset">
         <legend>Dual-Path Installation Policy (.EXE Verifier, FDISK Disk &amp; Host OS PWA / ISO)</legend>
         <div class="settings-grid-2col">
           <label class="settings-row" style="cursor:pointer;">
@@ -3204,6 +3316,34 @@ export function renderMasterSettingsCurrentTab(): void {
         <textarea id="st-profile-json" style="width:100%;height:62px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;box-sizing:border-box;">${JSON.stringify(systemRegistry)}</textarea>
       </fieldset>
     `;
+
+    bindCheck('st-boot-mgr', (c) => {
+      r.enableBootManagerOnBoot = c;
+      renderBootManagerOptions();
+    });
+    bindCheck('st-boot-signin', (c) => (r.requireSignInOnBoot = c));
+    bindSelect('st-boot-loader', (v) => {
+      r.selectedBootloaderMode = v as 'win_hybrid_mbr' | 'legacy_95_mbr';
+      r.enableBootManagerOnBoot = v === 'win_hybrid_mbr';
+      r.requireSignInOnBoot = v === 'win_hybrid_mbr';
+      renderBootManagerOptions();
+      renderOsSetupPartitionOptionsUI();
+      renderMasterSettingsCurrentTab();
+    });
+    container.querySelector('#st-local-add-btn')?.addEventListener('click', () => {
+      const nEl = container.querySelector('#st-local-name') as HTMLInputElement | null;
+      const pEl = container.querySelector('#st-local-pin') as HTMLInputElement | null;
+      const uname = nEl?.value.trim() || '';
+      if (!uname) {
+        bridgeRef?.sfx.playChordError();
+        return;
+      }
+      upsertLocalAccount(uname, pEl?.value || '', 'Standard');
+      renderMasterSettingsCurrentTab();
+    });
+    container.querySelector('#st-act-signin')?.addEventListener('click', () => openLocalSignInScreen());
+    container.querySelector('#st-act-booter')?.addEventListener('click', () => openPhysicalBooterModal());
+    container.querySelector('#st-act-usb-img')?.addEventListener('click', () => downloadBootableUsbDiskImage());
 
     bindCheck('st-exe-sfx', (c) => (r.sfxVerifyPrompt = c));
     bindCheck('st-exe-autodel', (c) => (r.autoDeleteExeAfterInstall = c));
@@ -3815,6 +3955,23 @@ export function initCmosBiosController(): void {
   document.getElementById('cmos-cancel-btn')?.addEventListener('click', () => {
     applySystemRegistryToOS();
     screen.style.display = 'none';
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (screen.style.display !== 'flex') return;
+    if (e.key === 'F6') {
+      e.preventDefault();
+      document.getElementById('cmos-activate-all-btn')?.click();
+    } else if (e.key === 'F7') {
+      e.preventDefault();
+      document.getElementById('cmos-defaults-btn')?.click();
+    } else if (e.key === 'F10') {
+      e.preventDefault();
+      document.getElementById('cmos-save-exit-btn')?.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      document.getElementById('cmos-cancel-btn')?.click();
+    }
   });
 }
 

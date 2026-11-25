@@ -8,6 +8,17 @@ export type BrowserEngineId = 'chrome' | 'netscape' | 'ie3';
 export type BrowserRenderMode = 'ai' | 'live';
 export type BrowserAiEra = '1996' | '2001' | 'modern';
 
+export interface LocalUserAccount {
+  username: string;
+  displayName: string;
+  avatar: string;
+  role: 'Administrator' | 'Standard';
+  password: string;
+  pin: string;
+  homeDir: string;
+  createdAt: string;
+}
+
 export interface SystemRegistry {
   // --- Tab 1: Display, CRT & Compositor (HKCU\Control Panel\Display) ---
   themePreset: 'standard' | 'hotdog' | 'cyberpunk' | 'vaporwave' | 'matrix' | 'win31' | 'highcontrast' | 'custom';
@@ -99,7 +110,7 @@ export interface SystemRegistry {
   screensaverStyle: 'starfield' | 'matrix';
   fileSystemFormat: 'FAT16' | 'FAT32';
 
-  // --- Tab 7: Dual-Path Install (.EXE Policy, FDISK Disk & Host OS Mode) ---
+  // --- Tab 7: Dual-Path Install (.EXE Policy, FDISK Disk, Partition Target & Host OS Mode) ---
   sfxVerifyPrompt: boolean;
   autoDeleteExeAfterInstall: boolean;
   defaultExeDownloadDir: 'C:\\Downloads' | 'C:\\' | 'D:\\Installers';
@@ -108,12 +119,18 @@ export interface SystemRegistry {
   strictMbrBootCheck: boolean;
   isoVolumeLabel: string;
   autoFullscreenStandalone: boolean;
+  selectedInstallTargetPartition: 'C:' | 'D:';
+  selectedBootloaderMode: 'win_hybrid_mbr' | 'legacy_95_mbr';
 
-  // --- Tab 8 / CMOS BIOS Settings (HKLM\Hardware\BIOS) ---
+  // --- Tab 8 / CMOS BIOS & Always-Local Sign-In Settings (HKLM\Hardware\BIOS) ---
   biosQuickPost: boolean;
   biosBootOrder: 'C_A_CDROM' | 'A_C_CDROM' | 'CDROM_C_A';
   biosBootAudio: boolean;
   biosNumLockOn: boolean;
+  enableBootManagerOnBoot: boolean;
+  requireSignInOnBoot: boolean;
+  activeLocalAccount: string;
+  localAccounts: LocalUserAccount[];
 }
 
 export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
@@ -207,13 +224,40 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   primaryPartitionSizeMB: 1495,
   enableSecondaryDriveD: true,
   strictMbrBootCheck: true,
-  isoVolumeLabel: 'GEMINI95_OS',
+  isoVolumeLabel: 'ANGELOS_BOOT',
   autoFullscreenStandalone: false,
+  selectedInstallTargetPartition: 'C:',
+  selectedBootloaderMode: 'win_hybrid_mbr',
 
   biosQuickPost: true,
   biosBootOrder: 'C_A_CDROM',
   biosBootAudio: true,
   biosNumLockOn: true,
+  enableBootManagerOnBoot: true,
+  requireSignInOnBoot: true,
+  activeLocalAccount: 'Michael',
+  localAccounts: [
+    {
+      username: 'Michael',
+      displayName: 'Michael',
+      avatar: '🧑‍💻',
+      role: 'Administrator',
+      password: '',
+      pin: '',
+      homeDir: 'C:\\Users\\Michael',
+      createdAt: '1995-08-24',
+    },
+    {
+      username: 'Guest95',
+      displayName: 'Guest (Local)',
+      avatar: '👤',
+      role: 'Standard',
+      password: '',
+      pin: '',
+      homeDir: 'C:\\Users\\Guest95',
+      createdAt: '1995-08-24',
+    },
+  ],
 };
 
 export interface PartitionTableState {
@@ -291,6 +335,44 @@ export const DEFAULT_PACKAGE_CATALOG: SoftwarePackage[] = [
     browserEngine: 'chrome',
     iconHtml: '🟢',
     description: 'Physical Google Chrome browser with real Live Web proxy browsing, multi-tab strip, Omnibox search & optional ✨ AI Web Time-Machine.',
+    installed: true,
+    desktopShortcut: true,
+    startMenuShortcut: true,
+    canUninstall: true,
+  },
+  {
+    pkgId: 'app_old_java_creator',
+    name: 'Old Java Creator 1995 (Billy AI)',
+    version: '0.01a',
+    publisher: 'Sun Micro-Trash / Billy AI',
+    category: 'core',
+    sizeMB: 4.2,
+    installDir: 'C:\\JDK1995',
+    exeName: 'OLDJAVA.EXE',
+    setupExeFileName: 'OLDJAVA95_SETUP.EXE',
+    appWindowId: 'javaCreatorApp',
+    iconHtml: '☕',
+    description:
+      'Retro 1995 Java-from-scratch (trash) IDE powered by Billy AI — an intentionally clueless tiny AI agent who gets Java completely wrong on purpose, features a 10-interaction progression arc, Trash javac compiler, fake JVM crash console & unlockable Ultra Trash Mode (JDK -0.5).',
+    installed: false,
+    desktopShortcut: true,
+    startMenuShortcut: true,
+    canUninstall: true,
+  },
+  {
+    pkgId: 'app_hockey_cards',
+    name: 'Hockey Cards 95 (McGee & Obliterate)',
+    version: '1.95',
+    publisher: 'McGee 144p Trading Cards Inc.',
+    category: 'multimedia',
+    sizeMB: 3.8,
+    installDir: 'C:\\Program Files\\HockeyCards95',
+    exeName: 'HOCKEY95.EXE',
+    setupExeFileName: 'HOCKEY95_SETUP.EXE',
+    appWindowId: 'hockeyCardsApp',
+    iconHtml: '🏒',
+    description:
+      'Retro 1995 hockey card pack ripper, binder & card obliterator starring Thomas Mamas McGee, Thomas, Thomas Robins, infinite random McGee & Obliterate players, and deliberately non-4K goofy procedural hockey portraits.',
     installed: true,
     desktopShortcut: true,
     startMenuShortcut: true,
@@ -605,6 +687,15 @@ export const APP_SVG_ICONS: Record<string, string> = {
   trophiesApp: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M18 12 H46 V26 C46 36 39 42 32 42 C25 42 18 36 18 26 Z" fill="#eab308" stroke="#000" stroke-width="2"/><path d="M18 16 H11 C11 26 14 30 19 30" fill="none" stroke="#ca8a04" stroke-width="3"/><path d="M46 16 H53 C53 26 50 30 45 30" fill="none" stroke="#ca8a04" stroke-width="3"/><rect x="28" y="42" width="8" height="8" fill="#ca8a04" stroke="#000" stroke-width="1.5"/><rect x="20" y="50" width="24" height="6" fill="#854d0e" stroke="#000" stroke-width="2"/></svg>',
   ),
+  cameraApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="7" y="18" width="50" height="34" rx="5" fill="#1e293b" stroke="#000" stroke-width="2.2"/><path d="M22 18 L26 11 H38 L42 18 Z" fill="#334155" stroke="#000" stroke-width="2"/><circle cx="32" cy="35" r="12" fill="#0f172a" stroke="#94a3b8" stroke-width="2.5"/><circle cx="32" cy="35" r="7.5" fill="#0284c7"/><circle cx="29" cy="32" r="2.4" fill="#e0f2fe"/><circle cx="48" cy="24" r="3" fill="#ef4444"/><rect x="13" y="23" width="6" height="3.5" rx="1" fill="#facc15"/></svg>',
+  ),
+  javaCreatorApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="52" rx="6" fill="#2c1a12" stroke="#000" stroke-width="2.2"/><path d="M22 16 Q25 11 22 7 M31 16 Q34 11 31 7 M40 16 Q43 11 40 7" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/><rect x="15" y="21" width="28" height="23" rx="4" fill="#fef3c7" stroke="#000" stroke-width="2"/><path d="M43 25 H50 C53 25 53 38 43 38" fill="none" stroke="#fef3c7" stroke-width="4"/><path d="M43 25 H50 C53 25 53 38 43 38" fill="none" stroke="#000" stroke-width="1.5"/><text x="29" y="36" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="11" fill="#b91c1c">{;?}</text><rect x="12" y="46" width="38" height="6" rx="2" fill="#f59e0b" stroke="#000" stroke-width="1.5"/></svg>',
+  ),
+  hockeyCardsApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="11" y="6" width="42" height="52" rx="4" fill="#facc15" stroke="#000" stroke-width="2.4"/><rect x="15" y="10" width="34" height="28" fill="#0ea5e9" stroke="#000" stroke-width="1.8"/><circle cx="32" cy="24" r="10" fill="#fed7aa" stroke="#000" stroke-width="1.8"/><path d="M21 20 C22 11 42 11 43 20 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/><circle cx="28" cy="23" r="3" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="28" cy="23" r="1.2" fill="#000"/><circle cx="36" cy="22" r="2" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="36" cy="22" r="1" fill="#000"/><rect x="27" y="28" width="10" height="4" fill="#450a0a"/><rect x="29" y="28" width="2.5" height="2.5" fill="#fff"/><rect x="34" y="28" width="2.5" height="2.5" fill="#facc15"/><rect x="15" y="41" width="34" height="13" fill="#0f172a"/><text x="32" y="51" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="9" fill="#fde047">MCGEE</text></svg>',
+  ),
 };
 
 const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v4';
@@ -665,7 +756,14 @@ export function loadSystemRegistry(): SystemRegistry {
       if (parsed && parsed.defaultBrowserEngine === 'cyberchrome') {
         parsed.defaultBrowserEngine = 'chrome';
       }
-      return { ...DEFAULT_SYSTEM_REGISTRY, ...parsed };
+      const merged: SystemRegistry = { ...DEFAULT_SYSTEM_REGISTRY, ...parsed };
+      if (!Array.isArray(merged.localAccounts) || merged.localAccounts.length === 0) {
+        merged.localAccounts = DEFAULT_SYSTEM_REGISTRY.localAccounts.map((a) => ({ ...a }));
+      }
+      if (!merged.localAccounts.some((a) => a.username === merged.activeLocalAccount)) {
+        merged.activeLocalAccount = merged.localAccounts[0].username;
+      }
+      return merged;
     }
   } catch (e) {
     console.warn('Registry load fallback:', e);
@@ -828,8 +926,13 @@ export const REGISTRY_DESCRIPTORS: RegistryEntryDescriptor[] = [
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'MountLogicalDriveD', key: 'enableSecondaryDriveD', regType: 'REG_DWORD', description: '1 = Mount secondary D:\\ partition in Explorer' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'StrictMBRBootGuard', key: 'strictMbrBootCheck', regType: 'REG_DWORD', description: '1 = Halt BIOS POST if C:\\ or MBR is missing' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\FDISK', name: 'BootISOVolumeLabel', key: 'isoVolumeLabel', regType: 'REG_SZ', description: 'ISO-9660 volume label for exported bootable ISO' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\Setup', name: 'TargetInstallPartition', key: 'selectedInstallTargetPartition', regType: 'REG_SZ', description: 'Selected target drive partition for OS installation (C: or D:)' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\Disk\\Setup', name: 'BootloaderMode', key: 'selectedBootloaderMode', regType: 'REG_SZ', description: 'win_hybrid_mbr or legacy_95_mbr boot manager configuration' },
 
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'QuickPOST', key: 'biosQuickPost', regType: 'REG_DWORD', description: 'Fast RAM test during power-on boot' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'BootSequence', key: 'biosBootOrder', regType: 'REG_SZ', description: 'Boot priority (C_A_CDROM|A_C_CDROM|CDROM_C_A)' },
   { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Hardware\\BIOS\\Award451PG', name: 'BootStartupChime', key: 'biosBootAudio', regType: 'REG_DWORD', description: 'Synthesize Eno startup chime during splash' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Boot\\Manager', name: 'EnableBootManager', key: 'enableBootManagerOnBoot', regType: 'REG_DWORD', description: '1 = Show Windows Boot Manager partition selector during boot' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Accounts\\LocalOnly', name: 'RequireLocalSignIn', key: 'requireSignInOnBoot', regType: 'REG_DWORD', description: '1 = Show Windows Always-Local-Account sign-in screen on boot' },
+  { hive: 'HKEY_LOCAL_MACHINE', subkey: 'Software\\Accounts\\LocalOnly', name: 'ActiveLocalAccount', key: 'activeLocalAccount', regType: 'REG_SZ', description: 'Currently active Always-Local user account profile' },
 ];

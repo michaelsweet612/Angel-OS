@@ -3,21 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Remix Gemini 95</title>
+    <title>AngelOS-web</title>
     <meta
       name="description"
-      content="Explore a retro OS that brings back nostalgic memories with an AI twist."
+      content="AngelOS-web — An installable Windows 11 + 10/95 hybrid web operating system with BIOS, partition setup, physical booter, and always-local accounts."
     />
-    <meta property="og:title" content="Remix Gemini 95" />
+    <meta property="og:title" content="AngelOS-web" />
     <meta
       property="og:description"
-      content="Explore a retro OS that brings back nostalgic memories with an AI twist."
+      content="AngelOS-web — An installable Windows 11 + 10/95 hybrid web operating system with BIOS, partition setup, physical booter, and always-local accounts."
     />
     <meta name="theme-color" content="#000080" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Gemini 95" />
+    <meta name="apple-mobile-web-app-title" content="AngelOS-web" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -101,6 +101,66 @@
         </div>
       </div>
 
+      <!-- Stage 1.5: Windows-Style Boot Manager (OS & Partition Selector) -->
+      <div id="boot-manager-stage" class="boot-manager-stage" style="display: none">
+        <div class="bootmgr-card">
+          <div class="bootmgr-header">
+            <div class="bootmgr-title">Angel-OS Windows Boot Manager</div>
+            <div class="bootmgr-sub">Choose an operating system or tool to start · Account Mode: <b>Local Account Always</b></div>
+          </div>
+          <div class="bootmgr-list" id="bootmgr-list">
+            <button type="button" class="bootmgr-option selected" data-boot-choice="normal">
+              <div class="bootmgr-opt-icon">🪟</div>
+              <div class="bootmgr-opt-text">
+                <b>Angel-OS (Windows 11 + 10 Hybrid OS)</b>
+                <span id="bootmgr-normal-desc">On Volume C:\ (Partition 1) · Always Local Account Sign-In</span>
+              </div>
+              <span class="bootmgr-opt-tag">DEFAULT</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="safemode">
+              <div class="bootmgr-opt-icon">🛡️</div>
+              <div class="bootmgr-opt-text">
+                <b>Angel-OS Safe Mode &amp; Recovery Diagnostics</b>
+                <span>Minimal drivers · Inspect files, Registry &amp; Partition health</span>
+              </div>
+              <span class="bootmgr-opt-tag">SAFE</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="setup">
+              <div class="bootmgr-opt-icon">💿</div>
+              <div class="bootmgr-opt-text">
+                <b>Windows-Style OS Setup &amp; Partition Options (SETUP.EXE)</b>
+                <span>Choose disk partition (C: / D:), format, configure Bootloader &amp; create Local Account</span>
+              </div>
+              <span class="bootmgr-opt-tag">INSTALL</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="physical_booter">
+              <div class="bootmgr-opt-icon">💾</div>
+              <div class="bootmgr-opt-text">
+                <b>Physical Hardware Booter (.ISO / Raw USB .IMG / Linux &amp; Win Installers)</b>
+                <span>Create real hardware boot media for bare-metal PCs, USB drives, QEMU &amp; VirtualBox</span>
+              </div>
+              <span class="bootmgr-opt-tag">BARE METAL</span>
+            </button>
+            <button type="button" class="bootmgr-option" data-boot-choice="cmos">
+              <div class="bootmgr-opt-icon">⚙️</div>
+              <div class="bootmgr-opt-text">
+                <b>Enter CMOS BIOS Setup (5,120+ Features) / MS-DOS FDISK</b>
+                <span>Hardware RAM/CPU/Fan curves &amp; MBR partition table setup</span>
+              </div>
+              <span class="bootmgr-opt-tag">BIOS</span>
+            </button>
+          </div>
+          <div class="bootmgr-footer">
+            <span id="bootmgr-countdown-txt" class="tabular-nums">Starting highlighted option in 5s...</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="bootmgr-pause-btn" class="boot-skip-btn">⏸ Pause Timer</button>
+              <button type="button" id="bootmgr-continue-btn" class="boot-power-btn">▶ Boot Highlighted OS ➔</button>
+              <button type="button" id="bootmgr-skip-btn" class="boot-skip-btn">Skip to Desktop</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Stage 2: Windows 11 + 10 Boot Splash Screen with Windows Icon -->
       <div id="boot-splash-stage" class="boot-splash-stage" style="display: none">
         <div class="splash-clouds-bg"></div>
@@ -134,6 +194,61 @@
         </div>
         <button id="splash-skip-btn" class="splash-skip-btn">Skip to Desktop ➔</button>
         <div class="splash-loading-bar"></div>
+      </div>
+    </div>
+
+    <!-- WINDOWS ALWAYS-LOCAL-ACCOUNT LOCK & SIGN-IN SCREEN -->
+    <div id="os-signin-screen" class="os-signin-screen" style="display: none">
+      <div class="signin-top-strip">
+        <span class="signin-local-badge">🔒 LOCAL ACCOUNT ALWAYS · OFFLINE OS PROFILE (NO CLOUD SIGN-IN REQUIRED)</span>
+        <span id="signin-lock-clock" class="signin-lock-clock tabular-nums">10:30 AM · 11/24/2026</span>
+      </div>
+
+      <div class="signin-center-box">
+        <div class="signin-avatar-circle" id="signin-avatar">🧑‍💻</div>
+        <div class="signin-username" id="signin-displayname">Michael</div>
+        <div class="signin-user-meta" id="signin-user-meta">Local Account · Administrator · C:\Users\Michael</div>
+
+        <div class="signin-form-box" id="signin-form-box">
+          <div class="signin-input-row">
+            <input
+              type="password"
+              id="signin-secret-input"
+              class="signin-secret-input"
+              placeholder="Optional Password / PIN (leave blank for instant sign in)"
+              autocomplete="off"
+            />
+            <button type="button" id="signin-submit-btn" class="signin-submit-btn" title="Sign in">➔</button>
+          </div>
+          <div id="signin-auth-hint" class="signin-auth-hint">Local password not required — click ➔ or press Enter to sign in</div>
+          <div id="signin-error-msg" class="signin-error-msg" style="display: none">Incorrect local password or PIN. Try again.</div>
+
+          <div class="signin-actions-row">
+            <button type="button" id="signin-new-acct-btn" class="signin-link-btn">+ New Local Account</button>
+            <button type="button" id="signin-quick-desk-btn" class="signin-link-btn">Sign in immediately ➔</button>
+          </div>
+
+          <div id="signin-create-panel" class="signin-create-panel" style="display: none">
+            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.78rem">Create Always-Local Account (Stored in C:\Users\)</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap">
+              <input type="text" id="signin-create-name" class="win95-input" placeholder="Username (e.g. Alex)" style="flex: 1; min-width: 120px" />
+              <input type="password" id="signin-create-pin" class="win95-input" placeholder="Optional PIN (blank = no PIN)" style="width: 150px" />
+              <button type="button" id="signin-create-save-btn" class="win95-btn"><b>Create Local User</b></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="signin-bottom-bar">
+        <div class="signin-accounts-list" id="signin-accounts-list">
+          <!-- Populated with local accounts -->
+        </div>
+        <div class="signin-power-tools">
+          <button type="button" class="signin-tool-btn" id="signin-open-booter-btn">💾 Physical Booter</button>
+          <button type="button" class="signin-tool-btn" id="signin-open-setup-btn">💿 Partition Setup</button>
+          <button type="button" class="signin-tool-btn" id="signin-open-bootmgr-btn">🪟 Boot Manager</button>
+          <button type="button" class="signin-tool-btn" id="signin-reboot-bios-btn">🔄 BIOS / Restart</button>
+        </div>
       </div>
     </div>
 
@@ -175,6 +290,22 @@
               <button type="button" class="cmos-filter-pill active" data-filter="all">All (5,120)</button>
               <button type="button" class="cmos-filter-pill" data-filter="live">⚡ Live OS Effects</button>
               <button type="button" class="cmos-filter-pill" data-filter="active">✓ Activated Only</button>
+            </div>
+          </div>
+
+          <!-- Bulk Select, Activate & Deactivate Controls -->
+          <div class="cmos-bulk-bar">
+            <div class="cmos-bulk-group">
+              <span id="cmos-selected-counter" class="cmos-sel-counter tabular-nums">0 selected</span>
+              <button type="button" id="cmos-select-filtered-btn" class="cmos-mini-btn" title="Select all registers in current category/search">☑ Select View</button>
+              <button type="button" id="cmos-select-all-5120-btn" class="cmos-mini-btn" title="Select all 5,120 BIOS registers">☑ Select All 5,120</button>
+              <button type="button" id="cmos-clear-selection-btn" class="cmos-mini-btn" title="Clear current selection">☐ Clear</button>
+              <button type="button" id="cmos-activate-selected-btn" class="cmos-mini-btn cmos-bulk-activate" disabled title="Activate all selected registers">⚡ Activate Selected</button>
+              <button type="button" id="cmos-deactivate-selected-btn" class="cmos-mini-btn cmos-bulk-deactivate" disabled title="Deactivate all selected registers">⊘ Deactivate Selected</button>
+            </div>
+            <div class="cmos-bulk-group">
+              <button type="button" id="cmos-activate-all-btn" class="cmos-mini-btn cmos-bulk-all-on" title="Activate all 5,120 BIOS features at once">⚡⚡ Activate ALL 5,120</button>
+              <button type="button" id="cmos-deactivate-all-btn" class="cmos-mini-btn cmos-bulk-all-off" title="Deactivate all 5,120 BIOS features back to dormant">↺ Deactivate ALL</button>
             </div>
           </div>
 
@@ -288,6 +419,7 @@
             <table class="cmos-features-table">
               <thead>
                 <tr>
+                  <th style="width: 32px; text-align: center"><input type="checkbox" id="cmos-select-page-chk" title="Select/Deselect All on Page" /></th>
                   <th>Reg / ID</th>
                   <th>Advanced BIOS Feature</th>
                   <th>Subsystem</th>
@@ -310,7 +442,7 @@
           </div>
 
           <div id="cmos-item-help-box" class="cmos-help-box">
-            <b>ITEM HELP:</b> Select any of the 5,120 advanced firmware registers above to inspect its documentation. Nothing is activated unless you enable it here!
+            <b>ITEM HELP:</b> Select any of the 5,120 advanced firmware registers above to inspect its documentation. Use checkboxes to select &amp; activate/deactivate batches, or click "Activate ALL 5,120"!
           </div>
         </div>
       </div>
@@ -318,54 +450,101 @@
       <div class="cmos-footer-actions">
         <button id="cmos-save-exit-btn" class="cmos-action-btn primary">F10: Save to CMOS &amp; Reboot</button>
         <button id="cmos-apply-desktop-btn" class="cmos-action-btn" style="background: #86efac">✓ Apply &amp; Return to Desktop</button>
+        <button id="cmos-footer-activate-all-btn" class="cmos-action-btn" style="background: #fde047">⚡ F6: Activate ALL 5,120 Features</button>
         <button id="cmos-os-setup-btn" class="cmos-action-btn">💿 Boot CD-ROM (OS Reinstall)</button>
-        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Reset All 5,120+ to Inactive</button>
+        <button id="cmos-defaults-btn" class="cmos-action-btn">F7: Deactivate ALL 5,120+</button>
         <button id="cmos-cancel-btn" class="cmos-action-btn">ESC: Exit</button>
       </div>
     </div>
 
-    <!-- FULL BLUE-SCREEN OS REINSTALLER (GEMINI 95 SETUP.EXE) -->
+    <!-- FULL BLUE-SCREEN OS REINSTALLER (ANGELOS-WEB SETUP.EXE) -->
     <div id="os-reinstall-screen" class="os-reinstall-screen" style="display: none">
-      <div class="os-setup-top-banner">Gemini 95 Operating System Setup (SETUP.EXE)</div>
+      <div class="os-setup-top-banner">AngelOS-web Operating System Setup (SETUP.EXE)</div>
       <div class="os-setup-center-dialog" id="os-setup-step-select">
-        <div class="os-setup-dialog-title">Welcome to Gemini 95 Setup &amp; Recovery</div>
+        <div class="os-setup-dialog-title">Angel-OS Setup &amp; Recovery — Partition &amp; Local Account Options</div>
         <p class="os-setup-lead">
-          Setup will reinstall or repair the Gemini 95 Operating System on drive <b>C:\ (QUANTUM FIREBALL 1995MB)</b>. Choose your installation mode and bundled Web Browser below:
+          Select how to install Angel-OS, pick your target disk partition, and configure your offline <b>Local Account Always</b> profile:
         </p>
         <div class="os-setup-options">
           <label class="os-setup-radio-card">
             <input type="radio" name="os-setup-mode" value="repair" checked />
             <div>
-              <b>1. Express In-Place Repair Install (Recommended)</b>
-              <span>Verifies system `.CAB` files, reinstalls missing core applications &amp; browser engines, and preserves your saved notes/art in <code>C:\Documents</code> &amp; <code>C:\Pictures</code>.</span>
+              <b>1. Express In-Place Upgrade / Repair Install (Recommended)</b>
+              <span>Preserves your files in <code>C:\Users\</code>, <code>C:\Documents</code> &amp; <code>C:\Pictures</code> while updating system binaries and browsers.</span>
             </div>
           </label>
           <label class="os-setup-radio-card">
             <input type="radio" name="os-setup-mode" value="clean" />
             <div>
-              <b>2. Clean Format C:\ &amp; Factory OS Reinstall</b>
-              <span>Formats partition <code>C:\</code>, resets all Master Settings &amp; Registry keys (`HKEY_*`) to 1995 factory defaults, and performs a fresh OS installation from CD-ROM.</span>
+              <b>2. Custom Clean Install onto Selected Partition</b>
+              <span>Formats the selected partition cleanly, writes fresh MBR/Boot Manager records, and resets Registry keys (<code>HKEY_*</code>).</span>
             </div>
           </label>
         </div>
-        <div class="os-setup-browser-pick">
-          <label for="os-setup-browser-select"><b>Bundle Default Web Browser Engine During OS Setup:</b></label>
-          <select id="os-setup-browser-select" class="win95-select">
-            <option value="chrome" selected>🟢 Google Chrome (Default Desktop Engine)</option>
-            <option value="netscape">🌐 Netscape Navigator 95 Gold (v3.04)</option>
-            <option value="ie3">📘 Microsoft Internet Explorer 3.0 (Plus! 95)</option>
-            <option value="all">💿 Install All 3 Browser Engines Together</option>
-          </select>
+
+        <div class="os-setup-part-panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <b>Where do you want to install Angel-OS? (Partition Options)</b>
+            <span id="os-setup-selected-part-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:#000080;">Selected: Partition 1 (C:\)</span>
+          </div>
+          <table class="os-setup-part-table tabular-nums">
+            <thead>
+              <tr>
+                <th>Partition</th>
+                <th>Status</th>
+                <th>Size / FS</th>
+                <th>Install Target</th>
+              </tr>
+            </thead>
+            <tbody id="os-setup-partitions-tbody"></tbody>
+          </table>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <button type="button" id="os-setup-part-new-btn" class="win95-btn">+ Ensure C: &amp; D: Dual Partitions</button>
+            <button type="button" id="os-setup-part-fmt-btn" class="win95-btn">⚡ Format Selected Partition</button>
+            <button type="button" id="os-setup-part-active-btn" class="win95-btn">✓ Set Primary Active (0x80)</button>
+            <select id="os-setup-fs-select" class="win95-select" title="Partition File System">
+              <option value="FAT32">FAT32 (Modern Large Volume)</option>
+              <option value="FAT16">FAT16 (1995 Classic)</option>
+            </select>
+            <select id="os-setup-bootloader-select" class="win95-select" title="Bootloader Option">
+              <option value="win_hybrid_mbr">Windows Boot Manager + Local Sign-In</option>
+              <option value="legacy_95_mbr">Classic Award 95 Direct Boot</option>
+            </select>
+          </div>
         </div>
-        <div class="os-setup-btn-row">
-          <button id="os-setup-fdisk-btn" class="win95-btn">🔧 Partition Disk (FDISK.EXE)</button>
-          <button id="os-setup-begin-btn" class="win95-btn"><b>▶ Begin OS Installation ➔</b></button>
-          <button id="os-setup-cancel-btn" class="win95-btn">Cancel &amp; Return to Desktop</button>
+
+        <div class="os-setup-acct-grid">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="os-setup-username"><b>Local Account Username (Always Local):</b></label>
+            <input type="text" id="os-setup-username" class="win95-input" value="Michael" placeholder="e.g. Michael" />
+            <span style="font-size:0.68rem;color:#1e293b;">🔒 Local Account Always — no online cloud sign-in needed.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="os-setup-pin"><b>Optional Local PIN / Password:</b></label>
+            <input type="password" id="os-setup-pin" class="win95-input" value="" placeholder="Leave blank for 1-click Local Sign-In" />
+            <select id="os-setup-browser-select" class="win95-select" style="margin-top:2px;">
+              <option value="chrome" selected>🟢 Bundle Google Chrome (Default)</option>
+              <option value="netscape">🌐 Netscape Navigator 95 Gold</option>
+              <option value="ie3">📘 Microsoft Internet Explorer 3.0</option>
+              <option value="all">💿 Bundle All 3 Browsers</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="os-setup-btn-row" style="justify-content:space-between;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" id="os-setup-fdisk-btn" class="win95-btn">🔧 Full FDISK.EXE</button>
+            <button type="button" id="os-setup-physical-btn" class="win95-btn" style="background:#e0f2fe;font-weight:700;">💾 Physical Hardware Booter (.ISO / USB .IMG)</button>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button type="button" id="os-setup-begin-btn" class="win95-btn"><b>▶ Install Angel-OS Now ➔</b></button>
+            <button type="button" id="os-setup-cancel-btn" class="win95-btn">Cancel</button>
+          </div>
         </div>
       </div>
 
       <div class="os-setup-center-dialog" id="os-setup-step-progress" style="display: none">
-        <div class="os-setup-dialog-title" id="os-setup-progress-title">Copying Gemini 95 System Files...</div>
+        <div class="os-setup-dialog-title" id="os-setup-progress-title">Copying AngelOS-web System Files...</div>
         <p class="os-setup-lead" id="os-setup-stage-desc">Preparing Scandisk &amp; verifying FAT allocation tables on C:\...</p>
         <div class="os-setup-file-ticker tabular-nums" id="os-setup-file-ticker">Extracting: WIN95_01.CAB -&gt; C:\System95\KERNEL32.DLL</div>
         <div class="installshield-bar-outer">
@@ -582,22 +761,116 @@
     <div id="pwa-ios-modal" class="installshield-backdrop" style="display: none">
       <div class="sfx-exe-window" style="width: 460px">
         <div class="window-titlebar">
-          <span class="window-title">📲 Install Gemini 95 onto Your Real Device</span>
+          <span class="window-title">📲 Install AngelOS-web onto Your Real Device</span>
           <div class="window-controls">
             <button class="window-control-button" id="pwa-ios-close-btn">✕</button>
           </div>
         </div>
         <div class="sfx-exe-body">
           <div id="pwa-guide-body" style="font-size: 0.78rem; line-height: 1.45; color: #000">
-            <p style="margin: 0 0 8px 0"><b>Install Gemini 95 as a Standalone Fullscreen OS App:</b></p>
+            <p style="margin: 0 0 8px 0"><b>Install AngelOS-web as a Standalone Fullscreen OS App:</b></p>
             <ol style="margin: 0 0 10px 18px; padding: 0">
               <li>On <b>iPhone / iPad (Safari)</b>: Tap the <b>Share (↑)</b> button in the toolbar, then tap <b>"Add to Home Screen"</b>.</li>
-              <li>On <b>Desktop Chrome / Edge</b>: Open this app in its own browser tab and click the <b>Install Gemini 95 (🖥️)</b> icon in the address bar.</li>
+              <li>On <b>Desktop Chrome / Edge</b>: Open this app in its own browser tab and click the <b>Install AngelOS-web (🖥️)</b> icon in the address bar.</li>
             </ol>
           </div>
           <div class="sfx-exe-footer">
             <button class="win95-btn" id="pwa-modal-portable-btn">💻 Download Portable App (.HTML) Now</button>
             <button class="win95-btn" id="pwa-ios-ok-btn"><b>OK</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHYSICAL HARDWARE BOOTER & BARE-METAL OS MEDIA BUILDER MODAL -->
+    <div id="physical-booter-modal" class="installshield-backdrop" style="display: none">
+      <div class="sfx-exe-window" style="width: 780px; max-width: 96vw">
+        <div class="window-titlebar">
+          <span class="window-title">💾 Angel-OS Physical Hardware Booter &amp; Real OS Installer</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="phys-booter-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="sfx-exe-body" style="max-height: 82vh; overflow-y: auto">
+          <div style="background:#000080;color:#fff;padding:7px 10px;font-weight:700;font-size:0.8rem;margin-bottom:8px;">
+            Real Bare-Metal Boot Images, USB/MBR Partition Writer &amp; Host OS Kiosk Installers (Local Account Always)
+          </div>
+          <div id="phys-booter-live-summary" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:#dfdfdf;border:1px inset #808080;padding:6px 8px;margin-bottom:8px;">
+            Target Partition: C: · Account Policy: Local Account Always
+          </div>
+          <div class="phys-booter-grid">
+            <div style="background:#d4d0c8;border:2px groove #fff;padding:9px;">
+              <b style="color:#000080;">1. Raw Hardware Bootable Images (x86 / BIOS)</b>
+              <p style="font-size:0.72rem;margin:4px 0 8px;">Assembled 16-bit x86 real-mode interactive bootloader (<code>0x7C00</code>) + real 64-byte MBR Partition Table &amp; El Torito CD Catalog:</p>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <button type="button" class="win95-btn" id="phys-booter-dl-iso" style="background:#e0f2fe;font-weight:700;">💿 Download Interactive Bootable .ISO (El Torito x86)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-usb" style="background:#ffffcc;font-weight:700;">🔌 Download Partitioned USB / HDD Disk .IMG (MBR 0x55AA)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-py">🐍 Download Python USB/ISO Builder (.PY)</button>
+              </div>
+            </div>
+            <div style="background:#d4d0c8;border:2px groove #fff;padding:9px;">
+              <b style="color:#000080;">2. Install Directly on Real Linux / Windows PCs</b>
+              <p style="font-size:0.72rem;margin:4px 0 8px;">Configures <code>/opt/angel-os</code> or <code>C:\Angel-OS</code> with offline <b>Local Account Always</b> &amp; fullscreen boot launcher:</p>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <button type="button" class="win95-btn" id="phys-booter-dl-linux" style="background:#dcfce7;font-weight:700;">🐧 Linux Bare-Metal &amp; GRUB2 Installer (.SH)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-win" style="background:#e0e7ff;font-weight:700;">🪟 Windows Partition &amp; Local Shell Installer (.PS1)</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-pwa">📲 Install Standalone PWA App</button>
+                <button type="button" class="win95-btn" id="phys-booter-dl-html">🌐 Portable Desktop Container (.HTML)</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <b style="font-size:0.73rem;">Hardware Flash &amp; VM Boot Commands:</b>
+            <pre class="phys-booter-cmd">Boot ISO in VM  : qemu-system-x86_64 -cdrom ANGELOS_BOOT_BOOTCD.ISO
+Boot USB in VM  : qemu-system-x86_64 -hda ANGELOS_USB_DISK.img
+Write USB Linux : sudo dd if=ANGELOS_USB_DISK.img of=/dev/sdX bs=4M status=progress conv=fsync
+Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtcher on Windows)</pre>
+          </div>
+          <div class="sfx-exe-footer" style="margin-top:8px;">
+            <button type="button" class="win95-btn" id="phys-booter-ok-btn"><b>Close</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMERA & MICROPHONE HARDWARE PERMISSIONS MODAL -->
+    <div id="media-perm-modal" class="installshield-backdrop" style="display: none">
+      <div class="sfx-exe-window" style="width: 520px; max-width: 95vw">
+        <div class="window-titlebar">
+          <span class="window-title">🎤📷 AngelOS-web — Camera &amp; Microphone Access Permissions</span>
+          <div class="window-controls">
+            <button class="window-control-button" id="media-perm-close-btn">✕</button>
+          </div>
+        </div>
+        <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:10px;font-size:0.78rem;color:#000">
+          <div style="background:#000080;color:#fff;padding:7px 10px;font-weight:700;">
+            Hardware Privacy Control — Real Browser Camera &amp; Microphone Access
+          </div>
+          <p style="margin:0;line-height:1.4;">
+            Grant browser permission below to allow <b>AngelOS-web</b> to use your real webcam and microphone inside <b>Camera App (CAMERA.EXE)</b> and <b>Sound Studio (SNDREC32.EXE)</b>. Streams remain strictly local in your browser and can be released anytime.
+          </p>
+          <div class="media-perm-card">
+            <div class="media-perm-row">
+              <div><b>📷 Camera (Webcam)</b><br /><small>Live viewfinder, filters, PNG snapshots &amp; video capture</small></div>
+              <span id="perm-modal-cam-state" class="media-perm-pill perm-prompt">ASK / PROMPT</span>
+              <button type="button" class="win95-btn" id="perm-ask-cam-btn" style="background:#e0f2fe;font-weight:700;">📷 Allow Camera</button>
+            </div>
+            <div class="media-perm-row">
+              <div><b>🎤 Microphone (Audio Input)</b><br /><small>Live voice oscilloscope, mic recording &amp; video sound</small></div>
+              <span id="perm-modal-mic-state" class="media-perm-pill perm-prompt">ASK / PROMPT</span>
+              <button type="button" class="win95-btn" id="perm-ask-mic-btn" style="background:#dcfce7;font-weight:700;">🎤 Allow Mic</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="win95-btn" id="perm-ask-both-btn" style="background:#fef08a;font-weight:700;">📷+🎤 Allow Camera &amp; Mic Together</button>
+            <button type="button" class="win95-btn" id="perm-stop-all-btn" style="color:#991b1b;">⏹ Stop / Release Active Hardware</button>
+          </div>
+          <div class="sfx-exe-footer" style="justify-content:space-between;">
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="win95-btn" id="perm-launch-camera-btn">📷 Open Camera App</button>
+              <button type="button" class="win95-btn" id="perm-launch-sound-btn">🎚️ Open Sound Studio</button>
+            </div>
+            <button type="button" class="win95-btn" id="media-perm-ok-btn"><b>Done</b></button>
           </div>
         </div>
       </div>
@@ -756,6 +1029,14 @@
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #312e81, #8b5cf6)">🎚️</div>
           <span>Sound Studio</span>
         </div>
+        <div class="icon" data-app="cameraApp">
+          <img
+            data-icon-key="cameraApp"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Camera App"
+          />
+          <span>Camera App</span>
+        </div>
         <div class="icon" data-app="calendarApp">
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #991b1b, #ef4444)">📅</div>
           <span>Calendar 95</span>
@@ -775,6 +1056,22 @@
         <div class="icon" data-app="recycleBin">
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #334155, #94a3b8)">🗑️</div>
           <span>Recycle Bin</span>
+        </div>
+        <div class="icon" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">
+          <img
+            data-icon-key="javaCreatorApp"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Old Java Creator"
+          />
+          <span>Old Java Creator</span>
+        </div>
+        <div class="icon" data-app="hockeyCardsApp" data-pkg-id="app_hockey_cards">
+          <img
+            data-icon-key="hockeyCardsApp"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="Hockey Cards 95"
+          />
+          <span>Hockey Cards 95</span>
         </div>
       </div>
 
@@ -1151,10 +1448,10 @@
         </div>
       </div>
 
-      <!-- 9. GEMPLAYER (16-Bit Chiptune Synth + YouTube CRT Player) -->
-      <div class="window resizable" id="mediaPlayer" style="width: 540px; height: 480px">
+      <!-- 9. GEMPLAYER (16-Bit Mega Chiptune Synth: 9 Featured Themes + 5,000 Random Musics + YouTube CRT TV) -->
+      <div class="window resizable" id="mediaPlayer" style="width: 790px; height: 605px">
         <div class="window-titlebar">
-          <span class="window-title">GemPlayer 95 — Chiptune Synth &amp; Retro TV</span>
+          <span class="window-title">GemPlayer 95 — Mega Chiptune Jukebox (5,009 Tracks) &amp; Retro TV</span>
           <div class="window-controls">
             <div class="window-minimize window-control-button" title="Minimize">−</div>
             <div class="window-maximize window-control-button" title="Maximize">□</div>
@@ -1164,28 +1461,77 @@
         <div class="window-content media-player-content">
           <!-- Mode Tabs: Synth Deck vs YouTube TV -->
           <div class="media-mode-tabs">
-            <button class="win95-btn active" id="media-tab-synth">🎹 16-Bit Synth Visualizer</button>
+            <button class="win95-btn active" id="media-tab-synth">🎹 16-Bit Mega Synth (5,009 Tracks)</button>
             <button class="win95-btn" id="media-tab-yt">📺 YouTube Retro TV</button>
+            <span class="media-tab-badge" id="synth-ambush-badge" style="display: none">🔦 RANDOM CHASE AMBUSH!</span>
           </div>
 
           <!-- SYNTHESIZER DECK VIEW -->
           <div id="media-synth-panel" class="media-synth-panel">
-            <canvas id="synth-visualizer" width="480" height="180"></canvas>
+            <canvas id="synth-visualizer" width="740" height="112"></canvas>
+
             <div class="synth-track-info">
-              <span id="synth-now-playing">Track 01: Canyon.mid (FM Synth Remix)</span>
-              <span id="synth-bpm-display">124 BPM · STEREO</span>
+              <span id="synth-now-playing">🍄 Mario Theme Music (8-Bit Overworld Classic)</span>
+              <span id="synth-bpm-display" class="tabular-nums">162 BPM · 8-Bit Adventure · STEREO</span>
             </div>
-            <div class="synth-track-selector">
-              <button class="win95-btn synth-track-btn active" data-track="0">🎵 Canyon.mid</button>
-              <button class="win95-btn synth-track-btn" data-track="1">🌆 CyberWave 95</button>
-              <button class="win95-btn synth-track-btn" data-track="2">🕹️ Arcade Boss</button>
-              <button class="win95-btn synth-track-btn" data-track="3">🌙 Teal Dreams</button>
+
+            <!-- Featured Signature Themes -->
+            <div class="synth-featured-section">
+              <div class="synth-section-label">⭐ Featured Themes (Mario · Legend of Z · Hello Neighbor Chase · Big Boy Jim Boss · Harry Potter + Classics):</div>
+              <div class="synth-track-selector" id="synth-featured-grid">
+                <button type="button" class="win95-btn synth-track-btn active" data-featured-id="feat_mario">🍄 Mario Theme</button>
+                <button type="button" class="win95-btn synth-track-btn" data-featured-id="feat_legend_z">⚔️ Legend of Z Intro</button>
+                <button type="button" class="win95-btn synth-track-btn synth-chase-btn" data-featured-id="feat_hello_neighbor">🔦 Hello Neighbor Chase</button>
+                <button type="button" class="win95-btn synth-track-btn synth-boss-btn" data-featured-id="feat_big_boy_jim">💪 Big Boy Jim Boss</button>
+                <button type="button" class="win95-btn synth-track-btn synth-magic-btn" data-featured-id="feat_harry_potter">🪄 Harry Potter Theme</button>
+                <button type="button" class="win95-btn synth-track-btn" data-featured-id="feat_canyon">🎵 Canyon.mid</button>
+                <button type="button" class="win95-btn synth-track-btn" data-featured-id="feat_cyberwave">🌆 CyberWave 95</button>
+                <button type="button" class="win95-btn synth-track-btn" data-featured-id="feat_doom_boss">🕹️ DOOM Boss</button>
+                <button type="button" class="win95-btn synth-track-btn" data-featured-id="feat_teal_dreams">🌙 Teal Dreams</button>
+              </div>
             </div>
+
+            <!-- Transport & Randomizers -->
             <div class="synth-controls-row">
-              <button class="win95-btn" id="synth-play-toggle">▶ Play Synth</button>
-              <button class="win95-btn" id="synth-stop-btn">■ Stop</button>
-              <label style="font-size: 0.75rem; margin-left: auto">Tempo:</label>
-              <input type="range" id="synth-tempo" min="70" max="170" value="120" style="width: 90px" />
+              <button type="button" class="win95-btn" id="synth-play-toggle" style="background:#dcfce7;font-weight:700;">▶ Play Synth</button>
+              <button type="button" class="win95-btn" id="synth-stop-btn">■ Stop</button>
+              <button type="button" class="win95-btn" id="synth-random-btn" style="background:#fef08a;font-weight:700;" title="Pick a random track from all 5,000 random songs">🎲 Random (1–5000)</button>
+              <button type="button" class="win95-btn" id="synth-surprise-btn" style="background:#fee2e2;color:#7f1d1d;font-weight:700;" title="Randomly jumps to a random song OR ambushes with Hello Neighbor Chase / Big Boy Jim Boss!">🔦 Random Chase Mix</button>
+              <label class="synth-check-label" title="Automatically jump to another random song (or random Chase ambush!) every 2 loops">
+                <input type="checkbox" id="synth-auto-random-chk" />
+                <span>Auto-Shuffle</span>
+              </label>
+              <div class="synth-sliders-group">
+                <label>BPM:</label>
+                <input type="range" id="synth-tempo" min="65" max="200" value="162" style="width: 72px" />
+                <label>Vol:</label>
+                <input type="range" id="synth-volume" min="5" max="100" value="75" style="width: 58px" />
+              </div>
+            </div>
+
+            <!-- 5,000 Random Musics Jukebox Browser -->
+            <div class="synth-library-panel" id="synth-library-panel">
+              <div class="synth-lib-toolbar">
+                <span class="synth-lib-title">🎶 5,000 Random Selections</span>
+                <input
+                  type="text"
+                  id="synth-lib-search"
+                  class="win95-input synth-lib-search"
+                  placeholder="Search 5,000 random songs by name, #0001-#5000, key..."
+                  autocomplete="off"
+                />
+                <select id="synth-lib-genre" class="win95-input synth-lib-genre" aria-label="Filter random music genre"></select>
+                <span id="synth-lib-count" class="synth-lib-count tabular-nums">1–50 of 5,000</span>
+              </div>
+
+              <div class="synth-lib-list" id="synth-lib-list"></div>
+
+              <div class="synth-lib-pager">
+                <button type="button" class="win95-btn" id="synth-page-prev">◀ Prev 50</button>
+                <span id="synth-page-label" class="tabular-nums">Page 1 / 100 (5,000 Unique Random Tracks)</span>
+                <button type="button" class="win95-btn" id="synth-page-next">Next 50 ▶</button>
+                <button type="button" class="win95-btn" id="synth-page-rand">🎲 Random Page</button>
+              </div>
             </div>
           </div>
 
@@ -1324,7 +1670,7 @@
           <div id="ability-pane-exe" class="ability-mode-pane">
             <div class="ability-exe-portable-bar">
               <div>
-                <b>💻 Real PC Portable App:</b> Download Gemini 95 as a standalone desktop file carrying your live Registry &amp; apps:
+                <b>💻 Real PC Portable App:</b> Download AngelOS-web as a standalone desktop file carrying your live Registry &amp; apps:
               </div>
               <div style="display: flex; gap: 5px; flex-wrap: wrap">
                 <button class="win95-btn" id="ability-dl-portable-html-btn" style="background: #e0f2fe; font-weight: 700">⬇ Portable App (.HTML)</button>
@@ -1629,6 +1975,15 @@
         </div>
         <div class="window-content sndrec-wrapper">
           <canvas id="sndrec-scope" class="sndrec-scope" width="540" height="72"></canvas>
+          <div class="sndrec-mic-bar">
+            <span style="font-size:0.72rem;font-weight:700;">🎤 Live Microphone:</span>
+            <span id="sndrec-mic-perm-badge" class="media-perm-pill perm-prompt">ASK / PROMPT</span>
+            <button type="button" class="win95-btn" id="sndrec-ask-mic-btn" style="background:#dcfce7;font-weight:700;">🎤 Allow Mic Access</button>
+            <button type="button" class="win95-btn" id="sndrec-rec-mic-btn" style="background:#fee2e2;font-weight:700;">⏺ Rec Mic</button>
+            <button type="button" class="win95-btn" id="sndrec-play-mic-btn" disabled>▶ Play Mic</button>
+            <button type="button" class="win95-btn" id="sndrec-dl-mic-btn" disabled>⬇ Save Clip</button>
+            <audio id="sndrec-mic-playback" controls style="display:none;height:24px;max-width:190px;"></audio>
+          </div>
           <div class="sndrec-transport">
             <button class="win95-btn" id="sndrec-play-btn">▶ Play Loop</button>
             <button class="win95-btn" id="sndrec-stop-btn">⏹ Stop</button>
@@ -1810,8 +2165,264 @@
         </div>
       </div>
 
+      <!-- 24. CAMERA APP (CAMERA.EXE — LIVE WEBCAM, MIC AUDIO, FILTERS, PHOTO & VIDEO CAPTURE) -->
+      <div class="window resizable" id="cameraApp" style="width: 720px; height: 590px">
+        <div class="window-titlebar">
+          <span class="window-title">📷 Camera App — AngelOS-web (CAMERA.EXE)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content camera-app-wrapper">
+          <!-- Hardware Permission & Device Bar -->
+          <div class="camera-perm-bar">
+            <div class="camera-perm-group">
+              <span>📷 Cam: <span id="camera-perm-cam-badge" class="media-perm-pill perm-prompt">ASK / PROMPT</span></span>
+              <span>🎤 Mic: <span id="camera-perm-mic-badge" class="media-perm-pill perm-prompt">ASK / PROMPT</span></span>
+            </div>
+            <div class="camera-perm-group">
+              <button type="button" class="win95-btn" id="camera-allow-cam-btn" style="background:#e0f2fe;font-weight:700;">📷 Allow Camera</button>
+              <button type="button" class="win95-btn" id="camera-allow-mic-btn" style="background:#dcfce7;font-weight:700;">🎤 Allow Mic</button>
+              <button type="button" class="win95-btn" id="camera-allow-both-btn" style="background:#fef08a;font-weight:700;">📷+🎤 Allow Both</button>
+              <button type="button" class="win95-btn" id="camera-test-btn" title="Preview animated test pattern if no physical webcam is attached">🎞️ Test Pattern</button>
+              <button type="button" class="win95-btn" id="camera-stop-btn" style="color:#991b1b;">⏹ Stop</button>
+            </div>
+          </div>
+
+          <!-- Viewfinder Stage -->
+          <div class="camera-stage">
+            <video id="camera-video" class="camera-video" autoplay playsinline muted style="display:none"></video>
+            <canvas id="camera-test-canvas" class="camera-test-canvas" width="640" height="360" style="display:none"></canvas>
+            <div id="camera-shutter-flash" class="camera-shutter-flash"></div>
+            <span id="camera-rec-badge" class="camera-rec-badge tabular-nums" style="display:none">● REC 00:00</span>
+            <div id="camera-idle-overlay" class="camera-idle-overlay">
+              <div style="font-size:2.4rem">📷</div>
+              <div style="font-weight:700;font-size:0.95rem">AngelOS-web Camera Ready</div>
+              <div style="font-size:0.76rem;color:#cbd5e1;max-width:420px;text-align:center">
+                Click <b>Allow Camera</b> or <b>Allow Both (Cam + Mic)</b> above to grant browser hardware access — or try <b>Test Pattern</b> for instant offline snapshot testing.
+              </div>
+            </div>
+          </div>
+
+          <!-- Capture Controls, Filters, Devices & Mic Level -->
+          <div class="camera-controls-bar">
+            <div class="camera-ctrl-left">
+              <button type="button" class="win95-btn camera-shutter-btn" id="camera-snap-btn">📸 Take Photo</button>
+              <button type="button" class="win95-btn camera-record-btn" id="camera-record-btn">⏺ Record Video</button>
+              <label style="font-size:0.72rem;display:flex;align-items:center;gap:4px">
+                Filter:
+                <select id="camera-filter-select" class="win95-select">
+                  <option value="none">Normal</option>
+                  <option value="crt95">CRT 95</option>
+                  <option value="noir">B&amp;W Noir</option>
+                  <option value="sepia">1995 Sepia</option>
+                  <option value="matrix">Matrix Green</option>
+                  <option value="vapor">Vaporwave</option>
+                  <option value="thermal">Thermal Vision</option>
+                </select>
+              </label>
+              <label style="font-size:0.72rem;display:flex;align-items:center;gap:3px;cursor:pointer">
+                <input type="checkbox" id="camera-mirror-chk" checked /> Mirror
+              </label>
+            </div>
+            <div class="camera-ctrl-right">
+              <select id="camera-device-select" class="win95-select" title="Select Camera Device" style="max-width:140px">
+                <option value="">Default Camera</option>
+              </select>
+              <select id="camera-mic-select" class="win95-select" title="Select Microphone Device" style="max-width:140px">
+                <option value="">Default Mic</option>
+              </select>
+              <div class="camera-mic-vu" title="Live Microphone Audio Level">
+                <span>🎤</span>
+                <div class="camera-mic-vu-track"><div id="camera-mic-vu-fill" class="camera-mic-vu-fill"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filmstrip Camera Roll -->
+          <div class="camera-gallery-strip" id="camera-gallery-strip">
+            <div class="camera-gallery-empty">Photos &amp; video clips captured here are saved to <b>C:\Pictures</b> and downloadable directly.</div>
+          </div>
+
+          <div class="window-statusbar">
+            <span id="camera-status-text">Ready — Click "Allow Camera" or "Allow Mic" to request browser access.</span>
+            <span>CAMERA.EXE · C:\Pictures</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 25. OLD JAVA CREATOR 1995 + BILLY AI (OLDJAVA.EXE — INSTALLABLE VIA ABILITY TO INSTALL) -->
+      <div class="window resizable" id="javaCreatorApp" style="width: 868px; height: 585px">
+        <div class="window-titlebar">
+          <span class="window-title">☕ Old Java Creator 1995 — Powered by Billy AI (OLDJAVA.EXE)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content java-ide-shell">
+          <!-- Top 10-Interaction Progression Bar -->
+          <div class="billy-top-bar">
+            <div class="billy-progress-left">
+              <span class="billy-interaction-label" id="billy-interaction-label">Billy Interactions: 0 / 10</span>
+              <div class="billy-interaction-pips" id="billy-interaction-pips"></div>
+            </div>
+            <div class="billy-progress-right">
+              <span class="billy-errors-stat" id="billy-errors-stat">Bugs Created by Billy: 14</span>
+              <button type="button" class="win95-btn" id="billy-reset-btn" title="Reset Billy's 10-interaction counter">↻ Reset 0/10</button>
+            </div>
+          </div>
+
+          <!-- Hidden 10/10 Milestone Celebration Banner -->
+          <div class="billy-milestone-banner" id="billy-milestone-banner" style="display: none">
+            <span>🏆 10 / 10 CERTIFIED BILLY JAVA SURVIVOR! Trophy Unlocked &amp; ULTRA TRASH MODE (JDK -0.5) Ready!</span>
+            <span>☕ IQ -4 Master</span>
+          </div>
+
+          <!-- Main Split Workspace: Left Code IDE + Console | Right Billy AI Agent -->
+          <div class="java-split-body">
+            <div class="java-editor-pane">
+              <div class="java-editor-toolbar">
+                <span class="java-filename-tag" id="java-active-filename">HeloWroldMaybe.java</span>
+                <div class="java-toolbar-btns">
+                  <button type="button" class="win95-btn" id="java-compile-btn" style="background:#fef3c7;font-weight:700;">🔨 Compile (javac)</button>
+                  <button type="button" class="win95-btn" id="java-run-btn" style="background:#dcfce7;font-weight:700;">▶ Run (java)</button>
+                  <button type="button" class="win95-btn" id="java-billy-fix-btn" style="background:#fee2e2;color:#7f1d1d;font-weight:700;">🩹 Ask Billy to Fix</button>
+                  <button type="button" class="win95-btn" id="java-save-vfs-btn">💾 Save C:\</button>
+                  <button type="button" class="win95-btn" id="java-download-btn">⬇ .java</button>
+                </div>
+              </div>
+              <textarea
+                id="java-code-editor"
+                class="java-code-editor"
+                spellcheck="false"
+                aria-label="Old Java 1995 source code editor"
+              ></textarea>
+              <div class="java-console-hdr">
+                <span>📟 Trash JVM &amp; javac 0.01a Compiler Console</span>
+                <span>C:\JDK1995\BIN</span>
+              </div>
+              <pre id="java-console-out" class="java-console-out">C:\JDK1995\BIN&gt; Ready! Ask Billy AI to create Java from scratch (trash), then Compile or Run!</pre>
+            </div>
+
+            <div class="billy-agent-pane">
+              <div class="billy-card-hdr">
+                <div class="billy-avatar-face" id="billy-avatar-face">🤪</div>
+                <div class="billy-card-meta">
+                  <b>Billy AI — Certified Horrible Java Agent</b>
+                  <span>0% Coding Knowledge · 100% Confidence · Breaks Code On Purpose</span>
+                </div>
+                <button type="button" class="win95-btn" id="billy-poke-btn" title="Poke Billy for an interaction">👆 Poke</button>
+              </div>
+
+              <button type="button" class="win95-btn billy-ultra-btn" id="billy-ultra-trash-btn" disabled>
+                🔒 Ultra Trash Mode (Interact 10 more times)
+              </button>
+
+              <div class="billy-presets-row">
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="hello world">☕ Hello World</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="calculator">🧮 Calculator</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="3d game">🎮 3D Game</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="login security">🔐 Login</button>
+                <button type="button" class="win95-btn billy-preset-btn" data-prompt="for loop sort array">🔁 For Loop</button>
+              </div>
+
+              <div class="billy-chat-log" id="billy-chat-log"></div>
+
+              <div class="billy-input-row">
+                <input
+                  type="text"
+                  id="billy-prompt-input"
+                  class="win95-input"
+                  placeholder="Ask Billy to make any Java app from trash..."
+                  autocomplete="off"
+                />
+                <button type="button" class="win95-btn" id="billy-send-btn" style="background:#fef08a;font-weight:700;">Ask Billy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="window-statusbar">
+            <span id="java-status-text">Ready — Interact with Billy 10 times to unlock Ultra Trash Mode (JDK -0.5)!</span>
+            <span>OLDJAVA.EXE · JDK 0.01 Trash Edition</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 26. HOCKEY CARDS 95 — MCGEE & OBLITERATE EDITION (HOCKEY95.EXE — 0% 4K REALISM) -->
+      <div class="window resizable" id="hockeyCardsApp" style="width: 895px; height: 625px">
+        <div class="window-titlebar">
+          <span class="window-title">🏒 Hockey Cards 95 — McGee &amp; Obliterate Edition (HOCKEY95.EXE · 0% 4K Realism)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content hockey-app-shell">
+          <!-- Top Pack Ripper & Obliterate Toolbar -->
+          <div class="hockey-action-bar">
+            <button type="button" class="win95-btn" id="hockey-rip-pack-btn" style="background:#fef08a;font-weight:700;">📦 Rip 5-Card Pack!</button>
+            <button type="button" class="win95-btn" id="hockey-gen-mcgee-btn" style="background:#dbeafe;font-weight:700;">🎲 Random McGee</button>
+            <button type="button" class="win95-btn" id="hockey-gen-oblit-btn" style="background:#ffedd5;color:#7c2d12;font-weight:700;">🔥 Random Obliterate</button>
+            <button type="button" class="win95-btn" id="hockey-mutate-face-btn" style="background:#f3e8ff;color:#581c87;font-weight:700;">🤪 Mutate Face (0% 4K)</button>
+            <button type="button" class="win95-btn" id="hockey-obliterate-btn" style="background:#dc2626;color:#fef08a;font-weight:700;">💥 OBLITERATE CARD!</button>
+            <button type="button" class="win95-btn" id="hockey-save-vfs-btn" style="margin-left:auto;" title="Save card PNG to C:\Pictures">💾 Save C:\</button>
+            <button type="button" class="win95-btn" id="hockey-download-btn">⬇ .PNG</button>
+          </div>
+
+          <!-- Main Split: Left Non-4K Card Canvas + Scouting | Right Binder Collection -->
+          <div class="hockey-split-body">
+            <div class="hockey-left-pane">
+              <div class="hockey-card-stage" id="hockey-card-stage">
+                <canvas id="hockey-card-canvas" width="320" height="420"></canvas>
+              </div>
+              <div class="hockey-scouting-box" id="hockey-scouting-box"></div>
+            </div>
+
+            <div class="hockey-binder-pane">
+              <div class="hockey-binder-hdr">
+                <span>📚 McGee &amp; Obliterate Card Binder</span>
+                <span id="hockey-stats-summary" class="tabular-nums">Cards: 7 · Packs Ripped: 1 · 💥 Obliterated: 0</span>
+              </div>
+              <div class="hockey-binder-controls">
+                <input
+                  type="text"
+                  id="hockey-search-input"
+                  class="win95-input"
+                  placeholder="Search Thomas Mamas McGee, Thomas Robins, McGee, Obliterate..."
+                  autocomplete="off"
+                />
+                <select id="hockey-filter-select" class="win95-input" aria-label="Filter hockey cards">
+                  <option value="all">All Cards</option>
+                  <option value="featured">👑 Featured Legends</option>
+                  <option value="thomas">🏒 Thomas Squad</option>
+                  <option value="mcgee">⭐ McGee Clan</option>
+                  <option value="obliterate">💥 Obliterate</option>
+                </select>
+              </div>
+              <div class="hockey-binder-grid" id="hockey-binder-grid"></div>
+            </div>
+          </div>
+
+          <div class="window-statusbar">
+            <span id="hockey-status-text">Ready — Rip a 5-Card Pack, inspect Thomas Mamas McGee &amp; Thomas Robins, or 💥 OBLITERATE a card!</span>
+            <span>HOCKEY95.EXE · 🚫 0% 4K Realism</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
+        <div class="ctx-item" data-action="open-camera">📷 Open Camera App (CAMERA.EXE)</div>
+        <div class="ctx-item" data-action="open-media-perms">🎤 Camera &amp; Mic Permissions...</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" data-action="toggle-snap-grid" id="ctx-snap-grid-item">⊞ Snap Desktop Icons to Grid: ON</div>
+        <div class="ctx-item" data-action="reset-icon-layout">↻ Auto-Arrange / Reset App Icons</div>
+        <div class="ctx-divider"></div>
         <div class="ctx-item" data-action="open-installer">💿 Ability to Install (Software &amp; OS)</div>
         <div class="ctx-item" data-action="open-display">⚙️ Master Settings &amp; Control Panel...</div>
         <div class="ctx-item" data-action="open-regedit">🗂️ Open REGEDIT.EXE</div>
@@ -1823,7 +2434,7 @@
         <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
         <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
         <div class="ctx-divider"></div>
-        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (16 Secrets)</div>
+        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (20 Secrets)</div>
         <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
         <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
@@ -1905,6 +2516,10 @@
               <img data-icon-key="soundRecorder" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Sound Studio" />
               <span>Sound Studio</span>
             </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="cameraApp">
+              <img data-icon-key="cameraApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Camera App" />
+              <span>Camera</span>
+            </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="calendarApp">
               <img data-icon-key="calendarApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Calendar" />
               <span>Calendar</span>
@@ -1920,6 +2535,14 @@
             <button type="button" class="start-tile-btn start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">
               <img data-icon-key="minesweeper" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="GemSweeper" />
               <span>Sweeper</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">
+              <img data-icon-key="javaCreatorApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Old Java Creator" />
+              <span>Old Java</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="hockeyCardsApp" data-pkg-id="app_hockey_cards">
+              <img data-icon-key="hockeyCardsApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Hockey Cards 95" />
+              <span>Hockey 95</span>
             </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="trophiesApp">
               <img data-icon-key="trophiesApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Trophies" />
@@ -1983,11 +2606,14 @@
             <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT.EXE)</div>
             <div class="start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">🎛️ Performance &amp; Adjustment Levels</div>
             <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
+            <div class="start-menu-item" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">☕ Old Java Creator 1995 (Billy AI · 10 Interactions)</div>
+            <div class="start-menu-item" data-app="hockeyCardsApp" data-pkg-id="app_hockey_cards">🏒 Hockey Cards 95 (McGee &amp; Obliterate · 0% 4K)</div>
             <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
             <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
             <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>
             <div class="start-menu-item" data-app="calendarApp">📅 Calendar, Clock &amp; Alarms</div>
-            <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (.WAV Export)</div>
+            <div class="start-menu-item" data-app="soundRecorder">🎚️ Sound Studio (Live Mic + .WAV Export)</div>
+            <div class="start-menu-item" data-app="cameraApp">📷 Camera App (Live Webcam, Mic &amp; Filters)</div>
             <div class="start-menu-item" data-app="clipViewer">📋 Clipboard &amp; Snipping Studio</div>
             <div class="start-menu-item" data-app="mediaPlayer" data-pkg-id="app_mediaplayer">🎹 GemPlayer Synth &amp; TV</div>
             <div class="start-menu-item" data-app="gemini" data-pkg-id="app_aim">💬 Gemini AIM Messenger</div>
@@ -1995,13 +2621,15 @@
             <div class="start-menu-item" data-app="arcadeApp">🕹️ Arcade 95 (Snake/Breakout/Blocks/Ski)</div>
             <div class="start-menu-item" data-app="minesweeper" data-pkg-id="app_minesweeper">💣 GemSweeper Deluxe</div>
             <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
-            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (16 Achievements)</div>
+            <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (20 Achievements)</div>
             <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
             <div class="start-menu-divider"></div>
+            <div class="start-menu-item" id="start-media-perms">🎤📷 Camera &amp; Mic Access Permissions...</div>
             <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
             <div class="start-menu-item" id="start-run-dialog">🏃 Run... (Alt+R)</div>
             <div class="start-menu-item" id="start-fdisk">🔧 FDISK Disk Partitioner...</div>
-            <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS (SETUP.EXE)...</div>
+            <div class="start-menu-item" id="start-physical-booter">💾 Physical Hardware Booter...</div>
+            <div class="start-menu-item" id="start-os-reinstall">💿 Reinstall OS &amp; Partition Setup...</div>
             <div class="start-menu-item" id="start-pwa-install">📲 Install as Physical OS (PWA)...</div>
             <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
             <div class="start-menu-item" id="start-hotkeys-btn">⌨️ Keyboard Shortcuts &amp; Secrets</div>
@@ -2012,19 +2640,20 @@
 
         <!-- Bottom Windows 11 Profile & Power Footer -->
         <div class="start-footer-bar">
-          <div class="start-user-pill">
+          <div class="start-user-pill clickable-acct" id="start-user-pill-btn" title="Always Local Account — Click to Switch User or Lock Screen">
             <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" class="start-user-win-icon" />
-            <span>Angel-OS · Win11+10</span>
+            <span id="start-user-label">Michael · Local Account</span>
           </div>
           <div class="start-power-wrap">
             <button type="button" class="start-power-btn" id="start-power-btn" title="Power, BIOS &amp; Restart Options">
               ⏻
             </button>
             <div class="start-power-menu" id="start-power-menu" style="display: none">
+              <div class="start-power-item" id="start-lock-signin">🔒 Lock / Switch Local Account</div>
               <div class="start-power-item" id="start-open-bios-menu">⚙️ Enter CMOS BIOS (5,120+ Features)</div>
-              <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Enter BIOS POST</div>
+              <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Boot Manager</div>
               <div class="start-power-item" id="start-sleep-saver">🌙 Sleep (Screensaver)</div>
-              <div class="start-power-item" id="start-power-reinstall">💿 Reinstall OS (SETUP.EXE)</div>
+              <div class="start-power-item" id="start-power-reinstall">💿 Partition Setup (SETUP.EXE)</div>
             </div>
           </div>
         </div>
@@ -2258,6 +2887,14 @@
             <span class="qs-icon">⊞</span>
             <span class="qs-label">Tile Windows</span>
           </button>
+          <button class="qs-tile" id="qs-tile-camera" title="Open Camera App &amp; Camera Access">
+            <span class="qs-icon">📷</span>
+            <span class="qs-label">Camera App</span>
+          </button>
+          <button class="qs-tile" id="qs-tile-mic" title="Allow / Manage Microphone Access">
+            <span class="qs-icon">🎤</span>
+            <span class="qs-label">Mic Access</span>
+          </button>
         </div>
         <div class="qs-sliders">
           <div class="qs-slider-row">
@@ -2441,13 +3078,13 @@
       <div id="winver-modal" class="installshield-backdrop" style="display:none">
         <div class="sfx-exe-window" style="width:420px">
           <div class="window-titlebar">
-            <span class="window-title">ℹ️ About Windows — Angel-OS (WINVER.EXE)</span>
+            <span class="window-title">ℹ️ About Windows — AngelOS-web (WINVER.EXE)</span>
             <div class="window-controls"><button class="window-control-button" id="winver-close-btn">✕</button></div>
           </div>
           <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#000">
             <div style="background:linear-gradient(135deg,#004a99,#0078d4);color:#fff;padding:10px 12px;font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:10px;border-radius:4px">
               <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" style="width:28px;height:28px" />
-              <span>Windows 11 + 10 Hybrid · Angel-OS</span>
+              <span>Windows 11 + 10 Hybrid · AngelOS-web</span>
             </div>
             <div><b>Shell:</b> Windows 11 Interface · Left-Side Windows 10 Taskbar &amp; Search</div>
             <div><b>Browser:</b> Google Chrome v131 (Downloaded &amp; Installed on C:\)</div>

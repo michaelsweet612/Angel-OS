@@ -2,6 +2,11 @@
 // 100% Client-Side Classic Win95 Accessories, Arcade Games, System Utilities & Shell Goodies
 
 import { getActivatedBiosCount, TOTAL_BIOS_FEATURES } from './osBios5000';
+import {
+  getLiveMicWaveform,
+  initSoundStudioMicControls,
+  openMediaPermissionsModal,
+} from './osMediaDevices';
 
 export interface MegaBridge {
   openApp: (appName: string, bypassPkgCheck?: boolean) => Promise<void>;
@@ -17,6 +22,9 @@ export interface MegaBridge {
   openFdiskScreen: (withGuide?: boolean) => void;
   openCmosBiosSetup: () => void;
   openOsReinstallScreen: () => void;
+  openPhysicalBooterModal?: () => void;
+  openLocalSignInScreen?: () => void;
+  downloadBootableUsbDiskImage?: () => void;
   addVfsFile: (name: string, type: 'folder' | 'text' | 'image' | 'app' | 'installer_exe', parent: string, content?: string) => void;
   removeVfsFile: (name: string, parent: string) => void;
   getVfsFiles: () => Array<{ name: string; type: string; parent: string; content?: string; appTarget?: string; pkgId?: string; sizeMB?: number }>;
@@ -176,6 +184,9 @@ const TROPHY_CATALOG: TrophyDef[] = [
   { id: 'calendar_planner', icon: '📅', title: 'Y2K Scheduler', desc: 'Saved a schedule note or set an alarm in Calendar 95.', points: 15 },
   { id: 'recycle_cleaner', icon: '🗑️', title: 'Disk Clean Freak', desc: 'Restored or emptied items inside Recycle Bin 95.', points: 10 },
   { id: 'bios_tinkerer', icon: '⚙️', title: 'Silicon Whisperer', desc: 'Activated advanced firmware registers inside CMOS BIOS Setup.', points: 25 },
+  { id: 'billy_java_10', icon: '☕', title: '10 Rounds with Billy', desc: 'Interacted 10 times with Billy AI in Old Java Creator 1995 and unlocked Ultra Trash Mode.', points: 30 },
+  { id: 'gemplayer_dj_5000', icon: '🎹', title: '5,000-Track DJ', desc: 'Spun themes and random selections inside GemPlayer 95 Mega Jukebox.', points: 20 },
+  { id: 'hockey_cards_obliterate', icon: '🏒', title: 'McGee Card Obliterator', desc: 'Obliterated a goofy non-4K hockey card in Hockey Cards 95 (McGee & Obliterate Edition).', points: 25 },
 ];
 
 const TROPHY_LS_KEY = 'gemini95_trophies_v1';
@@ -238,7 +249,7 @@ export function initTrophiesApp(windowElement: HTMLDivElement): void {
       localStorage.removeItem(TROPHY_LS_KEY);
     } catch {}
     renderTrophiesUI();
-    pushBalloonToast('Trophy Case Reset', 'All 16 Angel-OS achievements cleared.', '🏆');
+    pushBalloonToast('Trophy Case Reset', `All ${TROPHY_CATALOG.length} Angel-OS achievements cleared.`, '🏆');
   });
 }
 
@@ -1534,7 +1545,23 @@ export function initSoundRecorderApp(windowElement: HTMLDivElement): void {
       sCtx.lineTo(scope.width, scope.height / 2);
       sCtx.stroke();
 
-      if (isGloballyMuted) {
+      const liveMicBuf = getLiveMicWaveform();
+      if (liveMicBuf) {
+        sCtx.strokeStyle = '#38bdf8';
+        sCtx.lineWidth = 2;
+        sCtx.beginPath();
+        const sliceW = scope.width / liveMicBuf.length;
+        for (let i = 0; i < liveMicBuf.length; i++) {
+          const v = liveMicBuf[i] / 128.0;
+          const y = (v * scope.height) / 2;
+          if (i === 0) sCtx.moveTo(0, y);
+          else sCtx.lineTo(i * sliceW, y);
+        }
+        sCtx.stroke();
+        sCtx.fillStyle = '#38bdf8';
+        sCtx.font = 'bold 10px "IBM Plex Mono", monospace';
+        sCtx.fillText('🎤 LIVE MIC INPUT', 6, 12);
+      } else if (isGloballyMuted) {
         sCtx.fillStyle = '#ff6666';
         sCtx.font = 'bold 11px "IBM Plex Mono", monospace';
         sCtx.textAlign = 'center';
@@ -1679,6 +1706,7 @@ export function initSoundRecorderApp(windowElement: HTMLDivElement): void {
   });
 
   renderGrid();
+  initSoundStudioMicControls(windowElement);
 }
 
 // ==================== 7. CALENDAR, ANALOG CLOCK & ALARMS 95 (CALENDAR.EXE) ====================
@@ -2350,16 +2378,32 @@ export function executeRunCommand(raw: string): boolean {
     netscape: 'chrome',
     angelnav: 'chrome',
     iexplore: 'chrome',
+    camera: 'cameraApp',
+    webcam: 'cameraApp',
+    cam: 'cameraApp',
+    java: 'javaCreatorApp',
+    oldjava: 'javaCreatorApp',
+    javac: 'javaCreatorApp',
+    billy: 'javaCreatorApp',
+    hockey: 'hockeyCardsApp',
+    hockeycards: 'hockeyCardsApp',
+    mcgee: 'hockeyCardsApp',
+    obliterate: 'hockeyCardsApp',
+    cards: 'hockeyCardsApp',
   };
 
   if (map[cmd]) {
     megaBridge?.openApp(map[cmd]);
     return true;
   }
+  if (cmd === 'mic' || cmd === 'microphone' || cmd === 'permissions' || cmd === 'privacy') { openMediaPermissionsModal(); return true; }
   if (cmd === 'fdisk') { megaBridge?.openFdiskScreen(false); return true; }
   if (cmd === 'fdisk /?' || cmd === 'fdisk help') { megaBridge?.openFdiskScreen(true); return true; }
   if (cmd === 'bios' || cmd === 'cmos') { megaBridge?.openCmosBiosSetup(); return true; }
   if (cmd === 'setup') { megaBridge?.openOsReinstallScreen(); return true; }
+  if (cmd === 'booter' || cmd === 'physicalboot' || cmd === 'physical') { megaBridge?.openPhysicalBooterModal?.(); return true; }
+  if (cmd === 'usbboot' || cmd === 'usbimg') { megaBridge?.downloadBootableUsbDiskImage?.(); return true; }
+  if (cmd === 'lock' || cmd === 'signin' || cmd === 'switchuser') { megaBridge?.openLocalSignInScreen?.(); return true; }
   if (cmd === 'bsod') { triggerBsodPrank('User executed BSOD.EXE from Run dialog.'); return true; }
   if (cmd === 'winver') { openWinverModal(); return true; }
   if (cmd === 'hotkeys') { openHotkeysModal(); return true; }
@@ -2367,7 +2411,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, perf, bios, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try hockey, mcgee, oldjava, billy, camera, mic, chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 

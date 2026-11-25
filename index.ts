@@ -32,9 +32,38 @@ import {
 } from './osExtendedApps';
 import { BIOS_FLAGSHIP_IDS, isBiosPilotOverclocked, isBiosZeroWaitPost } from './osBios5000';
 import { detectHostHardware, getEffectiveRamDisplay, getEffectiveRamMB, initPerfAdjustApp } from './osHardwarePerf';
+import {
+  closeLocalSignInScreen,
+  initPhysicalBooterAndSignIn,
+  openLocalSignInScreen,
+  openPhysicalBooterModal,
+  renderBootManagerOptions,
+  syncLocalAccountStartPill,
+} from './osPhysicalBooter';
+import {
+  initCameraApp,
+  initMediaPermissionsController,
+  openMediaPermissionsModal,
+  registerMediaBridge,
+  stopCameraAppStreams,
+} from './osMediaDevices';
+import { initOldJavaCreatorApp, registerJavaCreatorBridge } from './osOldJavaCreator';
+import {
+  buildRandomSynthTrack,
+  DrumPatternKind,
+  FEATURED_SYNTH_TRACKS,
+  pickRandomTrackFrom5000,
+  pickSurpriseTrackWithRandomChase,
+  queryRandomTracks,
+  RANDOM_MUSIC_COUNT,
+  RANDOM_MUSIC_GENRES,
+  SynthTrack,
+} from './osGemPlayerLibrary';
+import { initHockeyCardsApp, registerHockeyCardsBridge } from './osHockeyCards';
 import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
+  downloadBootableUsbDiskImage,
   downloadPortableHostApp,
   dropSetupExeToVfs,
   executeVfsSetupExe,
@@ -381,7 +410,7 @@ class RetroSoundEngine {
 const sfx = new RetroSoundEngine();
 
 // --- In-OS Retro Dialog (Replaces window.alert) ---
-function showOsDialog(message: string, title = 'Gemini 95 System') {
+function showOsDialog(message: string, title = 'AngelOS-web System') {
   const toast = document.getElementById('os-toast') as HTMLDivElement | null;
   const titleEl = document.getElementById('os-toast-title');
   const textEl = document.getElementById('os-toast-text');
@@ -763,7 +792,33 @@ let geminiInstance: any | null = null;
 let paintCritiqueIntervalId: number | null = null;
 const paintResizeObserverMap = new Map<Element, ResizeObserver>();
 
-const PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'abilityToInstall', 'controlPanel'] as const;
+const TASKBAR_ORDER_STORAGE_KEY = '__angelos_taskbar_order_v1';
+const DEFAULT_PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'cameraApp', 'abilityToInstall', 'controlPanel'];
+let taskbarAppOrder: string[] = (() => {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(TASKBAR_ORDER_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length > 0) {
+      const merged = saved.filter((x) => typeof x === 'string');
+      DEFAULT_PINNED_TASKBAR_APPS.forEach((a) => {
+        if (!merged.includes(a)) merged.push(a);
+      });
+      return merged;
+    }
+  } catch {
+    // fallback
+  }
+  return [...DEFAULT_PINNED_TASKBAR_APPS];
+})();
+
+function saveTaskbarOrder(): void {
+  try {
+    window.localStorage.setItem(TASKBAR_ORDER_STORAGE_KEY, JSON.stringify(taskbarAppOrder));
+  } catch {
+    // ignore
+  }
+}
+
+let draggedTaskbarApp: string | null = null;
 
 function getAppDockMeta(appName: string): { icon: string; title: string } {
   if (appName === 'chrome') {
@@ -789,11 +844,14 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     solitaireApp: 'Solitaire 95',
     arcadeApp: 'Arcade 95',
     soundRecorder: 'Sound Studio',
+    cameraApp: 'Camera App',
     calendarApp: 'Calendar 95',
     taskManager: 'Task Manager',
     recycleBin: 'Recycle Bin',
     clipViewer: 'Clipboard 95',
     trophiesApp: 'Trophy Vault',
+    javaCreatorApp: 'Old Java Creator',
+    hockeyCardsApp: 'Hockey Cards 95',
   };
   return {
     icon: APP_SVG_ICONS[appName] || APP_SVG_ICONS.appExe,
@@ -871,18 +929,19 @@ function syncTaskbarDock(): void {
   taskbarAppsContainer.innerHTML = '';
 
   const appsToRender: string[] = [];
-  PINNED_TASKBAR_APPS.forEach((appName) => {
-    if (isAppInstalled(appName) || openApps.has(appName)) {
-      appsToRender.push(appName);
+  taskbarAppOrder.forEach((appName) => {
+    const isDefaultPinned = DEFAULT_PINNED_TASKBAR_APPS.includes(appName);
+    const appDesk = appDesktopMap.get(appName) || 1;
+    const isOpenOnDesk = openApps.has(appName) && appDesk === currentVirtualDesktop;
+    if ((isDefaultPinned && isAppInstalled(appName)) || isOpenOnDesk) {
+      if (!appsToRender.includes(appName)) appsToRender.push(appName);
     }
   });
   openApps.forEach((_, appName) => {
     const appDesk = appDesktopMap.get(appName) || 1;
-    if (
-      !appsToRender.includes(appName) &&
-      appDesk === currentVirtualDesktop
-    ) {
+    if (!appsToRender.includes(appName) && appDesk === currentVirtualDesktop) {
       appsToRender.push(appName);
+      if (!taskbarAppOrder.includes(appName)) taskbarAppOrder.push(appName);
     }
   });
 
@@ -904,10 +963,47 @@ function syncTaskbarDock(): void {
     btn.type = 'button';
     btn.className = 'taskbar-app';
     btn.dataset.appName = appName;
+    btn.draggable = true;
     if (isOpenOnDesk) btn.classList.add('is-open');
     if (isMin) btn.classList.add('is-minimized');
     if (isActive) btn.classList.add('active');
-    btn.title = isOpenOnDesk ? `${meta.title} (${isMin ? 'Minimized' : 'Running'})` : `${meta.title} (Pinned)`;
+    btn.title = `${meta.title} (${isOpenOnDesk ? (isMin ? 'Minimized' : 'Running') : 'Pinned'} — Drag to reorder)`;
+
+    btn.addEventListener('dragstart', (ev) => {
+      draggedTaskbarApp = appName;
+      btn.classList.add('is-dragging-dock');
+      ev.dataTransfer?.setData('text/plain', appName);
+    });
+    btn.addEventListener('dragend', () => {
+      draggedTaskbarApp = null;
+      btn.classList.remove('is-dragging-dock');
+      taskbarAppsContainer.querySelectorAll('.dock-drop-target').forEach((el) => el.classList.remove('dock-drop-target'));
+    });
+    btn.addEventListener('dragover', (ev) => {
+      if (!draggedTaskbarApp || draggedTaskbarApp === appName) return;
+      ev.preventDefault();
+      btn.classList.add('dock-drop-target');
+    });
+    btn.addEventListener('dragleave', () => {
+      btn.classList.remove('dock-drop-target');
+    });
+    btn.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      btn.classList.remove('dock-drop-target');
+      const fromApp = draggedTaskbarApp || ev.dataTransfer?.getData('text/plain');
+      if (!fromApp || fromApp === appName) return;
+      if (!taskbarAppOrder.includes(fromApp)) taskbarAppOrder.push(fromApp);
+      if (!taskbarAppOrder.includes(appName)) taskbarAppOrder.push(appName);
+      const fromIdx = taskbarAppOrder.indexOf(fromApp);
+      const toIdx = taskbarAppOrder.indexOf(appName);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        taskbarAppOrder.splice(fromIdx, 1);
+        taskbarAppOrder.splice(toIdx, 0, fromApp);
+        saveTaskbarOrder();
+        sfx.playClick();
+        syncTaskbarDock();
+      }
+    });
 
     const img = document.createElement('img');
     img.src = meta.icon;
@@ -1150,6 +1246,15 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   } else if (appName === 'trophiesApp' && !initializedApps.has('trophiesApp')) {
     initializedApps.add('trophiesApp');
     initTrophiesApp(windowElement);
+  } else if (appName === 'cameraApp' && !initializedApps.has('cameraApp')) {
+    initializedApps.add('cameraApp');
+    initCameraApp(windowElement);
+  } else if (appName === 'javaCreatorApp' && !initializedApps.has('javaCreatorApp')) {
+    initializedApps.add('javaCreatorApp');
+    initOldJavaCreatorApp(windowElement);
+  } else if (appName === 'hockeyCardsApp' && !initializedApps.has('hockeyCardsApp')) {
+    initializedApps.add('hockeyCardsApp');
+    initHockeyCardsApp(windowElement);
   }
 }
 
@@ -1164,6 +1269,10 @@ function closeApp(appName: string): void {
   openApps.delete(appName);
   minimizedApps.delete(appName);
   appDesktopMap.delete(appName);
+
+  if (appName === 'cameraApp') {
+    stopCameraAppStreams();
+  }
 
   if (dosInstances[appName]) {
     const container = document.getElementById(`${appName}-content`);
@@ -2357,37 +2466,114 @@ function initMinesweeperGame(windowElement: HTMLDivElement): void {
   resetGame();
 }
 
-// --- 9. GEMPLAYER (16-Bit Chiptune Synth + YouTube CRT TV) ---
+// --- 9. GEMPLAYER (16-Bit Mega Chiptune Synth: 9 Featured Themes + 5,000 Random Selections + YouTube CRT TV) ---
 let synthAudioCtx: AudioContext | null = null;
+let synthNoiseBuffer: AudioBuffer | null = null;
 let synthIntervalId: number | null = null;
 let synthAnimFrameId: number | null = null;
 let synthIsPlaying = false;
-let currentSynthTrack = 0;
-let synthTempo = 120;
+let activeSynthTrack: SynthTrack = FEATURED_SYNTH_TRACKS[0];
+let synthTempo = activeSynthTrack.bpm;
+let synthVolume = 0.75;
 let synthStep = 0;
+let synthAutoShuffle = false;
+let synthTrackChangeCb: ((track: SynthTrack, isAmbush?: boolean) => void) | null = null;
 
-const SYNTH_TRACKS = [
-  {
-    title: 'Track 01: Canyon.mid (1995 FM Passport Remix)',
-    notes: [261.63, 329.63, 392.0, 523.25, 392.0, 329.63, 293.66, 349.23, 440.0, 587.33, 440.0, 349.23],
-    bass: [130.81, 130.81, 146.83, 146.83, 164.81, 164.81, 196.0, 196.0],
-  },
-  {
-    title: 'Track 02: CyberWave 95 (Neon Arpeggio)',
-    notes: [220.0, 261.63, 329.63, 440.0, 329.63, 261.63, 196.0, 246.94, 293.66, 392.0, 293.66, 246.94],
-    bass: [110.0, 110.0, 98.0, 98.0, 87.31, 87.31, 98.0, 98.0],
-  },
-  {
-    title: 'Track 03: DOOM Boss Riff (16-Bit Overdrive)',
-    notes: [164.81, 164.81, 329.63, 164.81, 164.81, 293.66, 164.81, 164.81, 261.63, 164.81, 164.81, 246.94],
-    bass: [82.41, 82.41, 82.41, 98.0, 82.41, 82.41, 87.31, 98.0],
-  },
-  {
-    title: 'Track 04: Teal Desktop Dreams (Ambient Pad)',
-    notes: [329.63, 392.0, 493.88, 659.25, 587.33, 493.88, 392.0, 329.63],
-    bass: [164.81, 130.81, 146.83, 110.0],
-  },
-];
+function ensureSynthAudioCtx(): AudioContext {
+  if (!synthAudioCtx) {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    synthAudioCtx = new AudioCtx();
+  }
+  if (synthAudioCtx.state === 'suspended') synthAudioCtx.resume();
+  if (!synthNoiseBuffer) {
+    const len = Math.floor(synthAudioCtx.sampleRate * 0.14);
+    const buf = synthAudioCtx.createBuffer(1, len, synthAudioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    synthNoiseBuffer = buf;
+  }
+  return synthAudioCtx;
+}
+
+function triggerSynthDrum(ctx: AudioContext, kind: DrumPatternKind, step: number, now: number, vol: number): void {
+  if (kind === 'none' || vol <= 0.01) return;
+  const s8 = step % 8;
+  const s6 = step % 6;
+
+  let kick = false;
+  let snare = false;
+  let hat = false;
+
+  if (kind === 'arcade') {
+    kick = s8 === 0 || s8 === 4;
+    snare = s8 === 2 || s8 === 6;
+    hat = s8 % 2 === 1;
+  } else if (kind === 'march') {
+    kick = s8 === 0 || s8 === 4;
+    snare = s8 === 2 || s8 === 6 || s8 === 7;
+    hat = s8 === 1 || s8 === 5;
+  } else if (kind === 'chase') {
+    kick = s8 === 0 || s8 === 2 || s8 === 4 || s8 === 5 || s8 === 6;
+    snare = s8 === 3 || s8 === 7;
+    hat = true;
+  } else if (kind === 'boss') {
+    kick = s8 === 0 || s8 === 1 || s8 === 4 || s8 === 5;
+    snare = s8 === 2 || s8 === 6;
+    hat = s8 === 3 || s8 === 7;
+  } else if (kind === 'waltz') {
+    kick = s6 === 0;
+    hat = s6 === 2 || s6 === 4;
+  } else if (kind === 'light') {
+    kick = s8 === 0;
+    hat = s8 === 4;
+  }
+
+  if (kick) {
+    const kOsc = ctx.createOscillator();
+    const kGain = ctx.createGain();
+    kOsc.type = 'sine';
+    kOsc.frequency.setValueAtTime(145, now);
+    kOsc.frequency.exponentialRampToValueAtTime(38, now + 0.09);
+    kGain.gain.setValueAtTime(0.11 * vol, now);
+    kGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    kOsc.connect(kGain);
+    kGain.connect(ctx.destination);
+    kOsc.start(now);
+    kOsc.stop(now + 0.11);
+  }
+
+  if (snare && synthNoiseBuffer) {
+    const src = ctx.createBufferSource();
+    src.buffer = synthNoiseBuffer;
+    const flt = ctx.createBiquadFilter();
+    flt.type = 'bandpass';
+    flt.frequency.setValueAtTime(kind === 'chase' ? 2200 : 1500, now);
+    const nGain = ctx.createGain();
+    nGain.gain.setValueAtTime(0.065 * vol, now);
+    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+    src.connect(flt);
+    flt.connect(nGain);
+    nGain.connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.09);
+  }
+
+  if (hat && synthNoiseBuffer) {
+    const src = ctx.createBufferSource();
+    src.buffer = synthNoiseBuffer;
+    const flt = ctx.createBiquadFilter();
+    flt.type = 'highpass';
+    flt.frequency.setValueAtTime(6500, now);
+    const hGain = ctx.createGain();
+    hGain.gain.setValueAtTime(0.025 * vol, now);
+    hGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    src.connect(flt);
+    flt.connect(hGain);
+    hGain.connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 0.04);
+  }
+}
 
 function stopChiptuneSynth() {
   synthIsPlaying = false;
@@ -2400,50 +2586,97 @@ function stopChiptuneSynth() {
 }
 
 function startChiptuneSynth() {
-  if (!synthAudioCtx) {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    synthAudioCtx = new AudioCtx();
-  }
-  if (synthAudioCtx.state === 'suspended') synthAudioCtx.resume();
+  const ctx = ensureSynthAudioCtx();
   if (synthIntervalId) clearInterval(synthIntervalId);
 
   synthIsPlaying = true;
   const playBtn = document.getElementById('synth-play-toggle');
   if (playBtn) playBtn.textContent = '⏸ Pause Synth';
 
-  const stepDurationMs = Math.floor((60 / synthTempo / 2) * 1000);
+  const stepDurationMs = Math.max(65, Math.floor((60 / synthTempo / 2) * 1000));
+  const noteReleaseSec = Math.min(0.32, (stepDurationMs / 1000) * 1.15);
+
   synthIntervalId = window.setInterval(() => {
-    if (!synthAudioCtx || !synthIsPlaying) return;
-    const track = SYNTH_TRACKS[currentSynthTrack] || SYNTH_TRACKS[0];
-    const leadFreq = track.notes[synthStep % track.notes.length];
-    const bassFreq = track.bass[Math.floor(synthStep / 2) % track.bass.length];
+    if (!synthIsPlaying) return;
+    const track = activeSynthTrack;
+    const now = ctx.currentTime;
+    const vol = synthVolume;
 
-    const now = synthAudioCtx.currentTime;
-    // Lead voice
-    const osc = synthAudioCtx.createOscillator();
-    const gain = synthAudioCtx.createGain();
-    osc.type = currentSynthTrack === 2 ? 'sawtooth' : 'square';
-    osc.frequency.setValueAtTime(leadFreq, now);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-    osc.connect(gain);
-    gain.connect(synthAudioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.19);
-
-    // Bass voice on even steps
-    if (synthStep % 2 === 0) {
-      const bOsc = synthAudioCtx.createOscillator();
-      const bGain = synthAudioCtx.createGain();
-      bOsc.type = 'triangle';
-      bOsc.frequency.setValueAtTime(bassFreq, now);
-      bGain.gain.setValueAtTime(0.07, now);
-      bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-      bOsc.connect(bGain);
-      bGain.connect(synthAudioCtx.destination);
-      bOsc.start(now);
-      bOsc.stop(now + 0.26);
+    // Auto-Shuffle: after 2 full melody loops, jump to a surprise random song (including random Chase ambushes!)
+    if (synthAutoShuffle && synthStep > 0 && synthStep >= track.notes.length * 2) {
+      const pick = pickSurpriseTrackWithRandomChase();
+      activeSynthTrack = pick.track;
+      synthTempo = pick.track.bpm;
+      synthStep = 0;
+      synthTrackChangeCb?.(pick.track, pick.isAmbush);
+      startChiptuneSynth();
+      return;
     }
+
+    const leadFreq = track.notes[synthStep % track.notes.length] || 0;
+    const bassFreq = track.bass[synthStep % track.bass.length] || 0;
+    const harmFreq = track.harmony ? track.harmony[synthStep % track.harmony.length] || 0 : 0;
+
+    // Channel 1: Lead voice (+ optional celesta shimmer overtone for Harry Potter / Magic waltzes)
+    if (leadFreq > 0) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = track.leadWave;
+      osc.frequency.setValueAtTime(leadFreq, now);
+      const peakGain = (track.leadWave === 'sawtooth' ? 0.048 : 0.062) * vol;
+      gain.gain.setValueAtTime(Math.max(0.001, peakGain), now);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + noteReleaseSec);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + noteReleaseSec + 0.015);
+
+      if (track.bellShimmer) {
+        const bellOsc = ctx.createOscillator();
+        const bellGain = ctx.createGain();
+        bellOsc.type = 'sine';
+        bellOsc.frequency.setValueAtTime(leadFreq * 2, now);
+        bellGain.gain.setValueAtTime(Math.max(0.001, 0.032 * vol), now);
+        bellGain.gain.exponentialRampToValueAtTime(0.0008, now + noteReleaseSec * 1.4);
+        bellOsc.connect(bellGain);
+        bellGain.connect(ctx.destination);
+        bellOsc.start(now);
+        bellOsc.stop(now + noteReleaseSec * 1.45);
+      }
+    }
+
+    // Channel 2: Bass voice
+    if (bassFreq > 0) {
+      const bOsc = ctx.createOscillator();
+      const bGain = ctx.createGain();
+      bOsc.type = track.bassWave;
+      bOsc.frequency.setValueAtTime(bassFreq, now);
+      const bPeak = (track.bassWave === 'sawtooth' ? 0.055 : 0.085) * vol;
+      bGain.gain.setValueAtTime(Math.max(0.001, bPeak), now);
+      bGain.gain.exponentialRampToValueAtTime(0.0008, now + Math.min(0.36, noteReleaseSec * 1.2));
+      bOsc.connect(bGain);
+      bGain.connect(ctx.destination);
+      bOsc.start(now);
+      bOsc.stop(now + Math.min(0.38, noteReleaseSec * 1.25));
+    }
+
+    // Channel 3: Polyphonic harmony / chord voice
+    if (harmFreq > 0) {
+      const hOsc = ctx.createOscillator();
+      const hGain = ctx.createGain();
+      hOsc.type = 'triangle';
+      hOsc.frequency.setValueAtTime(harmFreq, now);
+      hGain.gain.setValueAtTime(Math.max(0.001, 0.035 * vol), now);
+      hGain.gain.exponentialRampToValueAtTime(0.0008, now + noteReleaseSec);
+      hOsc.connect(hGain);
+      hGain.connect(ctx.destination);
+      hOsc.start(now);
+      hOsc.stop(now + noteReleaseSec + 0.015);
+    }
+
+    // Channel 4: Retro percussion (kick/snare/hi-hat)
+    triggerSynthDrum(ctx, track.drums, synthStep, now, vol);
+
     synthStep++;
   }, stepDurationMs);
 }
@@ -2512,43 +2745,165 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
   const bpmEl = windowElement.querySelector('#synth-bpm-display');
   const playToggleBtn = windowElement.querySelector('#synth-play-toggle') as HTMLButtonElement;
   const stopSynthBtn = windowElement.querySelector('#synth-stop-btn') as HTMLButtonElement;
+  const randomBtn = windowElement.querySelector('#synth-random-btn') as HTMLButtonElement | null;
+  const surpriseBtn = windowElement.querySelector('#synth-surprise-btn') as HTMLButtonElement | null;
+  const autoShuffleChk = windowElement.querySelector('#synth-auto-random-chk') as HTMLInputElement | null;
   const tempoSlider = windowElement.querySelector('#synth-tempo') as HTMLInputElement;
+  const volumeSlider = windowElement.querySelector('#synth-volume') as HTMLInputElement | null;
+  const ambushBadge = windowElement.querySelector('#synth-ambush-badge') as HTMLSpanElement | null;
+
+  // 5,000-track jukebox browser elements
+  const libSearch = windowElement.querySelector('#synth-lib-search') as HTMLInputElement | null;
+  const libGenre = windowElement.querySelector('#synth-lib-genre') as HTMLSelectElement | null;
+  const libCount = windowElement.querySelector('#synth-lib-count');
+  const libList = windowElement.querySelector('#synth-lib-list') as HTMLDivElement | null;
+  const pagePrevBtn = windowElement.querySelector('#synth-page-prev') as HTMLButtonElement | null;
+  const pageNextBtn = windowElement.querySelector('#synth-page-next') as HTMLButtonElement | null;
+  const pageRandBtn = windowElement.querySelector('#synth-page-rand') as HTMLButtonElement | null;
+  const pageLabel = windowElement.querySelector('#synth-page-label');
 
   let ytControlsBound = false;
+  let libPage = 1;
+  const PAGE_SIZE = 50;
+  let totalLibPages = Math.ceil(RANDOM_MUSIC_COUNT / PAGE_SIZE);
+  let playedTrackCount = 0;
 
-  // Visualizer loop
+  if (libGenre) {
+    libGenre.innerHTML = RANDOM_MUSIC_GENRES.map((g) => `<option value="${g}">${g}</option>`).join('');
+  }
+
+  const syncTrackHeaderUI = (track: SynthTrack, isAmbush = false) => {
+    if (nowPlayingEl) nowPlayingEl.textContent = `${track.icon} ${track.title}`;
+    if (bpmEl) bpmEl.textContent = `${synthTempo} BPM · ${track.genre} · STEREO`;
+    if (tempoSlider) tempoSlider.value = String(Math.max(65, Math.min(200, synthTempo)));
+    if (ambushBadge) {
+      ambushBadge.style.display = isAmbush ? 'inline-flex' : 'none';
+      if (isAmbush) {
+        ambushBadge.textContent =
+          track.id === 'feat_hello_neighbor'
+            ? '🔦 RANDOM HELLO NEIGHBOR CHASE!'
+            : '💪 RANDOM BIG BOY JIM BOSS AMBUSH!';
+      }
+    }
+    windowElement.querySelectorAll<HTMLButtonElement>('.synth-track-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.featuredId === track.id);
+    });
+    libList?.querySelectorAll<HTMLButtonElement>('.synth-lib-row').forEach((r) => {
+      const isAct = r.dataset.randId === track.id;
+      r.classList.toggle('active', isAct);
+      if (isAct) r.scrollIntoView({ block: 'nearest' });
+    });
+  };
+
+  const renderRandomLibrary = () => {
+    if (!libList) return;
+    const res = queryRandomTracks(libSearch?.value || '', libGenre?.value || 'All 5,000', libPage, PAGE_SIZE);
+    libPage = res.page;
+    totalLibPages = res.totalPages;
+
+    const startIdx = res.total === 0 ? 0 : (res.page - 1) * PAGE_SIZE + 1;
+    const endIdx = Math.min(res.total, res.page * PAGE_SIZE);
+    if (libCount) {
+      libCount.textContent = `${startIdx.toLocaleString()}–${endIdx.toLocaleString()} of ${res.total.toLocaleString()}`;
+    }
+    if (pageLabel) {
+      pageLabel.textContent = `Page ${res.page} / ${res.totalPages} (${res.total.toLocaleString()} Unique Random Tracks)`;
+    }
+    if (pagePrevBtn) pagePrevBtn.disabled = res.page <= 1;
+    if (pageNextBtn) pageNextBtn.disabled = res.page >= res.totalPages;
+
+    if (res.items.length === 0) {
+      libList.innerHTML = `<div style="grid-column:1/-1;color:#94a3b8;padding:12px;text-align:center;">No random songs matched your search — try clearing the filter or clicking 🎲 Random (1–5000)!</div>`;
+      return;
+    }
+
+    libList.innerHTML = res.items
+      .map(
+        (m) => `
+        <button type="button" class="synth-lib-row${activeSynthTrack.id === m.id ? ' active' : ''}" data-rand-idx="${m.index}" data-rand-id="${m.id}" title="${m.numLabel}: ${m.title} (${m.genre} · ${m.bpm} BPM)">
+          <span class="synth-lib-row-main">
+            <span class="synth-lib-num">${m.numLabel}</span>
+            <span>${m.icon}</span>
+            <span class="synth-lib-name">${m.title}</span>
+          </span>
+          <span class="synth-lib-meta">${m.bpm}bpm</span>
+        </button>
+      `,
+      )
+      .join('');
+
+    libList.querySelectorAll<HTMLButtonElement>('.synth-lib-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        sfx.playClick();
+        const idx = parseInt(row.dataset.randIdx || '1', 10);
+        selectAndPlayTrack(buildRandomSynthTrack(idx), false);
+      });
+    });
+  };
+
+  const selectAndPlayTrack = (track: SynthTrack, isAmbush = false) => {
+    activeSynthTrack = track;
+    synthTempo = track.bpm;
+    synthStep = 0;
+    syncTrackHeaderUI(track, isAmbush);
+    startChiptuneSynth();
+    playedTrackCount++;
+    if (playedTrackCount >= 2 || !track.featured) {
+      unlockAchievement('gemplayer_dj_5000');
+    }
+  };
+
+  synthTrackChangeCb = (track, isAmbush = false) => {
+    syncTrackHeaderUI(track, isAmbush);
+    if (!track.featured) {
+      const m = /^rand_(\d+)$/.exec(track.id);
+      if (m) {
+        const idx = parseInt(m[1], 10);
+        if (!libSearch?.value && (!libGenre || libGenre.value === 'All 5,000')) {
+          libPage = Math.ceil(idx / PAGE_SIZE);
+          renderRandomLibrary();
+        }
+      }
+    }
+  };
+
+  // Visualizer loop (dynamic color palette per active track!)
   startMediaVisualizer = () => {
     if (!visCanvas || synthAnimFrameId !== null) return;
     const vCtx = visCanvas.getContext('2d');
-    const bars = 28;
+    const bars = 36;
     const heights = new Array(bars).fill(6);
     const drawVis = () => {
       if (vCtx) {
         vCtx.fillStyle = '#050811';
         vCtx.fillRect(0, 0, visCanvas.width, visCanvas.height);
         // Retro grid lines
-        vCtx.strokeStyle = 'rgba(0, 255, 102, 0.12)';
-        for (let y = 0; y < visCanvas.height; y += 20) {
+        vCtx.strokeStyle = 'rgba(0, 255, 102, 0.11)';
+        for (let y = 0; y < visCanvas.height; y += 18) {
           vCtx.beginPath();
           vCtx.moveTo(0, y);
           vCtx.lineTo(visCanvas.width, y);
           vCtx.stroke();
         }
         const barW = Math.floor((visCanvas.width - 20) / bars);
+        const [c0, c1, c2] = activeSynthTrack.palette;
         for (let i = 0; i < bars; i++) {
           if (synthIsPlaying) {
-            const target = 15 + Math.abs(Math.sin((synthStep + i) * 0.55)) * (visCanvas.height - 35) * (0.5 + Math.random() * 0.5);
-            heights[i] += (target - heights[i]) * 0.35;
+            const lead = activeSynthTrack.notes[synthStep % activeSynthTrack.notes.length] || 0;
+            const energy = lead > 0 ? 1.0 : 0.48;
+            const target =
+              (12 + Math.abs(Math.sin((synthStep + i) * 0.55)) * (visCanvas.height - 24) * (0.45 + Math.random() * 0.55)) * energy;
+            heights[i] += (target - heights[i]) * 0.38;
           } else {
-            heights[i] = Math.max(4, heights[i] * 0.9);
+            heights[i] = Math.max(4, heights[i] * 0.88);
           }
           const h = heights[i];
           const x = 10 + i * barW;
-          const y = visCanvas.height - h - 8;
+          const y = visCanvas.height - h - 6;
           const grad = vCtx.createLinearGradient(0, y, 0, visCanvas.height);
-          grad.addColorStop(0, '#ff00ff');
-          grad.addColorStop(0.5, '#00ffff');
-          grad.addColorStop(1, '#00ff66');
+          grad.addColorStop(0, c0);
+          grad.addColorStop(0.5, c1);
+          grad.addColorStop(1, c2);
           vCtx.fillStyle = grad;
           vCtx.fillRect(x, y, barW - 3, h);
         }
@@ -2558,6 +2913,9 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
     synthAnimFrameId = requestAnimationFrame(drawVis);
   };
   startMediaVisualizer();
+
+  syncTrackHeaderUI(activeSynthTrack, false);
+  renderRandomLibrary();
 
   playToggleBtn?.addEventListener('click', () => {
     sfx.playClick();
@@ -2569,24 +2927,97 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
     sfx.playClick();
     stopChiptuneSynth();
     synthStep = 0;
+    if (ambushBadge) ambushBadge.style.display = 'none';
+  });
+
+  randomBtn?.addEventListener('click', () => {
+    sfx.playClick();
+    const track = pickRandomTrackFrom5000();
+    const m = /^rand_(\d+)$/.exec(track.id);
+    if (m) {
+      if (libSearch) libSearch.value = '';
+      if (libGenre) libGenre.value = 'All 5,000';
+      libPage = Math.ceil(parseInt(m[1], 10) / PAGE_SIZE);
+      renderRandomLibrary();
+    }
+    selectAndPlayTrack(track, false);
+  });
+
+  surpriseBtn?.addEventListener('click', () => {
+    sfx.playClick();
+    const { track, isAmbush } = pickSurpriseTrackWithRandomChase();
+    if (!track.featured) {
+      const m = /^rand_(\d+)$/.exec(track.id);
+      if (m) {
+        if (libSearch) libSearch.value = '';
+        if (libGenre) libGenre.value = 'All 5,000';
+        libPage = Math.ceil(parseInt(m[1], 10) / PAGE_SIZE);
+        renderRandomLibrary();
+      }
+    }
+    selectAndPlayTrack(track, isAmbush);
+    if (isAmbush) {
+      pushBalloonToast(
+        track.id === 'feat_hello_neighbor' ? '🔦 Random Chase Ambush!' : '💪 Boss Battle Ambush!',
+        `GemPlayer 95 randomly launched ${track.title}!`,
+        track.icon,
+      );
+    }
+  });
+
+  autoShuffleChk?.addEventListener('change', () => {
+    synthAutoShuffle = autoShuffleChk.checked;
   });
 
   tempoSlider?.addEventListener('input', () => {
     synthTempo = parseInt(tempoSlider.value, 10) || 120;
-    if (bpmEl) bpmEl.textContent = `${synthTempo} BPM · STEREO`;
+    if (bpmEl) bpmEl.textContent = `${synthTempo} BPM · ${activeSynthTrack.genre} · STEREO`;
     if (synthIsPlaying) startChiptuneSynth();
   });
 
-  windowElement.querySelectorAll('.synth-track-btn').forEach((btn) => {
+  volumeSlider?.addEventListener('input', () => {
+    synthVolume = Math.max(0.05, Math.min(1, (parseInt(volumeSlider.value, 10) || 75) / 100));
+  });
+
+  windowElement.querySelectorAll<HTMLButtonElement>('.synth-track-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       sfx.playClick();
-      windowElement.querySelectorAll('.synth-track-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentSynthTrack = parseInt((btn as HTMLElement).dataset.track || '0', 10);
-      if (nowPlayingEl) nowPlayingEl.textContent = SYNTH_TRACKS[currentSynthTrack].title;
-      synthStep = 0;
-      startChiptuneSynth();
+      const featId = btn.dataset.featuredId;
+      const found = FEATURED_SYNTH_TRACKS.find((t) => t.id === featId) || FEATURED_SYNTH_TRACKS[0];
+      selectAndPlayTrack(found, false);
     });
+  });
+
+  libSearch?.addEventListener('input', () => {
+    libPage = 1;
+    renderRandomLibrary();
+  });
+
+  libGenre?.addEventListener('change', () => {
+    libPage = 1;
+    renderRandomLibrary();
+  });
+
+  pagePrevBtn?.addEventListener('click', () => {
+    sfx.playClick();
+    if (libPage > 1) {
+      libPage--;
+      renderRandomLibrary();
+    }
+  });
+
+  pageNextBtn?.addEventListener('click', () => {
+    sfx.playClick();
+    if (libPage < totalLibPages) {
+      libPage++;
+      renderRandomLibrary();
+    }
+  });
+
+  pageRandBtn?.addEventListener('click', () => {
+    sfx.playClick();
+    libPage = 1 + Math.floor(Math.random() * totalLibPages);
+    renderRandomLibrary();
   });
 
   // Mode switching
@@ -2874,7 +3305,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         Remix Gemini 95 (4.00.950 B · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.8.1 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -2891,7 +3322,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'SETUP' || upper === 'SETUP.EXE' || upper === 'FORMAT C:' || upper === 'FORMAT C: /S') {
       openOsReinstallScreen();
-      appendLine('Launching Gemini 95 OS Setup & Reinstallation Utility...');
+      appendLine('Launching AngelOS-web OS Setup & Reinstallation Utility...');
       return;
     }
     if (upper === 'SETTINGS' || upper === 'CONTROL' || upper === 'CONTROL.EXE') {
@@ -3005,19 +3436,62 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       RECYCLE: 'recycleBin',
       CLIPBRD: 'clipViewer',
       TROPHIES: 'trophiesApp',
+      CAMERA: 'cameraApp',
+      'CAMERA.EXE': 'cameraApp',
+      WEBCAM: 'cameraApp',
+      JAVA: 'javaCreatorApp',
+      JAVAC: 'javaCreatorApp',
+      OLDJAVA: 'javaCreatorApp',
+      'OLDJAVA.EXE': 'javaCreatorApp',
+      BILLY: 'javaCreatorApp',
+      HOCKEY: 'hockeyCardsApp',
+      'HOCKEY95.EXE': 'hockeyCardsApp',
+      MCGEE: 'hockeyCardsApp',
+      OBLITERATE: 'hockeyCardsApp',
+      CARDS: 'hockeyCardsApp',
     };
     if (dosDirectMap[upper]) {
       openApp(dosDirectMap[upper]);
       appendLine(`Launching ${upper}...`);
       return;
     }
+    if (upper === 'MIC' || upper === 'MICROPHONE' || upper === 'PERMISSIONS' || upper === 'PRIVACY') {
+      openMediaPermissionsModal();
+      appendLine('Opening Camera & Microphone Hardware Access Permissions...');
+      return;
+    }
     if (upper === 'BSOD') {
       triggerBsodPrank('DOS Command BSOD executed from COMMAND.COM');
       return;
     }
+    if (upper === 'BOOTER' || upper === 'PHYSICALBOOT' || upper === 'PHYSICAL') {
+      openPhysicalBooterModal();
+      appendLine('Opening Angel-OS Physical Hardware Booter (.ISO / Raw USB .IMG / Linux & Windows Installers)...');
+      return;
+    }
+    if (upper === 'USBBOOT' || upper === 'USBIMG') {
+      downloadBootableUsbDiskImage();
+      appendLine('Generating 16 MB raw MBR-partitioned USB/HDD image (ANGELOS_USB_DISK.img)...');
+      return;
+    }
+    if (upper === 'SIGNIN' || upper === 'LOCK' || upper === 'SWITCHUSER') {
+      openLocalSignInScreen();
+      appendLine('Locking session & opening Always-Local Account Sign-In...');
+      return;
+    }
+    if (upper === 'SETUP') {
+      openOsReinstallScreen();
+      appendLine('Launching Windows-Style Partition Options & OS Setup...');
+      return;
+    }
+    if (upper === 'BIOS' || upper === 'CMOS') {
+      openCmosBiosSetup();
+      appendLine('Entering Award / UEFI CMOS BIOS Setup Utility...');
+      return;
+    }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('Angel-OS 95 (Version 4.00.950 B · Five Trillion Features Pack)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.8.1 · Static Live Web Engine)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -3049,6 +3523,15 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         SOL: 'solitaireApp',
         ARCADE: 'arcadeApp',
         SOUND: 'soundRecorder',
+        CAMERA: 'cameraApp',
+        WEBCAM: 'cameraApp',
+        JAVA: 'javaCreatorApp',
+        OLDJAVA: 'javaCreatorApp',
+        BILLY: 'javaCreatorApp',
+        HOCKEY: 'hockeyCardsApp',
+        MCGEE: 'hockeyCardsApp',
+        OBLITERATE: 'hockeyCardsApp',
+        CARDS: 'hockeyCardsApp',
         CALENDAR: 'calendarApp',
         TASKMGR: 'taskManager',
         RECYCLE: 'recycleBin',
@@ -3110,10 +3593,305 @@ function applyTheme(themeName: string) {
   renderMasterSettingsCurrentTab();
 }
 
-// --- Desktop Interactions, Selection Marquee, Context Menu & Taskbar ---
+// --- Desktop Interactions, Movable App Icons, Start Tile Reordering, Marquee & Context Menu ---
+const ICON_POS_STORAGE_KEY = '__angelos_desktop_icon_pos_v1';
+const ICON_SNAP_STORAGE_KEY = '__angelos_desktop_icon_snap_v1';
+const START_ORDER_STORAGE_KEY = '__angelos_start_pinned_order_v1';
+
+let desktopIconPositions: Record<string, { x: number; y: number }> = (() => {
+  try {
+    const raw = window.localStorage.getItem(ICON_POS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  return {};
+})();
+
+let desktopSnapToGrid = (() => {
+  try {
+    const raw = window.localStorage.getItem(ICON_SNAP_STORAGE_KEY);
+    if (raw === '0') return false;
+  } catch {
+    // ignore
+  }
+  return true;
+})();
+
+function saveDesktopIconPositions(): void {
+  try {
+    window.localStorage.setItem(ICON_POS_STORAGE_KEY, JSON.stringify(desktopIconPositions));
+  } catch {
+    // ignore
+  }
+}
+
+function syncSnapGridContextLabel(): void {
+  const el = document.getElementById('ctx-snap-grid-item');
+  if (el) el.textContent = `⊞ Snap Desktop Icons to Grid: ${desktopSnapToGrid ? 'ON' : 'OFF'}`;
+}
+
+function clampDesktopIconCoords(x: number, y: number): { x: number; y: number } {
+  const tbH = getTaskbarHeightPx();
+  const isTop = systemRegistry.taskbarPosition === 'top';
+  const minX = 8;
+  const minY = isTop ? tbH + 8 : 8;
+  const maxX = Math.max(minX, window.innerWidth - 104);
+  const maxY = Math.max(minY, window.innerHeight - (isTop ? 98 : tbH + 98));
+  return {
+    x: Math.round(Math.max(minX, Math.min(x, maxX))),
+    y: Math.round(Math.max(minY, Math.min(y, maxY))),
+  };
+}
+
+function snapDesktopIconCoords(x: number, y: number): { x: number; y: number } {
+  const GRID_X = 108;
+  const GRID_Y = 98;
+  const PAD_X = 12;
+  const PAD_Y = 12;
+  if (!desktopSnapToGrid) return clampDesktopIconCoords(x, y);
+  const sx = PAD_X + Math.max(0, Math.round((x - PAD_X) / GRID_X)) * GRID_X;
+  const sy = PAD_Y + Math.max(0, Math.round((y - PAD_Y) / GRID_Y)) * GRID_Y;
+  return clampDesktopIconCoords(sx, sy);
+}
+
+function layoutDesktopIcons(resetSaved = false): void {
+  const container = document.getElementById('desktop-icons');
+  if (!container) return;
+  container.classList.add('free-position-mode');
+  if (resetSaved) {
+    desktopIconPositions = {};
+    try {
+      window.localStorage.removeItem(ICON_POS_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
+  const GRID_X = 108;
+  const GRID_Y = 98;
+  const PAD_X = 12;
+  const tbH = getTaskbarHeightPx();
+  const isTop = systemRegistry.taskbarPosition === 'top';
+  const PAD_Y = isTop ? tbH + 12 : 12;
+  const availH = Math.max(300, window.innerHeight - tbH - 24);
+  const rowsPerCol = Math.max(4, Math.min(6, Math.floor(availH / GRID_Y)));
+
+  const visibleIcons: HTMLElement[] = [];
+  const hiddenIcons: HTMLElement[] = [];
+  icons.forEach((icon) => {
+    if (icon.style.display === 'none') {
+      hiddenIcons.push(icon);
+    } else {
+      visibleIcons.push(icon);
+    }
+  });
+
+  const occupied = new Set<string>();
+  const keyOf = (x: number, y: number) => `${Math.round(x / 32)}_${Math.round(y / 32)}`;
+  let autoSlot = 0;
+
+  const nextFreeSlot = (): { x: number; y: number } => {
+    for (let guard = 0; guard < 200; guard++) {
+      const col = Math.floor(autoSlot / rowsPerCol);
+      const row = autoSlot % rowsPerCol;
+      autoSlot++;
+      const candidate = clampDesktopIconCoords(PAD_X + col * GRID_X, PAD_Y + row * GRID_Y);
+      const k = keyOf(candidate.x, candidate.y);
+      if (!occupied.has(k)) {
+        occupied.add(k);
+        return candidate;
+      }
+    }
+    return clampDesktopIconCoords(PAD_X, PAD_Y);
+  };
+
+  // Reserve explicitly saved positions of visible icons first
+  visibleIcons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || '';
+    const saved = appKey ? desktopIconPositions[appKey] : undefined;
+    if (saved) {
+      const pos = clampDesktopIconCoords(saved.x, saved.y);
+      occupied.add(keyOf(pos.x, pos.y));
+      icon.style.left = `${pos.x}px`;
+      icon.style.top = `${pos.y}px`;
+    }
+  });
+
+  // Place visible icons without saved positions into open slots
+  visibleIcons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || '';
+    if (appKey && desktopIconPositions[appKey]) return;
+    const pos = nextFreeSlot();
+    icon.style.left = `${pos.x}px`;
+    icon.style.top = `${pos.y}px`;
+  });
+
+  // Pre-assign distinct open slots for hidden installable icons so they never collide on install
+  hiddenIcons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || '';
+    const saved = appKey ? desktopIconPositions[appKey] : undefined;
+    const pos = saved ? clampDesktopIconCoords(saved.x, saved.y) : nextFreeSlot();
+    icon.style.left = `${pos.x}px`;
+    icon.style.top = `${pos.y}px`;
+  });
+  syncSnapGridContextLabel();
+}
+
+function initStartTileReordering(): void {
+  const grid = document.getElementById('start-pinned-grid');
+  if (!grid) return;
+
+  // Restore saved tile order if available
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(START_ORDER_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length > 0) {
+      const byKey = new Map<string, HTMLElement>();
+      grid.querySelectorAll<HTMLElement>('.start-tile-btn').forEach((tile) => {
+        const k = tile.dataset.app || tile.id || tile.textContent?.trim() || '';
+        if (k) byKey.set(k, tile);
+      });
+      saved.forEach((k: string) => {
+        const el = byKey.get(k);
+        if (el) grid.appendChild(el);
+      });
+    }
+  } catch {
+    // ignore
+  }
+
+  let draggedTile: HTMLElement | null = null;
+  const saveTileOrder = () => {
+    const order = Array.from(grid.querySelectorAll<HTMLElement>('.start-tile-btn')).map(
+      (t) => t.dataset.app || t.id || t.textContent?.trim() || '',
+    );
+    try {
+      window.localStorage.setItem(START_ORDER_STORAGE_KEY, JSON.stringify(order));
+    } catch {
+      // ignore
+    }
+  };
+
+  grid.querySelectorAll<HTMLElement>('.start-tile-btn').forEach((tile) => {
+    tile.draggable = true;
+    tile.addEventListener('dragstart', (ev) => {
+      draggedTile = tile;
+      tile.classList.add('is-dragging-tile');
+      ev.dataTransfer?.setData('text/plain', tile.dataset.app || tile.id || 'tile');
+    });
+    tile.addEventListener('dragend', () => {
+      draggedTile = null;
+      tile.classList.remove('is-dragging-tile');
+      grid.querySelectorAll('.tile-drop-target').forEach((x) => x.classList.remove('tile-drop-target'));
+    });
+    tile.addEventListener('dragover', (ev) => {
+      if (!draggedTile || draggedTile === tile) return;
+      ev.preventDefault();
+      tile.classList.add('tile-drop-target');
+    });
+    tile.addEventListener('dragleave', () => {
+      tile.classList.remove('tile-drop-target');
+    });
+    tile.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      tile.classList.remove('tile-drop-target');
+      if (!draggedTile || draggedTile === tile) return;
+      const children = Array.from(grid.children);
+      const fromIdx = children.indexOf(draggedTile);
+      const toIdx = children.indexOf(tile);
+      if (fromIdx < toIdx) {
+        grid.insertBefore(draggedTile, tile.nextSibling);
+      } else {
+        grid.insertBefore(draggedTile, tile);
+      }
+      sfx.playClick();
+      saveTileOrder();
+    });
+  });
+}
+
 icons.forEach((icon) => {
+  // Smooth Mouse & Touch Drag-to-Move for every Desktop App Icon
+  const beginIconDrag = (clientX: number, clientY: number) => {
+    const startX = clientX;
+    const startY = clientY;
+    const origLeft = parseFloat(icon.style.left || '12') || 12;
+    const origTop = parseFloat(icon.style.top || '12') || 12;
+    let moved = false;
+
+    const onMove = (mx: number, my: number) => {
+      const dx = mx - startX;
+      const dy = my - startY;
+      if (!moved && Math.hypot(dx, dy) > 5) {
+        moved = true;
+        icons.forEach((i) => i.classList.remove('selected'));
+        icon.classList.add('selected', 'is-dragging-icon');
+      }
+      if (!moved) return;
+      const next = clampDesktopIconCoords(origLeft + dx, origTop + dy);
+      icon.style.left = `${next.x}px`;
+      icon.style.top = `${next.y}px`;
+    };
+
+    const onEnd = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      if (!moved) return;
+      icon.classList.remove('is-dragging-icon');
+      const curX = parseFloat(icon.style.left || '12') || 12;
+      const curY = parseFloat(icon.style.top || '12') || 12;
+      const finalPos = snapDesktopIconCoords(curX, curY);
+      icon.style.left = `${finalPos.x}px`;
+      icon.style.top = `${finalPos.y}px`;
+      const appKey = icon.getAttribute('data-app');
+      if (appKey) {
+        desktopIconPositions[appKey] = finalPos;
+        saveDesktopIconPositions();
+      }
+      icon.dataset.justDragged = '1';
+      window.setTimeout(() => {
+        delete icon.dataset.justDragged;
+      }, 140);
+    };
+
+    const handleMouseMove = (ev: MouseEvent) => onMove(ev.clientX, ev.clientY);
+    const handleMouseUp = () => onEnd();
+    const handleTouchMove = (ev: TouchEvent) => {
+      if (ev.touches.length > 0) {
+        onMove(ev.touches[0].clientX, ev.touches[0].clientY);
+      }
+    };
+    const handleTouchEnd = () => onEnd();
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  icon.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    beginIconDrag(e.clientX, e.clientY);
+  });
+
+  icon.addEventListener(
+    'touchstart',
+    (e) => {
+      if (e.touches.length !== 1) return;
+      beginIconDrag(e.touches[0].clientX, e.touches[0].clientY);
+    },
+    { passive: true },
+  );
+
   icon.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (icon.dataset.justDragged === '1') return;
     icons.forEach((i) => i.classList.remove('selected'));
     icon.classList.add('selected');
     if (!systemRegistry.doubleClickIcons) {
@@ -3129,6 +3907,7 @@ icons.forEach((icon) => {
 
   icon.addEventListener('dblclick', (e) => {
     e.stopPropagation();
+    if (icon.dataset.justDragged === '1') return;
     if (systemRegistry.doubleClickIcons) {
       const appName = icon.getAttribute('data-app');
       if (appName) {
@@ -3272,6 +4051,11 @@ document.getElementById('start-run-dialog')?.addEventListener('click', () => {
   openRunDialog();
 });
 
+document.getElementById('start-media-perms')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openMediaPermissionsModal();
+});
+
 document.getElementById('start-new-sticky')?.addEventListener('click', () => {
   closeStartMenuUi();
   spawnCustomStickyNote();
@@ -3390,7 +4174,25 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     sfx.playClick();
     const action = (item as HTMLElement).dataset.action;
     contextMenu.style.display = 'none';
-    if (action === 'open-installer') openApp('abilityToInstall', true);
+    if (action === 'open-camera') openApp('cameraApp');
+    else if (action === 'open-media-perms') openMediaPermissionsModal();
+    else if (action === 'toggle-snap-grid') {
+      desktopSnapToGrid = !desktopSnapToGrid;
+      try {
+        window.localStorage.setItem(ICON_SNAP_STORAGE_KEY, desktopSnapToGrid ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      syncSnapGridContextLabel();
+      pushBalloonToast(
+        'Desktop Icon Grid',
+        desktopSnapToGrid ? 'Snap-to-Grid enabled — dragged icons align neatly.' : 'Freeform placement enabled — drop icons anywhere on desktop.',
+        '⊞',
+      );
+    } else if (action === 'reset-icon-layout') {
+      layoutDesktopIcons(true);
+      pushBalloonToast('App Icons Reset', 'All desktop app icons have been auto-arranged back to the default grid.', '↻');
+    } else if (action === 'open-installer') openApp('abilityToInstall', true);
     else if (action === 'open-regedit') openApp('regedit');
     else if (action === 'open-taskmgr') openApp('taskManager');
     else if (action === 'open-run') openRunDialog();
@@ -3514,10 +4316,10 @@ windows.forEach((windowElement, idx) => {
       document.addEventListener('mouseup', stopDragging, { once: true });
     };
 
-    const dragWindow = (e: MouseEvent) => {
+    const moveWindowTo = (clientX: number, clientY: number) => {
       if (!isDragging) return;
-      let x = e.clientX - dragOffsetX;
-      let y = e.clientY - dragOffsetY;
+      let x = clientX - dragOffsetX;
+      let y = clientY - dragOffsetY;
       const tbH = getTaskbarHeightPx();
       const isTop = systemRegistry.taskbarPosition === 'top';
       const minY = isTop ? tbH : 0;
@@ -3530,14 +4332,40 @@ windows.forEach((windowElement, idx) => {
       windowElement.style.top = `${y}px`;
     };
 
+    const dragWindow = (e: MouseEvent) => moveWindowTo(e.clientX, e.clientY);
+    const dragWindowTouch = (e: TouchEvent) => {
+      if (e.touches.length > 0) moveWindowTo(e.touches[0].clientX, e.touches[0].clientY);
+    };
+
     const stopDragging = () => {
       if (!isDragging) return;
       isDragging = false;
       titleBar.style.cursor = 'grab';
       document.removeEventListener('mousemove', dragWindow);
+      document.removeEventListener('touchmove', dragWindowTouch);
     };
 
     titleBar.addEventListener('mousedown', startDragging);
+    titleBar.addEventListener(
+      'touchstart',
+      (e) => {
+        if (
+          e.touches.length !== 1 ||
+          (e.target as Element).closest('.window-control-button') ||
+          windowElement.classList.contains('maximized')
+        ) {
+          return;
+        }
+        isDragging = true;
+        bringToFront(windowElement);
+        const rect = windowElement.getBoundingClientRect();
+        dragOffsetX = e.touches[0].clientX - rect.left;
+        dragOffsetY = e.touches[0].clientY - rect.top;
+        document.addEventListener('touchmove', dragWindowTouch, { passive: true });
+        document.addEventListener('touchend', stopDragging, { once: true });
+      },
+      { passive: true },
+    );
   }
 
   // Cascade initial window positions neatly
@@ -3547,9 +4375,10 @@ windows.forEach((windowElement, idx) => {
   windowElement.style.left = `${leftOffset}px`;
 });
 
-// --- Interactive BIOS POST & Windows 95 Splash Boot Controller ---
+// --- Interactive BIOS POST, Windows Boot Manager, Splash & Always-Local Sign-In Controller ---
 const bootScreen = document.getElementById('boot-screen') as HTMLDivElement | null;
 const bootBiosStage = document.getElementById('boot-bios-stage') as HTMLDivElement | null;
+const bootManagerStage = document.getElementById('boot-manager-stage') as HTMLDivElement | null;
 const bootSplashStage = document.getElementById('boot-splash-stage') as HTMLDivElement | null;
 const biosRamCounter = document.getElementById('bios-ram-counter') as HTMLSpanElement | null;
 const biosStatusLine = document.getElementById('bios-status-line') as HTMLDivElement | null;
@@ -3557,7 +4386,13 @@ const bootPowerBtn = document.getElementById('boot-power-btn') as HTMLButtonElem
 const bootSkipBtn = document.getElementById('boot-skip-btn') as HTMLButtonElement | null;
 const splashSkipBtn = document.getElementById('splash-skip-btn') as HTMLButtonElement | null;
 
-let bootState: 'bios' | 'post_running' | 'splash' | 'complete' = 'bios';
+type BootMgrChoice = 'normal' | 'safemode' | 'setup' | 'physical_booter' | 'cmos';
+let bootState: 'bios' | 'post_running' | 'bootmgr' | 'splash' | 'signin' | 'complete' = 'bios';
+let selectedBootChoice: BootMgrChoice = 'normal';
+let bootMgrCountdown = 5;
+let bootMgrPaused = false;
+let bootMgrTimerId: number | null = null;
+let bootMgrSafeModeFlag = false;
 const bootTimeouts: number[] = [];
 
 function clearBootTimers() {
@@ -3565,20 +4400,141 @@ function clearBootTimers() {
     const id = bootTimeouts.pop();
     if (id !== undefined) clearTimeout(id);
   }
+  if (bootMgrTimerId !== null) {
+    clearInterval(bootMgrTimerId);
+    bootMgrTimerId = null;
+  }
 }
 
-function finishBootToDesktop() {
+function syncBootMgrSelectionUI() {
+  document.querySelectorAll<HTMLElement>('.bootmgr-option').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.bootChoice === selectedBootChoice);
+  });
+}
+
+function updateBootMgrCountdownLabel(customMsg?: string) {
+  const el = document.getElementById('bootmgr-countdown-txt');
+  if (!el) return;
+  if (customMsg) {
+    el.textContent = customMsg;
+    return;
+  }
+  el.textContent = bootMgrPaused
+    ? 'Timer paused — click any OS or Physical Booter option, or press [ENTER]'
+    : `Starting highlighted option in ${bootMgrCountdown}s...`;
+}
+
+function finishBootToDesktop(bypassSignIn = false) {
   clearBootTimers();
+  if (!bypassSignIn && systemRegistry.requireSignInOnBoot) {
+    bootState = 'signin';
+    if (bootScreen) {
+      bootScreen.classList.add('fade-out');
+      const hideId = window.setTimeout(() => {
+        if (bootScreen && (bootState === 'signin' || bootState === 'complete')) {
+          bootScreen.style.display = 'none';
+        }
+      }, 360);
+      bootTimeouts.push(hideId);
+    }
+    openLocalSignInScreen();
+    return;
+  }
+
   bootState = 'complete';
   unlockAchievement('first_boot');
-  if (!bootScreen) return;
-  bootScreen.classList.add('fade-out');
-  const hideId = window.setTimeout(() => {
-    if (bootScreen && bootState === 'complete') {
-      bootScreen.style.display = 'none';
+  syncLocalAccountStartPill();
+  if (bootScreen) {
+    bootScreen.classList.add('fade-out');
+    const hideId = window.setTimeout(() => {
+      if (bootScreen && bootState === 'complete') {
+        bootScreen.style.display = 'none';
+      }
+    }, 360);
+    bootTimeouts.push(hideId);
+  }
+  if (bootMgrSafeModeFlag) {
+    bootMgrSafeModeFlag = false;
+    pushBalloonToast(
+      'Safe Mode & Diagnostics Active',
+      'Minimal drivers loaded. Partition Options, Registry Editor, and Local Accounts ready.',
+      '🛡️',
+    );
+  }
+}
+
+function startBootSplashStage(isSafeMode = false) {
+  clearBootTimers();
+  bootMgrSafeModeFlag = isSafeMode;
+  bootState = 'splash';
+  if (bootBiosStage) bootBiosStage.style.display = 'none';
+  if (bootManagerStage) bootManagerStage.style.display = 'none';
+  if (bootSplashStage) bootSplashStage.style.display = 'flex';
+  if (systemRegistry.biosBootAudio) {
+    sfx.playStartupChime();
+  }
+  const biosZeroWait = isBiosZeroWaitPost();
+  const splashDelay = biosZeroWait ? 450 : systemRegistry.biosQuickPost ? 1800 : isSafeMode ? 1200 : 2800;
+  const completeTimer = window.setTimeout(() => {
+    finishBootToDesktop(false);
+  }, splashDelay);
+  bootTimeouts.push(completeTimer);
+}
+
+function proceedFromBootManager(choice: BootMgrChoice) {
+  selectedBootChoice = choice;
+  syncBootMgrSelectionUI();
+  if (bootMgrTimerId !== null) {
+    clearInterval(bootMgrTimerId);
+    bootMgrTimerId = null;
+  }
+  bootMgrPaused = true;
+  if (choice === 'setup') {
+    updateBootMgrCountdownLabel('Paused — Windows Partition Options & Setup opened');
+    openOsReinstallScreen();
+    return;
+  }
+  if (choice === 'physical_booter') {
+    updateBootMgrCountdownLabel('Paused — Physical Hardware Booter Toolkit opened');
+    openPhysicalBooterModal();
+    return;
+  }
+  if (choice === 'cmos') {
+    updateBootMgrCountdownLabel('Paused — CMOS BIOS Setup Utility opened');
+    openCmosBiosSetup();
+    return;
+  }
+  startBootSplashStage(choice === 'safemode');
+}
+
+function enterBootManagerStage() {
+  clearBootTimers();
+  bootState = 'bootmgr';
+  selectedBootChoice = 'normal';
+  bootMgrCountdown = 5;
+  bootMgrPaused = false;
+  if (bootScreen) {
+    bootScreen.style.display = 'flex';
+    bootScreen.classList.remove('fade-out');
+  }
+  if (bootBiosStage) bootBiosStage.style.display = 'none';
+  if (bootSplashStage) bootSplashStage.style.display = 'none';
+  if (bootManagerStage) bootManagerStage.style.display = 'flex';
+  renderBootManagerOptions();
+  syncBootMgrSelectionUI();
+  const pauseBtn = document.getElementById('bootmgr-pause-btn');
+  if (pauseBtn) pauseBtn.textContent = '⏸ Pause Timer';
+  updateBootMgrCountdownLabel();
+
+  bootMgrTimerId = window.setInterval(() => {
+    if (bootState !== 'bootmgr' || bootMgrPaused) return;
+    bootMgrCountdown -= 1;
+    if (bootMgrCountdown <= 0) {
+      proceedFromBootManager(selectedBootChoice);
+    } else {
+      updateBootMgrCountdownLabel();
     }
-  }, 360);
-  bootTimeouts.push(hideId);
+  }, 1000);
 }
 
 function startBootWithAudio() {
@@ -3606,7 +4562,7 @@ function startBootWithAudio() {
   }
 
   if (biosStatusLine) {
-    biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOTING GEMINI 95...';
+    biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOT MANAGER...';
   }
 
   const maxRamKb = getEffectiveRamMB() * 1024;
@@ -3627,29 +4583,24 @@ function startBootWithAudio() {
     bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
   }
 
-  // Transition to Stage 2: Windows 11 + 10 Boot Splash + Lo-Fi Eno Synth Chime
+  // Transition to Windows Boot Manager (if enabled) or directly to Splash
   const biosZeroWait = isBiosZeroWaitPost();
   const postDelay = biosZeroWait ? 80 : systemRegistry.biosQuickPost ? 220 : 650;
-  const splashDelay = biosZeroWait ? 450 : systemRegistry.biosQuickPost ? 1800 : 3400;
-  const splashTimer = window.setTimeout(() => {
-    bootState = 'splash';
-    if (bootBiosStage) bootBiosStage.style.display = 'none';
-    if (bootSplashStage) bootSplashStage.style.display = 'flex';
-    if (systemRegistry.biosBootAudio) {
-      sfx.playStartupChime();
+  const nextTimer = window.setTimeout(() => {
+    if (systemRegistry.enableBootManagerOnBoot && !biosZeroWait) {
+      enterBootManagerStage();
+    } else {
+      startBootSplashStage(false);
     }
-
-    const completeTimer = window.setTimeout(() => {
-      finishBootToDesktop();
-    }, splashDelay);
-    bootTimeouts.push(completeTimer);
   }, postDelay);
-  bootTimeouts.push(splashTimer);
+  bootTimeouts.push(nextTimer);
 }
 
 function rebootGemini95() {
   clearBootTimers();
   closeStartMenuUi();
+  closeLocalSignInScreen();
+  bootMgrSafeModeFlag = false;
   bootState = 'bios';
   applySystemRegistryToOS(true);
   if (biosStatusLine) {
@@ -3659,6 +4610,7 @@ function rebootGemini95() {
       : '⚠ MISSING OPERATING SYSTEM ON C:\\ — PRESS [F9] FOR FDISK OR [F8] FOR OS SETUP CD-ROM';
   }
   if (bootBiosStage) bootBiosStage.style.display = 'flex';
+  if (bootManagerStage) bootManagerStage.style.display = 'none';
   if (bootSplashStage) bootSplashStage.style.display = 'none';
   if (bootScreen) {
     bootScreen.style.display = 'flex';
@@ -3677,12 +4629,41 @@ bootSkipBtn?.addEventListener('click', (e) => {
     startBootWithAudio();
     return;
   }
-  finishBootToDesktop();
+  finishBootToDesktop(true);
 });
 
 splashSkipBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
-  finishBootToDesktop();
+  finishBootToDesktop(true);
+});
+
+document.querySelectorAll<HTMLElement>('.bootmgr-option').forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sfx.playClick();
+    const choice = (btn.dataset.bootChoice || 'normal') as BootMgrChoice;
+    proceedFromBootManager(choice);
+  });
+});
+
+document.getElementById('bootmgr-pause-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  bootMgrPaused = !bootMgrPaused;
+  const btn = document.getElementById('bootmgr-pause-btn');
+  if (btn) btn.textContent = bootMgrPaused ? '▶ Resume Timer' : '⏸ Pause Timer';
+  updateBootMgrCountdownLabel();
+});
+
+document.getElementById('bootmgr-continue-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  proceedFromBootManager(selectedBootChoice);
+});
+
+document.getElementById('bootmgr-skip-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  finishBootToDesktop(true);
 });
 
 document.getElementById('start-reboot-os')?.addEventListener('click', () => {
@@ -3694,12 +4675,20 @@ window.addEventListener('keydown', (e) => {
   const cmosOpen = document.getElementById('cmos-bios-screen')?.style.display === 'flex';
   const setupOpen = document.getElementById('os-reinstall-screen')?.style.display === 'flex';
   const fdiskOpen = document.getElementById('fdisk-screen')?.style.display === 'flex';
+  const physOpen = document.getElementById('physical-booter-modal')?.style.display === 'flex';
+  const signInOpen = document.getElementById('os-signin-screen')?.style.display === 'flex';
+  if (physOpen && e.key === 'Escape') {
+    e.preventDefault();
+    const m = document.getElementById('physical-booter-modal');
+    if (m) m.style.display = 'none';
+    return;
+  }
   if (fdiskOpen && e.key === 'Escape') {
     e.preventDefault();
     document.getElementById('fdisk-exit-btn')?.click();
     return;
   }
-  if (cmosOpen || setupOpen || fdiskOpen) return;
+  if (cmosOpen || setupOpen || fdiskOpen || physOpen || signInOpen) return;
 
   if (bootState === 'bios') {
     if (e.key === 'Delete' || e.key === 'F2') {
@@ -3716,12 +4705,34 @@ window.addEventListener('keydown', (e) => {
       startBootWithAudio();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      if (isPrimaryBootable()) finishBootToDesktop();
+      if (isPrimaryBootable()) finishBootToDesktop(true);
       else startBootWithAudio();
+    }
+  } else if (bootState === 'bootmgr') {
+    const order: BootMgrChoice[] = ['normal', 'safemode', 'setup', 'physical_booter', 'cmos'];
+    const curIdx = order.indexOf(selectedBootChoice);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      bootMgrPaused = true;
+      selectedBootChoice = order[(curIdx + 1) % order.length];
+      syncBootMgrSelectionUI();
+      updateBootMgrCountdownLabel();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      bootMgrPaused = true;
+      selectedBootChoice = order[(curIdx - 1 + order.length) % order.length];
+      syncBootMgrSelectionUI();
+      updateBootMgrCountdownLabel();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      proceedFromBootManager(selectedBootChoice);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finishBootToDesktop(true);
     }
   } else if (bootState === 'splash' && e.key === 'Escape') {
     e.preventDefault();
-    finishBootToDesktop();
+    finishBootToDesktop(true);
   }
 });
 
@@ -4154,11 +5165,20 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '🏒 Hockey Cards 95 (Thomas Mamas McGee · Thomas · Thomas Robins · Random McGees & Obliterate · 0% 4K)', kind: 'Trading Cards App', action: () => openApp('hockeyCardsApp') },
+  { label: '☕ Old Java Creator 1995 (Billy AI — Install via Ability to Install · 10 Interactions)', kind: 'Java-from-Trash IDE', action: () => openApp('javaCreatorApp') },
+  { label: '📷 Camera App (CAMERA.EXE — Live Webcam, Mic Audio, Filters & Capture)', kind: 'Hardware App', action: () => openApp('cameraApp') },
+  { label: '🎤 Camera & Microphone Access Permissions (Allow Mic & Webcam)', kind: 'Privacy & Hardware', action: () => openMediaPermissionsModal() },
+  { label: '↻ Auto-Arrange / Reset Desktop App Positions', kind: 'Desktop Layout', action: () => layoutDesktopIcons(true) },
+  { label: '💾 Physical Hardware Booter (.ISO / Raw USB .IMG / Linux & Win Installers)', kind: 'Bare-Metal OS', action: () => openPhysicalBooterModal() },
+  { label: '🔌 Export Bootable Raw USB / HDD Image (ANGELOS_USB_DISK.img)', kind: 'Physical OS', action: () => downloadBootableUsbDiskImage() },
+  { label: '🔒 Always-Local Account Sign-In & User Switcher (Offline Profiles)', kind: 'Local Account Always', action: () => openLocalSignInScreen() },
+  { label: '🪟 Open Windows Boot Manager (OS & Partition Selector)', kind: 'Boot Menu', action: () => enterBootManagerStage() },
   { label: '💿 Ability to Install (.EXE Installers & Physical OS Setup)', kind: 'Dual Installer', action: () => openApp('abilityToInstall', true) },
   { label: '🔧 MS-DOS FDISK.EXE (Fixed Disk Partitioner: C:\\ & D:\\)', kind: 'Bare-Metal OS', action: () => openFdiskScreen(false) },
   { label: '📖 Interactive FDISK Guide (Step-by-Step 90s Partitioning Coach)', kind: 'FDISK Tutorial', action: () => openFdiskScreen(true) },
-  { label: '📲 Install Gemini 95 onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
-  { label: '💿 Export Bootable x86 CD-ROM Image (GEMINI95_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
+  { label: '📲 Install AngelOS-web onto Your Device (Native PWA OS)', kind: 'Physical OS', action: () => triggerNativePwaInstall() },
+  { label: '💿 Export Bootable x86 CD-ROM Image (ANGELOS_BOOTCD.ISO)', kind: 'Physical OS', action: () => downloadBootableIsoImage() },
   { label: '💻 Download Portable Desktop App (.HTML Container)', kind: 'Portable .EXE/App', action: () => downloadPortableHostApp('html') },
   { label: '⚙️ Master Settings & Control Panel (8-Tab Deep Config)', kind: 'System Setting', action: () => openApp('controlPanel', true) },
   { label: '🗂️ REGEDIT.EXE (Live Windows 95 Registry Editor)', kind: 'System Utility', action: () => openApp('regedit') },
@@ -4170,11 +5190,11 @@ const SEARCHABLE_ENTRIES = [
   { label: '📝 GemNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
   { label: '🎨 GemPaint 95 (Pixel Studio & AI Critic)', kind: 'Application', action: () => openApp('paint') },
   { label: '💣 GemSweeper Deluxe (Minesweeper + AI Advisor)', kind: 'Application', action: () => openApp('minesweeper') },
-  { label: '🎹 GemPlayer 95 (16-Bit Chiptune Synth & Retro TV)', kind: 'Application', action: () => openApp('mediaPlayer') },
+  { label: '🎹 GemPlayer 95 (Mario · Legend of Z · Neighbor Chase · Big Boy Jim Boss · Harry Potter + 5,000 Random Musics)', kind: 'Application', action: () => openApp('mediaPlayer') },
   { label: '📟 MS-DOS Prompt (COMMAND.COM + AI Kernel)', kind: 'Application', action: () => openApp('dosPrompt') },
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
   { label: '⚙️ Award / UEFI CMOS BIOS Setup (5,120+ Advanced Features)', kind: 'Firmware', action: () => openCmosBiosSetup() },
-  { label: '🔄 Reinstall Gemini 95 OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
+  { label: '🔄 Reinstall AngelOS-web OS (Blue-Screen SETUP.EXE)', kind: 'OS Recovery', action: () => openOsReinstallScreen() },
   { label: '🏷️ Toggle Taskbar App Labels (Icon-Only vs Win95 Text)', kind: 'Taskbar Style', action: () => toggleTaskbarLabels() },
   { label: '👼 Angel Pilot (In-Training Joke Copilot · 0% AI)', kind: 'Unhelpful Bot', action: () => {
     if (copilotSidebar) copilotSidebar.style.display = 'flex';
@@ -4191,7 +5211,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
   { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
   { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
-  { label: '🏆 Angel-OS Trophy Vault (17 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
+  { label: '🏆 Angel-OS Trophy Vault (20 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
   { label: '🏃 Run Command... Dialog (Alt+R)', kind: 'Shell Tool', action: () => openRunDialog() },
   { label: '📌 Spawn New Desktop Sticky Note', kind: 'Desktop Toy', action: () => spawnCustomStickyNote() },
   { label: '💀 Trigger Blue Screen of Death (BSOD Prank)', kind: 'Easter Egg', action: () => triggerBsodPrank() },
@@ -4693,6 +5713,9 @@ registerMegaBridge({
   openFdiskScreen,
   openCmosBiosSetup,
   openOsReinstallScreen,
+  openPhysicalBooterModal,
+  openLocalSignInScreen,
+  downloadBootableUsbDiskImage,
   addVfsFile: (name, type, parent, content) => {
     virtualFileSystem.push({ name, type, parent, content });
   },
@@ -4710,15 +5733,68 @@ initCmosBiosController();
 initOsReinstallerController();
 initFdiskController();
 initPwaAndHostOsController();
+initPhysicalBooterAndSignIn({
+  onEnterBootManager: () => enterBootManagerStage(),
+  onOpenSetup: () => openOsReinstallScreen(),
+  onOpenFdisk: (withGuide) => openFdiskScreen(withGuide),
+  onOpenCmos: () => openCmosBiosSetup(),
+  onReboot: () => rebootGemini95(),
+  onDesktopUnlocked: () => finishBootToDesktop(true),
+});
 initMegaShellFeatures();
+registerMediaBridge({
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  showOsDialog,
+  openApp,
+  pushToast: pushBalloonToast,
+  sfx,
+});
+initMediaPermissionsController();
+registerJavaCreatorBridge({
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  unlockAchievement,
+  pushToast: pushBalloonToast,
+  sfx,
+});
+registerHockeyCardsBridge({
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  unlockAchievement,
+  pushToast: pushBalloonToast,
+  sfx,
+});
 applySystemRegistryToOS(true);
 syncTaskbarDock();
+syncLocalAccountStartPill();
+layoutDesktopIcons(false);
+initStartTileReordering();
 resetIdleTimer();
-pushBalloonToast('Angel-OS Windows 11+10 Ready!', 'Left-side Windows 10 taskbar + Windows 11 Start menu, Google Chrome downloaded & ready, and 5,120+ dormant features waiting inside CMOS BIOS Setup!', '🪟');
+pushBalloonToast(
+  'AngelOS-web v1.8.1 Ready!',
+  'Open Hockey Cards 95 to collect Thomas Mamas McGee, Thomas, Thomas Robins, random McGee & Obliterate players (0% 4K Realism)!',
+  '🏒',
+);
 
+window.addEventListener('angelos:icons-changed', () => {
+  layoutDesktopIcons(false);
+});
 window.addEventListener('resize', () => {
   openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
+  layoutDesktopIcons(false);
 });
 window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
 window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });
-

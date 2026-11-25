@@ -385,9 +385,9 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
   if (format === 'bat') {
     const batLines = [
       '@ECHO OFF',
-      'TITLE Gemini 95 Portable Desktop OS Launcher',
+      'TITLE AngelOS-web Portable Desktop OS Launcher',
       'ECHO ========================================================',
-      'ECHO   LAUNCHING GEMINI 95 IN NATIVE CHROMELESS DESKTOP MODE',
+      'ECHO   LAUNCHING ANGELOS-WEB IN NATIVE CHROMELESS DESKTOP MODE',
       'ECHO ========================================================',
       `SET TARGET_URL=${appOrigin}`,
       'IF EXIST "%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe" (',
@@ -401,9 +401,9 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
       'START "" "%TARGET_URL%"',
     ].join('\r\n');
     const blob = new Blob([batLines], { type: 'application/x-bat;charset=utf-8' });
-    triggerBrowserBlobDownload(blob, 'Gemini95_Portable_Launcher.bat');
+    triggerBrowserBlobDownload(blob, 'AngelOS-web_Portable_Launcher.bat');
     bridge?.showOsDialog(
-      'Downloaded "Gemini95_Portable_Launcher.bat" to your real computer! Double-clicking it on Windows launches Gemini 95 in a chromeless native Win32 desktop window.',
+      'Downloaded "AngelOS-web_Portable_Launcher.bat" to your real computer! Double-clicking it on Windows launches AngelOS-web in a chromeless native Win32 desktop window.',
       'Portable .BAT Launcher Saved',
     );
     return;
@@ -427,7 +427,7 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini 95 — Portable Desktop Edition</title>
+  <title>AngelOS-web — Portable Desktop Edition</title>
   <style>
     html, body { margin:0; padding:0; height:100%; background:#008080; font-family:'Segoe UI', Tahoma, sans-serif; overflow:hidden; display:flex; flex-direction:column; }
     .portable-bar { background:#c0c0c0; border-bottom:2px solid #000; padding:4px 10px; display:flex; align-items:center; justify-content:space-between; font-size:12px; }
@@ -439,7 +439,7 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
 </head>
 <body>
   <div class="portable-bar">
-    <div><b>💾 Gemini 95 Portable Desktop Container</b> · Bound Host: <code>${appOrigin}</code></div>
+    <div><b>💾 AngelOS-web Portable Desktop Container</b> · Bound Host: <code>${appOrigin}</code></div>
     <div style="display:flex;gap:6px;">
       <button class="btn95" onclick="document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()">⛶ Fullscreen Hardware Lock</button>
       <button class="btn95" onclick="toggleSnap()">📋 Embedded Registry Snapshot</button>
@@ -447,7 +447,7 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
   </div>
   <iframe src="${appOrigin}" allow="autoplay; fullscreen; clipboard-write"></iframe>
   <div class="modal" id="snap-modal">
-    <div style="background:#000080;color:#fff;font-weight:bold;padding:4px 8px;margin-bottom:8px;">Exported Gemini 95 Registry &amp; Disk Snapshot</div>
+    <div style="background:#000080;color:#fff;font-weight:bold;padding:4px 8px;margin-bottom:8px;">Exported AngelOS-web Registry &amp; Disk Snapshot</div>
     <p style="font-size:12px;margin:4px 0;">Copy this JSON into <b>Master Settings → Tab 7 (Install &amp; OS Setup)</b> anytime to restore this exact hardware/theme profile:</p>
     <textarea readonly>${safeJson}</textarea>
     <div style="text-align:right;margin-top:8px;"><button class="btn95" onclick="toggleSnap()">Close</button></div>
@@ -462,9 +462,9 @@ export function downloadPortableHostApp(format: 'html' | 'bat'): void {
 </html>`;
 
   const blob = new Blob([portableHtml], { type: 'text/html;charset=utf-8' });
-  triggerBrowserBlobDownload(blob, 'Gemini95_Portable_App.html');
+  triggerBrowserBlobDownload(blob, 'AngelOS-web_Portable_App.html');
   bridge?.showOsDialog(
-    'Downloaded "Gemini95_Portable_App.html" to your computer! Open it from your Desktop anytime for an instant portable Gemini 95 container with your embedded Registry snapshot.',
+    'Downloaded "AngelOS-web_Portable_App.html" to your computer! Open it from your Desktop anytime for an instant portable AngelOS-web container with your embedded Registry snapshot.',
     'Portable App Downloaded',
   );
 }
@@ -1172,7 +1172,7 @@ export function initFdiskController(): void {
   });
 }
 
-// ==================== METHOD 2B: REAL BINARY EL TORITO X86 BOOTABLE .ISO BUILDER ====================
+// ==================== METHOD 2B: REAL BINARY EL TORITO X86 BOOTABLE .ISO & MBR USB DISK BUILDERS ====================
 
 function writeAsciiFixed(buf: Uint8Array, offset: number, str: string, len: number, padByte = 0x20): void {
   for (let i = 0; i < len; i++) {
@@ -1214,10 +1214,9 @@ function writeDirRecord(
   const recLen = 33 + nameLen + (nameLen % 2 === 0 ? 1 : 0);
 
   buf[offset + 0] = recLen;
-  buf[offset + 1] = 0; // Extended Attribute length
+  buf[offset + 1] = 0;
   writeBothEndian32(buf, offset + 2, extentLba);
   writeBothEndian32(buf, offset + 10, dataLen);
-  // Recording date/time: 1995-08-24 12:00:00 GMT
   buf[offset + 18] = 95;
   buf[offset + 19] = 8;
   buf[offset + 20] = 24;
@@ -1236,6 +1235,23 @@ function writeDirRecord(
   return recLen;
 }
 
+// Verified 446-byte 16-bit x86 real-mode interactive bootloader assembled via GNU as/ld from physical-booter/angel_booter.S
+export const VERIFIED_X86_BOOTER_446 = new Uint8Array([
+  250,49,192,142,216,142,192,142,208,188,0,124,251,184,3,0,205,16,184,0,6,183,31,49,201,186,79,24,205,16,180,2,
+  48,255,49,210,205,16,190,110,124,232,52,0,49,192,205,22,60,49,116,18,60,13,116,14,60,50,116,19,60,114,116,25,
+  60,82,116,21,235,230,190,7,125,232,20,0,244,235,253,205,18,190,76,125,232,9,0,235,211,205,25,234,0,0,255,255,
+  172,132,192,116,8,180,14,48,255,205,16,235,243,195,65,78,71,69,76,45,79,83,32,80,72,89,83,73,67,65,76,32,66,
+  79,79,84,69,82,32,118,49,46,52,13,10,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,61,
+  61,61,61,61,61,13,10,91,49,47,69,110,116,101,114,93,32,66,111,111,116,32,76,111,99,97,108,32,65,99,99,111,117,
+  110,116,32,79,83,13,10,91,50,93,32,80,114,111,98,101,32,66,73,79,83,32,38,32,80,97,114,116,105,116,105,111,
+  110,32,84,97,98,108,101,13,10,91,82,93,32,82,101,98,111,111,116,32,72,97,114,100,119,97,114,101,13,10,62,32,
+  0,13,10,91,79,75,93,32,65,110,103,101,108,45,79,83,32,76,111,99,97,108,32,65,99,99,111,117,110,116,32,75,
+  101,114,110,101,108,32,65,99,116,105,118,101,32,40,120,56,54,32,77,66,82,47,73,83,79,32,86,101,114,105,102,
+  105,101,100,41,13,10,0,13,10,91,79,75,93,32,120,56,54,32,82,101,97,108,45,77,111,100,101,32,77,101,109,111,
+  114,121,32,38,32,77,66,82,32,48,120,53,53,65,65,32,80,114,111,98,101,32,82,101,97,100,121,13,10,62,32,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+]);
+
 export function downloadBootableIsoImage(): void {
   const bridge = getOsBridge();
   bridge?.sfx.playFloppySeek();
@@ -1244,31 +1260,28 @@ export function downloadBootableIsoImage(): void {
   const TOTAL_SECTORS = 32; // 64 KB bootable ISO-9660 + El Torito CD-ROM
   const iso = new Uint8Array(TOTAL_SECTORS * SECTOR);
 
-  const volLabel = (systemRegistry.isoVolumeLabel || 'GEMINI95_OS')
+  const volLabel = (systemRegistry.isoVolumeLabel || 'ANGELOS_BOOT')
     .toUpperCase()
     .replace(/[^A-Z0-9_]/g, '_')
-    .slice(0, 28) || 'GEMINI95_OS';
+    .slice(0, 28) || 'ANGELOS_BOOT';
 
   // --- Sector 16: ISO-9660 Primary Volume Descriptor ---
   const pvd = 16 * SECTOR;
   iso[pvd + 0] = 0x01;
   writeAsciiFixed(iso, pvd + 1, 'CD001', 5);
   iso[pvd + 6] = 0x01;
-  writeAsciiFixed(iso, pvd + 8, 'GEMINI 95 X86 PC', 32, 0x20);
+  writeAsciiFixed(iso, pvd + 8, 'ANGEL-OS X86 PHYSICAL BOOTER', 32, 0x20);
   writeAsciiFixed(iso, pvd + 40, volLabel, 32, 0x20);
   writeBothEndian32(iso, pvd + 80, TOTAL_SECTORS);
   writeBothEndian16(iso, pvd + 120, 1);
   writeBothEndian16(iso, pvd + 124, 1);
   writeBothEndian16(iso, pvd + 128, SECTOR);
-  writeBothEndian32(iso, pvd + 132, 10); // Path table size
-  // L Path Table at Sector 21 (LE)
+  writeBothEndian32(iso, pvd + 132, 10);
   iso[pvd + 140] = 21;
-  // M Path Table at Sector 22 (BE)
   iso[pvd + 151] = 22;
-  // Root Directory Record pointing to Sector 23
   writeDirRecord(iso, pvd + 156, 23, SECTOR, true, 0x00);
-  writeAsciiFixed(iso, pvd + 318, 'GEMINI NEURAL SYSTEMS INC.', 128, 0x20);
-  writeAsciiFixed(iso, pvd + 446, 'GEMINI 95 EL TORITO BOOTABLE INSTALLER', 128, 0x20);
+  writeAsciiFixed(iso, pvd + 318, 'ANGEL-OS PHYSICAL BOOT LAB', 128, 0x20);
+  writeAsciiFixed(iso, pvd + 446, 'ANGEL-OS EL TORITO X86 BOOTER (LOCAL ACCOUNT ALWAYS)', 128, 0x20);
   iso[pvd + 881] = 0x01;
 
   // --- Sector 17: El Torito Boot Record Volume Descriptor ---
@@ -1277,11 +1290,7 @@ export function downloadBootableIsoImage(): void {
   writeAsciiFixed(iso, brvd + 1, 'CD001', 5);
   iso[brvd + 6] = 0x01;
   writeAsciiFixed(iso, brvd + 7, 'EL TORITO SPECIFICATION', 32, 0x00);
-  // Pointer to Boot Catalog at Sector 19 (little-endian uint32)
   iso[brvd + 71] = 19;
-  iso[brvd + 72] = 0;
-  iso[brvd + 73] = 0;
-  iso[brvd + 74] = 0;
 
   // --- Sector 18: Volume Descriptor Set Terminator ---
   const term = 18 * SECTOR;
@@ -1291,13 +1300,11 @@ export function downloadBootableIsoImage(): void {
 
   // --- Sector 19: El Torito Boot Catalog ---
   const cat = 19 * SECTOR;
-  // Validation Entry (bytes 0..31)
-  iso[cat + 0] = 0x01; // Header ID
-  iso[cat + 1] = 0x00; // Platform: 80x86
-  writeAsciiFixed(iso, cat + 4, 'Gemini 95 OS Boot', 24, 0x00);
+  iso[cat + 0] = 0x01;
+  iso[cat + 1] = 0x00;
+  writeAsciiFixed(iso, cat + 4, 'Angel-OS Booter', 24, 0x00);
   iso[cat + 30] = 0x55;
   iso[cat + 31] = 0xaa;
-  // Compute exact 16-bit two's-complement checksum over the 16 words so total sum === 0x0000
   let wordSum = 0;
   for (let i = 0; i < 32; i += 2) {
     if (i === 28) continue;
@@ -1307,121 +1314,223 @@ export function downloadBootableIsoImage(): void {
   iso[cat + 28] = checksum & 0xff;
   iso[cat + 29] = (checksum >> 8) & 0xff;
 
-  // Initial/Default Entry (bytes 32..63)
   iso[cat + 32] = 0x88; // Bootable
   iso[cat + 33] = 0x00; // No Emulation
-  iso[cat + 38] = 0x04; // Load 4 virtual 512-byte sectors (2048 bytes)
-  iso[cat + 40] = 20;   // Load RBA = Sector 20
+  iso[cat + 38] = 0x04; // Load 4 virtual 512B sectors
+  iso[cat + 40] = 20;   // Boot image LBA
 
-  // --- Sector 20: Real 16-Bit x86 BIOS Boot Sector (Executes at 0x7C00 in QEMU/VirtualBox!) ---
+  // --- Sector 20: Assembled 16-bit x86 Interactive Bootloader ---
   const boot = 20 * SECTOR;
-  const bootBanner =
-    '\r\n' +
-    ' ============================================================\r\n' +
-    '   GEMINI 95 PHYSICAL OPERATING SYSTEM — EL TORITO X86 CD   \r\n' +
-    ' ============================================================\r\n\r\n' +
-    `   Volume Label : ${volLabel}\r\n` +
-    `   CPU Profile  : ${systemRegistry.cpuModel}\r\n` +
-    `   File System  : ${systemRegistry.fileSystemFormat} (${partitionTable.primaryC.sizeMB} MB Primary C:)\r\n\r\n` +
-    '   [OK] x86 Real-Mode Bootloader verified at 0000:7C00h.\r\n' +
-    '   Open README.TXT & REGISTRY.JSON on this ISO disc, or boot\r\n' +
-    '   the full GUI PWA shell on your desktop/mobile browser!\r\n';
-
-  // 16-bit x86 machine code:
-  // cli; xor ax,ax; mov ds,ax; mov es,ax; mov ss,ax; mov sp,0x7c00; sti
-  // mov ax,0x0003; int 0x10 (80x25 text mode)
-  // mov ax,0x0600; mov bh,0x1f; xor cx,cx; mov dx,0x184f; int 0x10 (Win95 Setup royal blue screen!)
-  // mov ah,0x02; xor bh,bh; xor dx,dx; int 0x10 (cursor 0,0)
-  // mov si, 0x7c00 + msgOffset; print loop via lodsb + int 0x10 (ah=0x0e); hlt loop
-  const code = [
-    0xfa,                         // cli
-    0x31, 0xc0,                   // xor ax, ax
-    0x8e, 0xd8,                   // mov ds, ax
-    0x8e, 0xc0,                   // mov es, ax
-    0x8e, 0xd0,                   // mov ss, ax
-    0xbc, 0x00, 0x7c,             // mov sp, 0x7c00
-    0xfb,                         // sti
-    0xb8, 0x03, 0x00,             // mov ax, 0x0003
-    0xcd, 0x10,                   // int 0x10
-    0xb8, 0x00, 0x06,             // mov ax, 0x0600
-    0xb7, 0x1f,                   // mov bh, 0x1f (white on blue!)
-    0x31, 0xc9,                   // xor cx, cx
-    0xba, 0x4f, 0x18,             // mov dx, 0x184f
-    0xcd, 0x10,                   // int 0x10
-    0xb4, 0x02,                   // mov ah, 0x02
-    0x30, 0xff,                   // xor bh, bh
-    0x31, 0xd2,                   // xor dx, dx
-    0xcd, 0x10,                   // int 0x10
-    0xbe, 0x34, 0x7c,             // mov si, 0x7c34 (52 decimal)
-    // .loop (offset 39):
-    0xac,                         // lodsb
-    0x08, 0xc0,                   // or al, al
-    0x74, 0x06,                   // jz .halt (+6)
-    0xb4, 0x0e,                   // mov ah, 0x0e
-    0xb7, 0x00,                   // mov bh, 0x00
-    0xcd, 0x10,                   // int 0x10
-    0xeb, 0xf3,                   // jmp short .loop
-    // .halt:
-    0xf4,                         // hlt
-    0xeb, 0xfd,                   // jmp short .halt
-  ];
-  for (let i = 0; i < code.length; i++) iso[boot + i] = code[i];
-  const msgStart = 0x34; // 52
-  const maxBannerLen = 510 - msgStart - 1;
-  for (let i = 0; i < Math.min(bootBanner.length, maxBannerLen); i++) {
-    iso[boot + msgStart + i] = bootBanner.charCodeAt(i) & 0x7f;
-  }
+  iso.set(VERIFIED_X86_BOOTER_446, boot);
   iso[boot + 510] = 0x55;
   iso[boot + 511] = 0xaa;
 
-  // --- Sectors 21 & 22: Minimal ISO Path Tables ---
-  const lpt = 21 * SECTOR;
-  iso[lpt + 0] = 1;
-  iso[lpt + 2] = 23; // Root extent LBA LE
-  iso[lpt + 6] = 1;
+  // --- Sectors 21 & 22: Path Tables ---
+  iso[21 * SECTOR + 0] = 1;
+  iso[21 * SECTOR + 2] = 23;
+  iso[21 * SECTOR + 6] = 1;
+  iso[22 * SECTOR + 0] = 1;
+  iso[22 * SECTOR + 5] = 23;
+  iso[22 * SECTOR + 7] = 1;
 
-  const mpt = 22 * SECTOR;
-  iso[mpt + 0] = 1;
-  iso[mpt + 5] = 23; // Root extent LBA BE
-  iso[mpt + 7] = 1;
-
-  // --- Embedded Disc Files (Sectors 24, 25, 26..28) ---
+  // --- Embedded Disc Files ---
   const encoder = new TextEncoder();
+  const activeUser = systemRegistry.activeLocalAccount || 'Michael';
   const autorunBytes = encoder.encode(
-    `[autorun]\r\nopen=SETUP.EXE\r\nicon=GEMINI95.ICO\r\nlabel=${volLabel}\r\n`,
+    `[autorun]\r\nopen=SETUP.EXE\r\nicon=ANGELOS.ICO\r\nlabel=${volLabel}\r\n`,
   );
   const readmeBytes = encoder.encode(
-    `GEMINI 95 BOOTABLE CD-ROM IMAGE (${volLabel})\r\n` +
+    `ANGEL-OS PHYSICAL BOOTER ISO (${volLabel})\r\n` +
       `===================================================\r\n` +
-      `Generated: ${new Date().toISOString()}\r\n` +
-      `Web Host : ${window.location.origin}\r\n\r\n` +
-      `This ISO-9660 + El Torito x86 CD-ROM image contains:\r\n` +
-      `1. A working 16-bit x86 BIOS boot sector (Sector 20, 0x55AA) — test in QEMU:\r\n` +
-      `     qemu-system-i386 -cdrom ${volLabel}_BOOTCD.ISO\r\n` +
-      `2. AUTORUN.INF & REGISTRY.JSON containing your live Gemini 95 configuration.\r\n`,
+      `Generated       : ${new Date().toISOString()}\r\n` +
+      `Target Partition: ${systemRegistry.selectedInstallTargetPartition || 'C:'} (${systemRegistry.fileSystemFormat})\r\n` +
+      `Local Account   : ${activeUser} (LOCAL ACCOUNT ALWAYS — Offline Profile)\r\n\r\n` +
+      `1. Interactive 16-bit x86 bootloader verified at Sector 20 (0x55AA):\r\n` +
+      `     qemu-system-x86_64 -cdrom ${volLabel}_BOOTCD.ISO\r\n` +
+      `2. Inspect REGISTRY.JSON and LOCAL_ACCOUNTS.JSON inside this disc.\r\n`,
   );
-  const regBytes = encoder.encode(JSON.stringify({ systemRegistry, partitionTable }, null, 2));
+  const safeAccounts = (systemRegistry.localAccounts || []).map((a) => ({
+    username: a.username,
+    displayName: a.displayName,
+    role: a.role,
+    localAccountAlways: true,
+    homeDir: a.homeDir,
+  }));
+  const regBytes = encoder.encode(
+    JSON.stringify({ accountPolicy: 'LOCAL_ACCOUNT_ALWAYS', activeLocalAccount: activeUser, localAccounts: safeAccounts, partitionTable }, null, 2),
+  );
 
   iso.set(autorunBytes.slice(0, SECTOR), 24 * SECTOR);
   iso.set(readmeBytes.slice(0, SECTOR), 25 * SECTOR);
   iso.set(regBytes.slice(0, 4 * SECTOR), 26 * SECTOR);
 
-  // --- Sector 23: Root Directory Entries ---
   const root = 23 * SECTOR;
   let cursor = 0;
-  cursor += writeDirRecord(iso, root + cursor, 23, SECTOR, true, 0x00); // '.'
-  cursor += writeDirRecord(iso, root + cursor, 23, SECTOR, true, 0x01); // '..'
+  cursor += writeDirRecord(iso, root + cursor, 23, SECTOR, true, 0x00);
+  cursor += writeDirRecord(iso, root + cursor, 23, SECTOR, true, 0x01);
   cursor += writeDirRecord(iso, root + cursor, 24, autorunBytes.length, false, 'AUTORUN.INF;1');
   cursor += writeDirRecord(iso, root + cursor, 25, readmeBytes.length, false, 'README.TXT;1');
-  cursor += writeDirRecord(iso, root + cursor, 26, Math.min(regBytes.length, 4 * SECTOR), false, 'REGISTRY.JSON;1');
+  cursor += writeDirRecord(iso, root + cursor, 26, Math.min(regBytes.length, 4 * SECTOR), false, 'LOCAL_ACCOUNTS.JSON;1');
 
   const fileName = `${volLabel}_BOOTCD.ISO`;
   triggerBrowserBlobDownload(new Blob([iso], { type: 'application/octet-stream' }), fileName);
 
   bridge?.showOsDialog(
-    `Built & downloaded "${fileName}" (64 KB ISO-9660 + El Torito x86 Bootable CD-ROM)! You can mount it on your computer to inspect AUTORUN.INF & REGISTRY.JSON, or boot it in QEMU / VirtualBox!`,
-    'Bootable .ISO Image Exported',
+    `Built "${fileName}" with verified x86 interactive bootloader ([1] Boot Local Account "${activeUser}", [2] Probe BIOS, [R] Reboot)! Test directly in QEMU, VirtualBox, or burn to optical/USB media.`,
+    'Physical Bootable .ISO Exported',
   );
+}
+
+function writeMbrPartitionSlot(
+  buf: Uint8Array,
+  slot: number,
+  active: boolean,
+  partType: number,
+  lbaStart: number,
+  sectors: number,
+): void {
+  const off = 0x1be + slot * 16;
+  buf[off + 0] = active ? 0x80 : 0x00;
+  buf[off + 1] = slot === 0 ? 0x01 : 0xfe;
+  buf[off + 2] = slot === 0 ? 0x02 : 0xff;
+  buf[off + 3] = slot === 0 ? 0x00 : 0xff;
+  buf[off + 4] = partType;
+  buf[off + 5] = 0xfe;
+  buf[off + 6] = 0xff;
+  buf[off + 7] = 0xff;
+  const view = new DataView(buf.buffer, buf.byteOffset + off, 16);
+  view.setUint32(8, lbaStart, true);
+  view.setUint32(12, sectors, true);
+}
+
+export function downloadBootableUsbDiskImage(): void {
+  const bridge = getOsBridge();
+  bridge?.sfx.playFloppySeek();
+
+  const SECTORS = 8192; // 4 MB dense raw USB / Fixed Disk MBR Image
+  const disk = new Uint8Array(SECTORS * 512);
+  disk.set(VERIFIED_X86_BOOTER_446, 0);
+
+  const p1Start = 63;
+  const p1Sectors = partitionTable.logicalD.exists ? 5600 : SECTORS - p1Start - 1;
+  const fsType = systemRegistry.fileSystemFormat === 'FAT32' ? 0x0c : 0x06;
+  if (partitionTable.primaryC.exists) {
+    writeMbrPartitionSlot(disk, 0, partitionTable.primaryC.active, fsType, p1Start, p1Sectors);
+  }
+  if (partitionTable.logicalD.exists) {
+    const p2Start = p1Start + p1Sectors;
+    writeMbrPartitionSlot(disk, 1, false, 0x0b, p2Start, SECTORS - p2Start - 1);
+  }
+  if (partitionTable.mbrSignatureValid) {
+    disk[510] = 0x55;
+    disk[511] = 0xaa;
+  }
+
+  // FAT VBR at LBA 63
+  const vbr = p1Start * 512;
+  disk[vbr + 0] = 0xeb;
+  disk[vbr + 1] = 0x58;
+  disk[vbr + 2] = 0x90;
+  writeAsciiFixed(disk, vbr + 3, 'ANGELOS ', 8, 0x20);
+  disk[vbr + 510] = 0x55;
+  disk[vbr + 511] = 0xaa;
+
+  // Embedded local account & partition table JSON at LBA 67
+  const encoder = new TextEncoder();
+  const meta = encoder.encode(
+    JSON.stringify(
+      {
+        os: 'Angel-OS Physical Disk Image',
+        accountPolicy: 'LOCAL_ACCOUNT_ALWAYS',
+        activeLocalAccount: systemRegistry.activeLocalAccount || 'Michael',
+        selectedPartition: systemRegistry.selectedInstallTargetPartition || 'C:',
+        partitionTable,
+      },
+      null,
+      2,
+    ),
+  );
+  disk.set(meta.slice(0, 4096), (p1Start + 4) * 512);
+
+  triggerBrowserBlobDownload(new Blob([disk], { type: 'application/octet-stream' }), 'ANGELOS_USB_DISK.img');
+  bridge?.showOsDialog(
+    'Exported "ANGELOS_USB_DISK.img" with genuine MBR Partition Table (C:/D:), x86 Interactive Physical Bootloader at Sector 0, and your Local Account config! Flash via Rufus, Etcher, dd, or run in QEMU.',
+    'Raw Bootable USB Disk (.IMG) Exported',
+  );
+}
+
+export function downloadPhysicalHostBooterFile(kind: 'linux_sh' | 'windows_ps1' | 'python_builder'): void {
+  const bridge = getOsBridge();
+  bridge?.sfx.playFloppySeek();
+  const activeUser = (systemRegistry.activeLocalAccount || 'Michael').replace(/[^A-Za-z0-9_-]/g, '') || 'Michael';
+  const targetPart = systemRegistry.selectedInstallTargetPartition || 'C:';
+
+  if (kind === 'linux_sh') {
+    const script = `#!/usr/bin/env bash
+set -euo pipefail
+# Angel-OS Bare-Metal Linux & GRUB2 Installer (Preconfigured for Local User: ${activeUser})
+ANGELOS_USER="${activeUser}"
+ANGELOS_URL="${window.location.origin}${window.location.pathname}"
+echo "=== Installing Angel-OS Physical Kiosk Shell for Local Account: $ANGELOS_USER ==="
+sudo mkdir -p /opt/angel-os /var/lib/angel-os
+cat <<'EOF' | sudo tee /var/lib/angel-os/local_accounts.json >/dev/null
+{
+  "accountPolicy": "LOCAL_ACCOUNT_ALWAYS",
+  "activeLocalAccount": "${activeUser}",
+  "targetPartition": "${targetPart}"
+}
+EOF
+cat <<EOF | sudo tee /usr/local/bin/angel-os-boot >/dev/null
+#!/usr/bin/env bash
+for b in google-chrome chromium chromium-browser microsoft-edge; do
+  command -v "\$b" >/dev/null && exec "\$b" --kiosk --app="$ANGELOS_URL"
+done
+echo "Open $ANGELOS_URL in your browser."
+EOF
+sudo chmod +x /usr/local/bin/angel-os-boot
+echo "[OK] Installed! Run 'angel-os-boot' or download offline ZIP from GitHub Releases for 100% air-gapped hosting."
+`;
+    triggerBrowserBlobDownload(new Blob([script], { type: 'text/x-shellscript;charset=utf-8' }), 'install_angelos_linux.sh');
+  } else if (kind === 'windows_ps1') {
+    const targetDir = targetPart === 'D:' ? 'D:\\Angel-OS' : 'C:\\Angel-OS';
+    const ps = `# Angel-OS Windows Native Partition & Local-Account Installer (User: ${activeUser})
+param(
+  [string]$InstallRoot = "${targetDir}",
+  [string]$LocalUsername = "${activeUser}"
+)
+New-Item -ItemType Directory -Force -Path "$InstallRoot\\Users\\$LocalUsername" | Out-Null
+@{
+  accountPolicy = "LOCAL_ACCOUNT_ALWAYS"
+  activeLocalAccount = $LocalUsername
+  targetPartition = "${targetPart}"
+  shellUrl = "${window.location.origin}${window.location.pathname}"
+} | ConvertTo-Json | Set-Content "$InstallRoot\\local_account.json" -Encoding UTF8
+$Bat = "@ECHO OFF\`r\`nSTART \\"\\" msedge --kiosk --app=\\"${window.location.origin}${window.location.pathname}\\""
+$Bat | Set-Content "$InstallRoot\\Boot-AngelOS.bat" -Encoding ASCII
+$Wsh = New-Object -ComObject WScript.Shell
+$Sc = $Wsh.CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\\Angel-OS ($LocalUsername).lnk")
+$Sc.TargetPath = "$InstallRoot\\Boot-AngelOS.bat"
+$Sc.Save()
+Write-Host "[OK] Angel-OS Local Shell installed to $InstallRoot for $LocalUsername!" -ForegroundColor Green
+`;
+    triggerBrowserBlobDownload(new Blob([ps], { type: 'text/plain;charset=utf-8' }), 'Install-AngelOS-Windows.ps1');
+  } else {
+    const py = `#!/usr/bin/env python3
+"""Quick standalone Angel-OS Physical USB & ISO generator (Local Account: ${activeUser})"""
+import json, os, struct
+BOOT_446 = bytes(${JSON.stringify(Array.from(VERIFIED_X86_BOOTER_446))})
+os.makedirs("angelos_boot_out", exist_ok=True)
+disk = bytearray(4096 * 512)
+disk[0:446] = BOOT_446
+struct.pack_into("<BBBBBBBBII", disk, 0x1BE, 0x80, 1, 2, 0, ${systemRegistry.fileSystemFormat === 'FAT32' ? 0x0c : 0x06}, 0xFE, 0xFF, 0xFF, 63, 4000)
+disk[510:512] = b"\\x55\\xAA"
+meta = json.dumps({"accountPolicy": "LOCAL_ACCOUNT_ALWAYS", "localAccount": "${activeUser}", "partition": "${targetPart}"}).encode()
+disk[67*512:67*512+len(meta)] = meta
+open("angelos_boot_out/ANGELOS_USB_DISK.img", "wb").write(disk)
+print("Generated angelos_boot_out/ANGELOS_USB_DISK.img for Local Account ${activeUser}!")
+`;
+    triggerBrowserBlobDownload(new Blob([py], { type: 'text/x-python;charset=utf-8' }), 'build_angelos_usb.py');
+  }
 }
 
 // ==================== METHOD 2C: NATIVE PWA STANDALONE OS INSTALLER & HARDWARE FULLSCREEN ====================
@@ -1480,7 +1589,7 @@ export async function triggerNativePwaInstall(): Promise<void> {
 
   if (state.isInstalledStandalone) {
     bridge?.showOsDialog(
-      'Gemini 95 is currently running as a Standalone Installed OS App on your device! Use "Fullscreen Hardware Lock" for 100% edge-to-edge CRT immersion.',
+      'AngelOS-web is currently running as a Standalone Installed OS App on your device! Use "Fullscreen Hardware Lock" for 100% edge-to-edge CRT immersion.',
       'Standalone OS Active',
     );
     return;
@@ -1503,15 +1612,15 @@ export async function triggerNativePwaInstall(): Promise<void> {
     return;
   }
 
-  // Helpful guidance when inside AI Studio preview iframe or browser where prompt hasn't fired yet
+  // Helpful guidance when inside preview iframe or browser where prompt hasn't fired yet
   const iosModal = document.getElementById('pwa-ios-modal');
   const bodyEl = document.getElementById('pwa-guide-body');
   if (iosModal && bodyEl) {
     bodyEl.innerHTML = `
-      <p style="margin:0 0 8px 0;">To install <b>Gemini 95</b> directly onto your computer's Desktop / Start Menu / Dock as a native standalone OS app:</p>
+      <p style="margin:0 0 8px 0;">To install <b>AngelOS-web</b> directly onto your computer's Desktop / Start Menu / Dock as a native standalone OS app:</p>
       <ol style="margin:0 0 10px 18px;padding:0;line-height:1.5;">
         <li>Open this app's URL in its own top-level browser tab (click the <b>Open in New Tab ↗</b> icon in the top-right preview header if viewing inside an iframe).</li>
-        <li>Click the <b>Install Gemini 95 (🖥️ / ⊕)</b> icon in Chrome or Edge's address bar — or click <b>📲 Install OS</b> on the Gemini 95 taskbar!</li>
+        <li>Click the <b>Install AngelOS-web (🖥️ / ⊕)</b> icon in Chrome or Edge's address bar — or click <b>📲 Install OS</b> on the AngelOS-web taskbar!</li>
         <li>Alternatively, click <b>Download Portable App (.HTML / .BAT)</b> below for an instant desktop launcher file right now.</li>
       </ol>
     `;
