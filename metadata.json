@@ -1,7 +1,10 @@
 {
   "name": "AngelOS-web",
   "description": "AngelOS-web — An installable Windows 11 + 10/95 hybrid web operating system with BIOS, partition setup, physical booter, and always-local accounts.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

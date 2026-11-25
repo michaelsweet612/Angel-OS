@@ -4,9 +4,9 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.4.1-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.5.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
-Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
+Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, WebRTC MediaDevices (Camera & Microphone), 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
 
 > **Personal Use Only:** You are welcome to download and run Angel-OS locally for your own personal use. Republishing, redistributing, or re-hosting copies is not permitted without written permission (see [`LICENSE`](./LICENSE)).
 
@@ -17,14 +17,14 @@ Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, 16-bit x86 As
 ## Download & Play Locally
 
 1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)** (**AngelOS-web**).
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.4.1-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.4.1-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.5.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.5.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
 3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
 
 ## Overview
 
-**AngelOS-web** (the web edition of **Angel-OS**) recreates the tactile nostalgia of a desktop PC—complete with an interactive Award BIOS POST sequence, **Angel-OS Windows Boot Manager**, **Always-Local Account Sign-In (`C:\Users\<Name>`)**, Sound Blaster 16 synthesis, CRT scanlines, MS-DOS `FDISK.EXE`, InstallShield `.EXE` wizards, and a live Registry—fused with modern Windows 11/10 shell ergonomics (Snap Layouts, Virtual Desktops, Universal Search, Copilot sidebar) and generative AI capabilities across its built-in apps.
+**AngelOS-web** (the web edition of **Angel-OS**) recreates the tactile nostalgia of a desktop PC—complete with an interactive Award BIOS POST sequence, **Angel-OS Windows Boot Manager**, **Always-Local Account Sign-In (`C:\Users\<Name>`)**, Sound Blaster 16 synthesis, live **Camera & Microphone hardware access**, freely movable desktop/taskbar/Start apps, CRT scanlines, MS-DOS `FDISK.EXE`, InstallShield `.EXE` wizards, and a live Registry—fused with modern Windows 11/10 shell ergonomics (Snap Layouts, Virtual Desktops, Universal Search, Copilot sidebar) and generative AI capabilities across its built-in apps.
 
 It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you can install software inside the simulated `C:\` / `D:\` drives via Win32 `.EXE` installers, create/format/target partitions during **OS Setup**, sign in strictly with offline **Local Accounts** (never cloud logins), install Angel-OS directly onto your device as an offline-capable **Progressive Web App (PWA)**, or export & build genuine hardware-bootable **`.ISO`** (`El Torito` x86), **raw MBR-partitioned USB/HDD `.IMG`** (`ANGELOS_USB_DISK.img`), and Linux/Windows host booter scripts (`physical-booter/`).
 
@@ -36,12 +36,19 @@ It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you c
 - **Interactive Award Modular BIOS v4.51PG (`POST`)**: Hardware memory check, IDE drive detection (`QUANTUM FIREBALL 1995MB`), Sound Blaster 16 DSP init, and keyboard boot hotkeys (`ENTER`/`SPACE`, `DEL`/`F2`, `F8`, `F9`, `ESC`).
 - **Angel-OS Windows Boot Manager**: Selectable boot menu appearing after POST (with pauseable 5-second countdown & keyboard navigation) letting you boot into **Angel-OS Hybrid**, **Safe Mode & Diagnostics**, **Windows-Style Partition Options & OS Setup (`SETUP.EXE`)**, **Physical Hardware Booter**, or **CMOS BIOS Setup**.
 - **Always-Local Account Sign-In & Lock Screen (`Local Account Always`)**: Offline-first Windows sign-in screen stored locally under `C:\Users\<Username>` and browser `localStorage`—zero cloud authentication required. Supports optional local password/PIN verification, instant user switching chips, inline `+ New Local Account` creation, clickable Start profile pill, and Start Power → `Lock / Switch Local Account`.
-- **CMOS BIOS Setup Utility**: Configure CPU model (`486DX2 66MHz` through `Pentium II 400MHz`), Turbo toggle, **RAM Allocation Mode** (`Auto-Detect Host PC RAM`, `Limited Pool 16–4,096 MB`, or `Custom Manual MB`), Performance Level presets, Cooling Fan curves, live Vcore/Temp/RPM telemetry, Quick POST, boot priority, Audio DSP, CRT scanlines, `FAT16`/`FAT32` file system, and **5,120+ dormant firmware registers** synced with `HKLM\Hardware\BIOS`.
+- **CMOS BIOS Setup Utility (5,120+ Registers + Bulk Select / Activate / Deactivate)**: Configure CPU model (`486DX2 66MHz` through `Pentium II 400MHz`), Turbo toggle, **RAM Allocation Mode** (`Auto-Detect Host PC RAM`, `Limited Pool 16–4,096 MB`, or `Custom Manual MB`), Performance Level presets, Cooling Fan curves, live Vcore/Temp/RPM telemetry, Quick POST, boot priority, Audio DSP, CRT scanlines, `FAT16`/`FAT32` file system, and **5,120+ dormant firmware registers** with **per-row selection checkboxes**, **`Select View` / `Select All 5,120` / `Clear`**, **`Activate Selected` / `Deactivate Selected`**, **`Activate ALL 5,120` (`F6`)**, and **`Deactivate ALL` (`F7`)** controls.
 - **MS-DOS `FDISK.EXE` Partitioner & Windows-Style Partition Options (`SETUP.EXE`)**: Create, resize, format, or set Active Primary `C:\` and Logical `D:\` partitions inside either MS-DOS `FDISK` or the modern blue-screen **OS Setup Partition Table**, choose `FAT16`/`FAT32` and Bootloader Mode, and provision your initial Local Account before Express Repair or Clean Factory Install.
 - **Physical Hardware Booter (`physical-booter/` + In-OS Booter Modal)**: Multi-language bare-metal toolkit written in **16-bit x86 Assembly (`angel_booter.S` / `angel_booter.bin`)**, **Python 3 (`build_physical_booter.py`)**, **Bash + systemd + GRUB2 (`install_angelos_linux.sh`)**, **PowerShell (`Install-AngelOS-Windows.ps1`)**, and **Batch (`Flash-AngelOS-USB.bat`)**—plus one-click browser exports for bootable `64 KB` **ISO-9660/El Torito `.ISO`** and `16 MB` raw MBR-partitioned **`ANGELOS_USB_DISK.img`** images ready for USB flashing (Rufus / BalenaEtcher / `dd`), QEMU, or VirtualBox.
 - **Web Audio Lo-Fi Synth Engine (`RetroSoundEngine`)**: Synthesizes the BIOS POST beep, floppy seek clicks, V.90 56k dial-up modem handshakes, window chimes, and an ambient Brian Eno-inspired startup pad with tape saturation and adjustable DAC bit depth (`4`/`8`/`12`/`16`-bit).
 
-### Built-In Applications & Utilities
+### Built-In Applications, Hardware Access & Movable Desktop Shell
+- **Camera App (`CAMERA.EXE`) & Hardware Access Permissions (`Camera` + `Microphone`)**:
+  - Dedicated **Camera & Microphone Access Permissions** dialog (`#media-perm-modal`), Quick Settings tiles, and in-app permission buttons trigger real browser `navigator.mediaDevices.getUserMedia` requests with live status badges and one-click hardware release.
+  - **Camera App** features live webcam viewfinder, camera & microphone device selection, live mic VU meter, 7 real-time filters (*Normal*, *CRT 95*, *B&W Noir*, *1995 Sepia*, *Matrix Green*, *Vaporwave*, *Thermal Vision*), mirror flip, **📸 Take Photo** (saves PNG directly to `C:\Pictures` + downloadable filmstrip), **⏺ Record Video** (`.webm` capture with mic audio), and an offline **Test Pattern** fallback mode.
+  - **Sound Studio (`SNDREC32.EXE`)** adds live **Microphone Access**, real-time live voice waveform rendering on the oscilloscope, microphone clip recording/playback, and `.webm` / 16-bit `.WAV` downloads.
+- **Freely Movable Apps & Customizable Layout**:
+  - Drag and drop **Desktop App Icons** freely anywhere on the desktop (mouse & touch) with persistent saved positions, optional **Snap-to-Grid** toggle, and **Auto-Arrange / Reset App Icons** in the desktop right-click menu.
+  - Drag and reorder **Taskbar App Buttons** and **Start Menu Pinned Tiles** directly, and move application windows with both mouse and touch dragging.
 - **Ability to Install (Dual-Mode Installer)**:
   - **Way 1 — `.EXE` Setup Files & Portable App**: Drop or run `*_SETUP.EXE` packages in `C:\Downloads`, browse the built-in **Tucows 95 Shareware Depot**, unpack `MZ 0x5A4D` self-extracting cabinets, walk through the 5-step **InstallShield 95 Wizard**, or download a portable `.HTML` (with embedded Registry snapshot) / `.BAT` desktop launcher.
   - **Way 2 — Physical OS & Hardware Boot Media**: Open the **Physical Hardware Booter**, install as a standalone offline **PWA**, lock hardware fullscreen, download raw USB `.IMG` (`ANGELOS_USB_DISK.img`), El Torito `.ISO` (`ANGELOS_BOOTCD.ISO`), or native Linux/Windows installer scripts.
@@ -53,7 +60,7 @@ It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you c
 - **Gemini AIM (Instant Messenger)**: Chat with 1995 personas (`SmarterChild_95`, `ZeroCool_1337`, `Clippy_Pro`, `Win95_Guru`), trigger quick prompts, and save chat transcripts to GemNotes.
 - **GemSweeper Deluxe**: Classic Minesweeper (`9×9`, `12×12`, `14×16`) with chord-clicking, timer/flag counters, and AI tactical hints.
 - **GemPlayer 95**: 4-track 16-bit Web Audio FM Chiptune Synthesizer (`Canyon.mid`, `CyberWave 95`, `DOOM Boss Riff`, `Teal Desktop Dreams`) with a live spectrum visualizer and tempo control, plus **YouTube Retro CRT TV** playback.
-- **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `FDISK`, `ISO`, `USBBOOT`, `BOOTER`, `SIGNIN`, `LOCK`, `SWITCHUSER`, `INSTALL`, `SETUP`, `PERF`, `PERFLEVELS`, `RAM`, `FANS`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
+- **MS-DOS Prompt (`COMMAND.COM`)**: Supports built-in commands (`HELP`, `DIR`, `CAMERA`, `WEBCAM`, `MIC`, `PERMISSIONS`, `FDISK`, `ISO`, `USBBOOT`, `BOOTER`, `SIGNIN`, `LOCK`, `SWITCHUSER`, `INSTALL`, `SETUP`, `PERF`, `PERFLEVELS`, `RAM`, `FANS`, `*.EXE`, `SYSINFO`, `SETTINGS`, `REGEDIT`, `BIOS`, `MATRIX`, `COLOR`/`PHOSPHOR`, `CLS`, `CHIME`, `OPEN <APP>`) plus natural-language queries handled by the `GEMINI.SYS` AI DOS Kernel.
 - **DOOM II**: Protected-mode MS-DOS DOOM II embed (`js-dos`).
 - **Master System Settings & Control Panel (`CONTROL.EXE`)**: 8-tab configuration suite covering **Display & CRT**, **Windows & Fonts**, **Taskbar & Snap**, **Sound DSP**, **Browser & Modem**, **CPU, RAM & Power**, **Boot, Accounts, Install & Physical Booter**, and **Registry & BIOS**—including 7 built-in themes (*Standard Teal*, *Hot Dog Stand*, *Cyberpunk*, *Vaporwave*, *Matrix*, *Win 3.1*, *High Contrast*), custom hex palettes, CRT scanline/calibration sliders, idle screensavers (*3D Starfield* / *Matrix*), and `.REG` JSON import/export.
 - **Registry Editor (`REGEDIT.EXE`)**: Hierarchical live editor for 60+ `HKEY_CURRENT_USER` and `HKEY_LOCAL_MACHINE` keys with instant search and `REGEDIT4` file export to `C:\System95`.
@@ -131,6 +138,7 @@ Angel-OS/
 ├── osSystemCore.ts     # SystemRegistry schema, LocalUserAccount store, package catalog & partition state
 ├── osHardwarePerf.ts   # Host hardware auto-detect, Auto/Limited/Custom RAM modes & fan/thermal engine
 ├── osPhysicalBooter.ts # Windows Boot Manager helper, Always-Local Sign-In, Partition Setup & Booter modal
+├── osMediaDevices.ts   # Real Camera & Microphone permission manager, Camera App (CAMERA.EXE) & live mic capture
 ├── osExtendedApps.ts   # Multi-engine browser, InstallShield 95, 8-tab Control Panel, REGEDIT, SYSMON & BIOS
 ├── osDualInstall.ts    # .EXE SFX runner, Tucows depot, FDISK, ISO-9660/El Torito & Raw USB .IMG builders
 ├── osMegaFeatures.ts   # Classic Win95 accessories, Arcade games, Run dialog & MegaBridge shell API

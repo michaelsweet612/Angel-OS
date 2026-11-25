@@ -7643,8 +7643,419 @@ body.bios-rgb-trim .window.active-window {
 }
 
 #physical-booter-modal,
-#pwa-ios-modal {
+#pwa-ios-modal,
+#media-perm-modal {
   z-index: 9900;
+}
+
+/* ==================== MOVABLE DESKTOP ICONS, TASKBAR & START REORDERING ==================== */
+.desktop-icons.free-position-mode {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.desktop-icons.free-position-mode .icon {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  transition: box-shadow 0.12s ease;
+}
+
+.desktop-icons.free-position-mode .icon.is-dragging-icon {
+  cursor: grabbing;
+  z-index: 16;
+  opacity: 0.92;
+  background-color: rgba(0, 120, 212, 0.45);
+  border: 1px dashed #fde047;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  transform: scale(1.04);
+}
+
+.taskbar-app.is-dragging-dock {
+  opacity: 0.45;
+}
+
+.taskbar-app.dock-drop-target {
+  outline: 2px solid #0078d4;
+  outline-offset: -2px;
+  background: rgba(0, 120, 212, 0.22) !important;
+}
+
+.start-tile-btn.is-dragging-tile {
+  opacity: 0.45;
+}
+
+.start-tile-btn.tile-drop-target {
+  outline: 2px dashed #0078d4;
+  background: rgba(0, 120, 212, 0.16) !important;
+}
+
+/* ==================== HARDWARE PERMISSIONS MODAL & LIVE MIC BAR ==================== */
+.media-perm-card {
+  background: #dfdfdf;
+  border: 2px inset #808080;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.media-perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #bdbdbd;
+}
+
+.media-perm-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.media-perm-pill {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid #64748b;
+  background: #e2e8f0;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.media-perm-pill.perm-live {
+  background: #16a34a;
+  border-color: #14532d;
+  color: #ffffff;
+}
+
+.media-perm-pill.perm-granted {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #14532d;
+}
+
+.media-perm-pill.perm-denied {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+
+.media-perm-pill.perm-prompt {
+  background: #fef9c3;
+  border-color: #ca8a04;
+  color: #713f12;
+}
+
+.sndrec-mic-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #d4d0c8;
+  border: 1px inset #808080;
+  padding: 5px 8px;
+}
+
+/* ==================== CAMERA APP (CAMERA.EXE) ==================== */
+.camera-app-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #c0c0c0;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.camera-perm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #d4d0c8;
+  border: 1px inset #808080;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+}
+
+.camera-perm-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.camera-stage {
+  position: relative;
+  flex: 1;
+  min-height: 180px;
+  background: #020617;
+  border: 2px inset #808080;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-video,
+.camera-test-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-idle-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #f8fafc;
+  padding: 16px;
+  background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+}
+
+.camera-shutter-flash {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease-out;
+}
+
+.camera-shutter-flash.flash {
+  opacity: 0.85;
+}
+
+.camera-rec-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(185, 28, 28, 0.92);
+  color: #ffffff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid #fecaca;
+}
+
+.camera-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #d4d0c8;
+  border: 1px inset #808080;
+  padding: 5px 8px;
+}
+
+.camera-ctrl-left,
+.camera-ctrl-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.camera-shutter-btn {
+  background: #0078d4 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.camera-record-btn {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  font-weight: 700;
+}
+
+.camera-mic-vu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+}
+
+.camera-mic-vu-track {
+  width: 64px;
+  height: 10px;
+  background: #0f172a;
+  border: 1px inset #808080;
+  overflow: hidden;
+}
+
+.camera-mic-vu-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+  transition: width 0.06s linear;
+}
+
+.camera-gallery-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  min-height: 98px;
+  max-height: 112px;
+  background: #1e293b;
+  border: 2px inset #808080;
+  padding: 6px 8px;
+  align-items: center;
+}
+
+.camera-gallery-empty {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  margin: auto;
+  text-align: center;
+}
+
+.camera-shot-card {
+  flex: 0 0 132px;
+  background: #c0c0c0;
+  border: 2px outset #ffffff;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.camera-shot-card img {
+  width: 100%;
+  height: 68px;
+  object-fit: cover;
+  background: #000;
+  display: block;
+}
+
+.camera-shot-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 0.62rem;
+  color: #000;
+}
+
+.camera-shot-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 72px;
+}
+
+.camera-dl-link {
+  text-decoration: none;
+  color: #000;
+  font-size: 0.62rem;
+  padding: 1px 4px;
+  height: auto;
+}
+
+.camera-app-wrapper .window-statusbar {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.camera-app-wrapper .window-statusbar span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ==================== CMOS BIOS BULK SELECT / ACTIVATE / DEACTIVATE BAR ==================== */
+.cmos-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  padding: 6px 8px;
+}
+
+.cmos-bulk-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.cmos-sel-counter {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fde047;
+  padding: 2px 6px;
+  background: rgba(250, 204, 21, 0.14);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+}
+
+.cmos-mini-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cmos-bulk-activate {
+  background: #14532d !important;
+  border-color: #4ade80 !important;
+  color: #dcfce7 !important;
+  font-weight: 700;
+}
+
+.cmos-bulk-deactivate {
+  background: #450a0a !important;
+  border-color: #f87171 !important;
+  color: #fee2e2 !important;
+  font-weight: 700;
+}
+
+.cmos-bulk-all-on {
+  background: #facc15 !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 700;
+}
+
+.cmos-bulk-all-off {
+  background: #b91c1c !important;
+  border-color: #fecaca !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.cmos-td-chk {
+  text-align: center;
+  width: 32px;
+}
+
+.cmos-row-chk {
+  width: 14px;
+  height: 14px;
+  accent-color: #facc15;
+  cursor: pointer;
+}
+
+.cmos-feat-row.is-checked {
+  background: rgba(250, 204, 21, 0.16);
 }
 
 

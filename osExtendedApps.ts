@@ -3910,6 +3910,23 @@ export function initCmosBiosController(): void {
     applySystemRegistryToOS();
     screen.style.display = 'none';
   });
+
+  window.addEventListener('keydown', (e) => {
+    if (screen.style.display !== 'flex') return;
+    if (e.key === 'F6') {
+      e.preventDefault();
+      document.getElementById('cmos-activate-all-btn')?.click();
+    } else if (e.key === 'F7') {
+      e.preventDefault();
+      document.getElementById('cmos-defaults-btn')?.click();
+    } else if (e.key === 'F10') {
+      e.preventDefault();
+      document.getElementById('cmos-save-exit-btn')?.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      document.getElementById('cmos-cancel-btn')?.click();
+    }
+  });
 }
 
 // ==================== OPTIONAL CRT STARFIELD / MATRIX SCREENSAVER ====================

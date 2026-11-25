@@ -145,6 +145,45 @@ export function resetAllBios5000ToDefaults(): void {
   saveActivatedBiosMap();
 }
 
+export function activateBiosFeaturesBatch(ids: Iterable<string>): number {
+  const catalog = getBiosFeatureCatalog();
+  const byId = new Map<string, BiosFeatureDef>();
+  for (const f of catalog) byId.set(f.id, f);
+  let count = 0;
+  for (const id of ids) {
+    const feat = byId.get(id);
+    if (!feat) continue;
+    const enabledVal = feat.options.find((o) => o !== feat.defaultValue) || 'Enabled';
+    activatedBiosFeatures[feat.id] = enabledVal;
+    count++;
+  }
+  saveActivatedBiosMap();
+  return count;
+}
+
+export function deactivateBiosFeaturesBatch(ids: Iterable<string>): number {
+  let count = 0;
+  for (const id of ids) {
+    if (Object.prototype.hasOwnProperty.call(activatedBiosFeatures, id)) {
+      delete activatedBiosFeatures[id];
+      count++;
+    }
+  }
+  saveActivatedBiosMap();
+  return count;
+}
+
+export function activateAllBios5000Features(): number {
+  const catalog = getBiosFeatureCatalog();
+  const nextMap: Record<string, string> = {};
+  for (const feat of catalog) {
+    nextMap[feat.id] = feat.options.find((o) => o !== feat.defaultValue) || 'Enabled';
+  }
+  activatedBiosFeatures = nextMap;
+  saveActivatedBiosMap();
+  return catalog.length;
+}
+
 // Curated flagship registers that produce visible/audible live OS behavior ONLY when activated in BIOS
 const FLAGSHIP_BY_CATEGORY: Record<
   string,
@@ -800,6 +839,25 @@ let biosSearchQuery = '';
 let biosPage = 1;
 const PAGE_SIZE = 60;
 let selectedBiosFeatureId = 'BIOS-0001';
+const selectedBiosIds = new Set<string>();
+
+function syncBiosSelectionUI(pageItems?: BiosFeatureDef[]): void {
+  const cntEl = document.getElementById('cmos-selected-counter');
+  if (cntEl) {
+    cntEl.textContent = `${selectedBiosIds.size.toLocaleString()} selected`;
+  }
+  const actSelBtn = document.getElementById('cmos-activate-selected-btn') as HTMLButtonElement | null;
+  const deactSelBtn = document.getElementById('cmos-deactivate-selected-btn') as HTMLButtonElement | null;
+  if (actSelBtn) actSelBtn.disabled = selectedBiosIds.size === 0;
+  if (deactSelBtn) deactSelBtn.disabled = selectedBiosIds.size === 0;
+
+  const pageChk = document.getElementById('cmos-select-page-chk') as HTMLInputElement | null;
+  if (pageChk && pageItems) {
+    const selectedOnPage = pageItems.filter((f) => selectedBiosIds.has(f.id)).length;
+    pageChk.checked = pageItems.length > 0 && selectedOnPage === pageItems.length;
+    pageChk.indeterminate = selectedOnPage > 0 && selectedOnPage < pageItems.length;
+  }
+}
 
 export interface BiosUiCallbacks {
   onFeatureChanged?: () => void;
@@ -942,17 +1000,36 @@ export function renderCmos5000Browser(): void {
   rowsEl.innerHTML = '';
   if (pageItems.length === 0) {
     const emptyTr = document.createElement('tr');
-    emptyTr.innerHTML = `<td colspan="4" class="cmos-empty-row">No matching BIOS registers. ${biosFilterMode === 'active' ? 'No features are activated yet — switch to "All 5,120" or "⚡ Live OS Effects" and turn features on inside BIOS!' : 'Try another search keyword.'}</td>`;
+    emptyTr.innerHTML = `<td colspan="5" class="cmos-empty-row">No matching BIOS registers. ${biosFilterMode === 'active' ? 'No features are activated yet — switch to "All 5,120", click "Activate ALL 5,120", or check individual features inside BIOS!' : 'Try another search keyword.'}</td>`;
     rowsEl.appendChild(emptyTr);
   } else {
     const frag = document.createDocumentFragment();
     pageItems.forEach((feat) => {
       const val = getBiosFeatureValue(feat.id, feat.defaultValue);
       const isActive = isBiosFeatureActivated(feat.id);
+      const isChecked = selectedBiosIds.has(feat.id);
 
       const tr = document.createElement('tr');
-      tr.className = `cmos-feat-row${isActive ? ' is-activated' : ''}${feat.id === selectedBiosFeatureId ? ' is-selected' : ''}`;
+      tr.className = `cmos-feat-row${isActive ? ' is-activated' : ''}${feat.id === selectedBiosFeatureId ? ' is-selected' : ''}${isChecked ? ' is-checked' : ''}`;
       tr.dataset.featId = feat.id;
+
+      const tdChk = document.createElement('td');
+      tdChk.className = 'cmos-td-chk';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'cmos-row-chk';
+      chk.checked = isChecked;
+      chk.dataset.featId = feat.id;
+      chk.title = `Select ${feat.id}`;
+      chk.addEventListener('click', (e) => e.stopPropagation());
+      chk.addEventListener('change', () => {
+        uiCallbacks.onPlayClick?.();
+        if (chk.checked) selectedBiosIds.add(feat.id);
+        else selectedBiosIds.delete(feat.id);
+        tr.classList.toggle('is-checked', chk.checked);
+        syncBiosSelectionUI(pageItems);
+      });
+      tdChk.appendChild(chk);
 
       const tdAddr = document.createElement('td');
       tdAddr.className = 'cmos-td-addr tabular-nums';
@@ -1000,6 +1077,7 @@ export function renderCmos5000Browser(): void {
       });
 
       tdCtrl.appendChild(select);
+      tr.appendChild(tdChk);
       tr.appendChild(tdAddr);
       tr.appendChild(tdName);
       tr.appendChild(tdSub);
@@ -1016,6 +1094,8 @@ export function renderCmos5000Browser(): void {
     });
     rowsEl.appendChild(frag);
   }
+
+  syncBiosSelectionUI(pageItems);
 
   const selFeat =
     pageItems.find((f) => f.id === selectedBiosFeatureId) ||
@@ -1059,6 +1139,79 @@ export function initCmos5000Listeners(): void {
       renderCmos5000Browser();
     });
   });
+
+  // Bulk Select / Activate / Deactivate Controls
+  const triggerActivateAll = () => {
+    uiCallbacks.onPlayClick?.();
+    activateAllBios5000Features();
+    applyBios5000EffectsToOS();
+    uiCallbacks.onFeatureChanged?.();
+    uiCallbacks.onUnlockTrophy?.('bios_tinkerer');
+    renderCmos5000Browser();
+  };
+
+  const triggerDeactivateAll = () => {
+    uiCallbacks.onPlayClick?.();
+    resetAllBios5000ToDefaults();
+    applyBios5000EffectsToOS();
+    uiCallbacks.onFeatureChanged?.();
+    renderCmos5000Browser();
+  };
+
+  document.getElementById('cmos-select-page-chk')?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    const filtered = getFilteredBiosFeatures();
+    const startIdx = (biosPage - 1) * PAGE_SIZE;
+    const pageItems = filtered.slice(startIdx, startIdx + PAGE_SIZE);
+    pageItems.forEach((f) => {
+      if (checked) selectedBiosIds.add(f.id);
+      else selectedBiosIds.delete(f.id);
+    });
+    renderCmos5000Browser();
+  });
+
+  document.getElementById('cmos-select-filtered-btn')?.addEventListener('click', () => {
+    uiCallbacks.onPlayClick?.();
+    getFilteredBiosFeatures().forEach((f) => selectedBiosIds.add(f.id));
+    renderCmos5000Browser();
+  });
+
+  document.getElementById('cmos-select-all-5120-btn')?.addEventListener('click', () => {
+    uiCallbacks.onPlayClick?.();
+    getBiosFeatureCatalog().forEach((f) => selectedBiosIds.add(f.id));
+    renderCmos5000Browser();
+  });
+
+  document.getElementById('cmos-clear-selection-btn')?.addEventListener('click', () => {
+    uiCallbacks.onPlayClick?.();
+    selectedBiosIds.clear();
+    renderCmos5000Browser();
+  });
+
+  document.getElementById('cmos-activate-selected-btn')?.addEventListener('click', () => {
+    if (selectedBiosIds.size === 0) return;
+    uiCallbacks.onPlayClick?.();
+    activateBiosFeaturesBatch(selectedBiosIds);
+    applyBios5000EffectsToOS();
+    uiCallbacks.onFeatureChanged?.();
+    if (getActivatedBiosCount() >= 1) {
+      uiCallbacks.onUnlockTrophy?.('bios_tinkerer');
+    }
+    renderCmos5000Browser();
+  });
+
+  document.getElementById('cmos-deactivate-selected-btn')?.addEventListener('click', () => {
+    if (selectedBiosIds.size === 0) return;
+    uiCallbacks.onPlayClick?.();
+    deactivateBiosFeaturesBatch(selectedBiosIds);
+    applyBios5000EffectsToOS();
+    uiCallbacks.onFeatureChanged?.();
+    renderCmos5000Browser();
+  });
+
+  document.getElementById('cmos-activate-all-btn')?.addEventListener('click', triggerActivateAll);
+  document.getElementById('cmos-footer-activate-all-btn')?.addEventListener('click', triggerActivateAll);
+  document.getElementById('cmos-deactivate-all-btn')?.addEventListener('click', triggerDeactivateAll);
 
   document.getElementById('cmos-page-first')?.addEventListener('click', () => {
     uiCallbacks.onPlayClick?.();

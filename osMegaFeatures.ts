@@ -2,6 +2,11 @@
 // 100% Client-Side Classic Win95 Accessories, Arcade Games, System Utilities & Shell Goodies
 
 import { getActivatedBiosCount, TOTAL_BIOS_FEATURES } from './osBios5000';
+import {
+  getLiveMicWaveform,
+  initSoundStudioMicControls,
+  openMediaPermissionsModal,
+} from './osMediaDevices';
 
 export interface MegaBridge {
   openApp: (appName: string, bypassPkgCheck?: boolean) => Promise<void>;
@@ -1537,7 +1542,23 @@ export function initSoundRecorderApp(windowElement: HTMLDivElement): void {
       sCtx.lineTo(scope.width, scope.height / 2);
       sCtx.stroke();
 
-      if (isGloballyMuted) {
+      const liveMicBuf = getLiveMicWaveform();
+      if (liveMicBuf) {
+        sCtx.strokeStyle = '#38bdf8';
+        sCtx.lineWidth = 2;
+        sCtx.beginPath();
+        const sliceW = scope.width / liveMicBuf.length;
+        for (let i = 0; i < liveMicBuf.length; i++) {
+          const v = liveMicBuf[i] / 128.0;
+          const y = (v * scope.height) / 2;
+          if (i === 0) sCtx.moveTo(0, y);
+          else sCtx.lineTo(i * sliceW, y);
+        }
+        sCtx.stroke();
+        sCtx.fillStyle = '#38bdf8';
+        sCtx.font = 'bold 10px "IBM Plex Mono", monospace';
+        sCtx.fillText('🎤 LIVE MIC INPUT', 6, 12);
+      } else if (isGloballyMuted) {
         sCtx.fillStyle = '#ff6666';
         sCtx.font = 'bold 11px "IBM Plex Mono", monospace';
         sCtx.textAlign = 'center';
@@ -1682,6 +1703,7 @@ export function initSoundRecorderApp(windowElement: HTMLDivElement): void {
   });
 
   renderGrid();
+  initSoundStudioMicControls(windowElement);
 }
 
 // ==================== 7. CALENDAR, ANALOG CLOCK & ALARMS 95 (CALENDAR.EXE) ====================
@@ -2353,12 +2375,16 @@ export function executeRunCommand(raw: string): boolean {
     netscape: 'chrome',
     angelnav: 'chrome',
     iexplore: 'chrome',
+    camera: 'cameraApp',
+    webcam: 'cameraApp',
+    cam: 'cameraApp',
   };
 
   if (map[cmd]) {
     megaBridge?.openApp(map[cmd]);
     return true;
   }
+  if (cmd === 'mic' || cmd === 'microphone' || cmd === 'permissions' || cmd === 'privacy') { openMediaPermissionsModal(); return true; }
   if (cmd === 'fdisk') { megaBridge?.openFdiskScreen(false); return true; }
   if (cmd === 'fdisk /?' || cmd === 'fdisk help') { megaBridge?.openFdiskScreen(true); return true; }
   if (cmd === 'bios' || cmd === 'cmos') { megaBridge?.openCmosBiosSetup(); return true; }
@@ -2373,7 +2399,7 @@ export function executeRunCommand(raw: string): boolean {
   if (cmd === 'tile') { megaBridge?.autoTileOpenWindows(); return true; }
   if (cmd === 'cascade') { megaBridge?.cascadeOpenWindows(); return true; }
 
-  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
+  megaBridge?.showOsDialog(`Cannot find '${raw}'. Try camera, mic, chrome, perf, bios, booter, usbboot, signin, setup, eventvwr, calc, sol, arcade, taskmgr, sndrec32, calendar, bsod, winver, fdisk, or cmd.`, 'Run');
   return false;
 }
 

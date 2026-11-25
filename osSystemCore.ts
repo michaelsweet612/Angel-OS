@@ -649,6 +649,9 @@ export const APP_SVG_ICONS: Record<string, string> = {
   trophiesApp: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M18 12 H46 V26 C46 36 39 42 32 42 C25 42 18 36 18 26 Z" fill="#eab308" stroke="#000" stroke-width="2"/><path d="M18 16 H11 C11 26 14 30 19 30" fill="none" stroke="#ca8a04" stroke-width="3"/><path d="M46 16 H53 C53 26 50 30 45 30" fill="none" stroke="#ca8a04" stroke-width="3"/><rect x="28" y="42" width="8" height="8" fill="#ca8a04" stroke="#000" stroke-width="1.5"/><rect x="20" y="50" width="24" height="6" fill="#854d0e" stroke="#000" stroke-width="2"/></svg>',
   ),
+  cameraApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="7" y="18" width="50" height="34" rx="5" fill="#1e293b" stroke="#000" stroke-width="2.2"/><path d="M22 18 L26 11 H38 L42 18 Z" fill="#334155" stroke="#000" stroke-width="2"/><circle cx="32" cy="35" r="12" fill="#0f172a" stroke="#94a3b8" stroke-width="2.5"/><circle cx="32" cy="35" r="7.5" fill="#0284c7"/><circle cx="29" cy="32" r="2.4" fill="#e0f2fe"/><circle cx="48" cy="24" r="3" fill="#ef4444"/><rect x="13" y="23" width="6" height="3.5" rx="1" fill="#facc15"/></svg>',
+  ),
 };
 
 const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v4';

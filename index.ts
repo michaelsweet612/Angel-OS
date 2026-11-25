@@ -40,6 +40,13 @@ import {
   renderBootManagerOptions,
   syncLocalAccountStartPill,
 } from './osPhysicalBooter';
+import {
+  initCameraApp,
+  initMediaPermissionsController,
+  openMediaPermissionsModal,
+  registerMediaBridge,
+  stopCameraAppStreams,
+} from './osMediaDevices';
 import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
@@ -772,7 +779,33 @@ let geminiInstance: any | null = null;
 let paintCritiqueIntervalId: number | null = null;
 const paintResizeObserverMap = new Map<Element, ResizeObserver>();
 
-const PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'abilityToInstall', 'controlPanel'] as const;
+const TASKBAR_ORDER_STORAGE_KEY = '__angelos_taskbar_order_v1';
+const DEFAULT_PINNED_TASKBAR_APPS = ['chrome', 'myComputer', 'cameraApp', 'abilityToInstall', 'controlPanel'];
+let taskbarAppOrder: string[] = (() => {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(TASKBAR_ORDER_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length > 0) {
+      const merged = saved.filter((x) => typeof x === 'string');
+      DEFAULT_PINNED_TASKBAR_APPS.forEach((a) => {
+        if (!merged.includes(a)) merged.push(a);
+      });
+      return merged;
+    }
+  } catch {
+    // fallback
+  }
+  return [...DEFAULT_PINNED_TASKBAR_APPS];
+})();
+
+function saveTaskbarOrder(): void {
+  try {
+    window.localStorage.setItem(TASKBAR_ORDER_STORAGE_KEY, JSON.stringify(taskbarAppOrder));
+  } catch {
+    // ignore
+  }
+}
+
+let draggedTaskbarApp: string | null = null;
 
 function getAppDockMeta(appName: string): { icon: string; title: string } {
   if (appName === 'chrome') {
@@ -798,6 +831,7 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     solitaireApp: 'Solitaire 95',
     arcadeApp: 'Arcade 95',
     soundRecorder: 'Sound Studio',
+    cameraApp: 'Camera App',
     calendarApp: 'Calendar 95',
     taskManager: 'Task Manager',
     recycleBin: 'Recycle Bin',
@@ -880,18 +914,19 @@ function syncTaskbarDock(): void {
   taskbarAppsContainer.innerHTML = '';
 
   const appsToRender: string[] = [];
-  PINNED_TASKBAR_APPS.forEach((appName) => {
-    if (isAppInstalled(appName) || openApps.has(appName)) {
-      appsToRender.push(appName);
+  taskbarAppOrder.forEach((appName) => {
+    const isDefaultPinned = DEFAULT_PINNED_TASKBAR_APPS.includes(appName);
+    const appDesk = appDesktopMap.get(appName) || 1;
+    const isOpenOnDesk = openApps.has(appName) && appDesk === currentVirtualDesktop;
+    if ((isDefaultPinned && isAppInstalled(appName)) || isOpenOnDesk) {
+      if (!appsToRender.includes(appName)) appsToRender.push(appName);
     }
   });
   openApps.forEach((_, appName) => {
     const appDesk = appDesktopMap.get(appName) || 1;
-    if (
-      !appsToRender.includes(appName) &&
-      appDesk === currentVirtualDesktop
-    ) {
+    if (!appsToRender.includes(appName) && appDesk === currentVirtualDesktop) {
       appsToRender.push(appName);
+      if (!taskbarAppOrder.includes(appName)) taskbarAppOrder.push(appName);
     }
   });
 
@@ -913,10 +948,47 @@ function syncTaskbarDock(): void {
     btn.type = 'button';
     btn.className = 'taskbar-app';
     btn.dataset.appName = appName;
+    btn.draggable = true;
     if (isOpenOnDesk) btn.classList.add('is-open');
     if (isMin) btn.classList.add('is-minimized');
     if (isActive) btn.classList.add('active');
-    btn.title = isOpenOnDesk ? `${meta.title} (${isMin ? 'Minimized' : 'Running'})` : `${meta.title} (Pinned)`;
+    btn.title = `${meta.title} (${isOpenOnDesk ? (isMin ? 'Minimized' : 'Running') : 'Pinned'} — Drag to reorder)`;
+
+    btn.addEventListener('dragstart', (ev) => {
+      draggedTaskbarApp = appName;
+      btn.classList.add('is-dragging-dock');
+      ev.dataTransfer?.setData('text/plain', appName);
+    });
+    btn.addEventListener('dragend', () => {
+      draggedTaskbarApp = null;
+      btn.classList.remove('is-dragging-dock');
+      taskbarAppsContainer.querySelectorAll('.dock-drop-target').forEach((el) => el.classList.remove('dock-drop-target'));
+    });
+    btn.addEventListener('dragover', (ev) => {
+      if (!draggedTaskbarApp || draggedTaskbarApp === appName) return;
+      ev.preventDefault();
+      btn.classList.add('dock-drop-target');
+    });
+    btn.addEventListener('dragleave', () => {
+      btn.classList.remove('dock-drop-target');
+    });
+    btn.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      btn.classList.remove('dock-drop-target');
+      const fromApp = draggedTaskbarApp || ev.dataTransfer?.getData('text/plain');
+      if (!fromApp || fromApp === appName) return;
+      if (!taskbarAppOrder.includes(fromApp)) taskbarAppOrder.push(fromApp);
+      if (!taskbarAppOrder.includes(appName)) taskbarAppOrder.push(appName);
+      const fromIdx = taskbarAppOrder.indexOf(fromApp);
+      const toIdx = taskbarAppOrder.indexOf(appName);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        taskbarAppOrder.splice(fromIdx, 1);
+        taskbarAppOrder.splice(toIdx, 0, fromApp);
+        saveTaskbarOrder();
+        sfx.playClick();
+        syncTaskbarDock();
+      }
+    });
 
     const img = document.createElement('img');
     img.src = meta.icon;
@@ -1159,6 +1231,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   } else if (appName === 'trophiesApp' && !initializedApps.has('trophiesApp')) {
     initializedApps.add('trophiesApp');
     initTrophiesApp(windowElement);
+  } else if (appName === 'cameraApp' && !initializedApps.has('cameraApp')) {
+    initializedApps.add('cameraApp');
+    initCameraApp(windowElement);
   }
 }
 
@@ -1173,6 +1248,10 @@ function closeApp(appName: string): void {
   openApps.delete(appName);
   minimizedApps.delete(appName);
   appDesktopMap.delete(appName);
+
+  if (appName === 'cameraApp') {
+    stopCameraAppStreams();
+  }
 
   if (dosInstances[appName]) {
     const container = document.getElementById(`${appName}-content`);
@@ -2883,7 +2962,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         AngelOS-web (v1.4.1 · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.5.0 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -3014,10 +3093,18 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       RECYCLE: 'recycleBin',
       CLIPBRD: 'clipViewer',
       TROPHIES: 'trophiesApp',
+      CAMERA: 'cameraApp',
+      'CAMERA.EXE': 'cameraApp',
+      WEBCAM: 'cameraApp',
     };
     if (dosDirectMap[upper]) {
       openApp(dosDirectMap[upper]);
       appendLine(`Launching ${upper}...`);
+      return;
+    }
+    if (upper === 'MIC' || upper === 'MICROPHONE' || upper === 'PERMISSIONS' || upper === 'PRIVACY') {
+      openMediaPermissionsModal();
+      appendLine('Opening Camera & Microphone Hardware Access Permissions...');
       return;
     }
     if (upper === 'BSOD') {
@@ -3051,7 +3138,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.4.1 · Physical Booter & Local Account Always)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.5.0 · Camera, Mic, Movable Apps & Bulk BIOS)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -3083,6 +3170,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         SOL: 'solitaireApp',
         ARCADE: 'arcadeApp',
         SOUND: 'soundRecorder',
+        CAMERA: 'cameraApp',
+        WEBCAM: 'cameraApp',
         CALENDAR: 'calendarApp',
         TASKMGR: 'taskManager',
         RECYCLE: 'recycleBin',
@@ -3144,10 +3233,263 @@ function applyTheme(themeName: string) {
   renderMasterSettingsCurrentTab();
 }
 
-// --- Desktop Interactions, Selection Marquee, Context Menu & Taskbar ---
+// --- Desktop Interactions, Movable App Icons, Start Tile Reordering, Marquee & Context Menu ---
+const ICON_POS_STORAGE_KEY = '__angelos_desktop_icon_pos_v1';
+const ICON_SNAP_STORAGE_KEY = '__angelos_desktop_icon_snap_v1';
+const START_ORDER_STORAGE_KEY = '__angelos_start_pinned_order_v1';
+
+let desktopIconPositions: Record<string, { x: number; y: number }> = (() => {
+  try {
+    const raw = window.localStorage.getItem(ICON_POS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  return {};
+})();
+
+let desktopSnapToGrid = (() => {
+  try {
+    const raw = window.localStorage.getItem(ICON_SNAP_STORAGE_KEY);
+    if (raw === '0') return false;
+  } catch {
+    // ignore
+  }
+  return true;
+})();
+
+function saveDesktopIconPositions(): void {
+  try {
+    window.localStorage.setItem(ICON_POS_STORAGE_KEY, JSON.stringify(desktopIconPositions));
+  } catch {
+    // ignore
+  }
+}
+
+function syncSnapGridContextLabel(): void {
+  const el = document.getElementById('ctx-snap-grid-item');
+  if (el) el.textContent = `⊞ Snap Desktop Icons to Grid: ${desktopSnapToGrid ? 'ON' : 'OFF'}`;
+}
+
+function clampDesktopIconCoords(x: number, y: number): { x: number; y: number } {
+  const tbH = getTaskbarHeightPx();
+  const isTop = systemRegistry.taskbarPosition === 'top';
+  const minX = 8;
+  const minY = isTop ? tbH + 8 : 8;
+  const maxX = Math.max(minX, window.innerWidth - 104);
+  const maxY = Math.max(minY, window.innerHeight - (isTop ? 98 : tbH + 98));
+  return {
+    x: Math.round(Math.max(minX, Math.min(x, maxX))),
+    y: Math.round(Math.max(minY, Math.min(y, maxY))),
+  };
+}
+
+function snapDesktopIconCoords(x: number, y: number): { x: number; y: number } {
+  const GRID_X = 108;
+  const GRID_Y = 98;
+  const PAD_X = 12;
+  const PAD_Y = 12;
+  if (!desktopSnapToGrid) return clampDesktopIconCoords(x, y);
+  const sx = PAD_X + Math.max(0, Math.round((x - PAD_X) / GRID_X)) * GRID_X;
+  const sy = PAD_Y + Math.max(0, Math.round((y - PAD_Y) / GRID_Y)) * GRID_Y;
+  return clampDesktopIconCoords(sx, sy);
+}
+
+function layoutDesktopIcons(resetSaved = false): void {
+  const container = document.getElementById('desktop-icons');
+  if (!container) return;
+  container.classList.add('free-position-mode');
+  if (resetSaved) {
+    desktopIconPositions = {};
+    try {
+      window.localStorage.removeItem(ICON_POS_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
+  const GRID_X = 108;
+  const GRID_Y = 98;
+  const PAD_X = 12;
+  const tbH = getTaskbarHeightPx();
+  const isTop = systemRegistry.taskbarPosition === 'top';
+  const PAD_Y = isTop ? tbH + 12 : 12;
+  const availH = Math.max(300, window.innerHeight - tbH - 24);
+  const rowsPerCol = Math.max(4, Math.min(6, Math.floor(availH / GRID_Y)));
+
+  let autoSlot = 0;
+  icons.forEach((icon) => {
+    const appKey = icon.getAttribute('data-app') || `icon_${autoSlot}`;
+    const isHidden = icon.style.display === 'none';
+    let pos = desktopIconPositions[appKey];
+    if (!pos) {
+      const col = Math.floor(autoSlot / rowsPerCol);
+      const row = autoSlot % rowsPerCol;
+      pos = clampDesktopIconCoords(PAD_X + col * GRID_X, PAD_Y + row * GRID_Y);
+      if (!isHidden) autoSlot++;
+    } else {
+      pos = clampDesktopIconCoords(pos.x, pos.y);
+    }
+    icon.style.left = `${pos.x}px`;
+    icon.style.top = `${pos.y}px`;
+  });
+  syncSnapGridContextLabel();
+}
+
+function initStartTileReordering(): void {
+  const grid = document.getElementById('start-pinned-grid');
+  if (!grid) return;
+
+  // Restore saved tile order if available
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(START_ORDER_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length > 0) {
+      const byKey = new Map<string, HTMLElement>();
+      grid.querySelectorAll<HTMLElement>('.start-tile-btn').forEach((tile) => {
+        const k = tile.dataset.app || tile.id || tile.textContent?.trim() || '';
+        if (k) byKey.set(k, tile);
+      });
+      saved.forEach((k: string) => {
+        const el = byKey.get(k);
+        if (el) grid.appendChild(el);
+      });
+    }
+  } catch {
+    // ignore
+  }
+
+  let draggedTile: HTMLElement | null = null;
+  const saveTileOrder = () => {
+    const order = Array.from(grid.querySelectorAll<HTMLElement>('.start-tile-btn')).map(
+      (t) => t.dataset.app || t.id || t.textContent?.trim() || '',
+    );
+    try {
+      window.localStorage.setItem(START_ORDER_STORAGE_KEY, JSON.stringify(order));
+    } catch {
+      // ignore
+    }
+  };
+
+  grid.querySelectorAll<HTMLElement>('.start-tile-btn').forEach((tile) => {
+    tile.draggable = true;
+    tile.addEventListener('dragstart', (ev) => {
+      draggedTile = tile;
+      tile.classList.add('is-dragging-tile');
+      ev.dataTransfer?.setData('text/plain', tile.dataset.app || tile.id || 'tile');
+    });
+    tile.addEventListener('dragend', () => {
+      draggedTile = null;
+      tile.classList.remove('is-dragging-tile');
+      grid.querySelectorAll('.tile-drop-target').forEach((x) => x.classList.remove('tile-drop-target'));
+    });
+    tile.addEventListener('dragover', (ev) => {
+      if (!draggedTile || draggedTile === tile) return;
+      ev.preventDefault();
+      tile.classList.add('tile-drop-target');
+    });
+    tile.addEventListener('dragleave', () => {
+      tile.classList.remove('tile-drop-target');
+    });
+    tile.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      tile.classList.remove('tile-drop-target');
+      if (!draggedTile || draggedTile === tile) return;
+      const children = Array.from(grid.children);
+      const fromIdx = children.indexOf(draggedTile);
+      const toIdx = children.indexOf(tile);
+      if (fromIdx < toIdx) {
+        grid.insertBefore(draggedTile, tile.nextSibling);
+      } else {
+        grid.insertBefore(draggedTile, tile);
+      }
+      sfx.playClick();
+      saveTileOrder();
+    });
+  });
+}
+
 icons.forEach((icon) => {
+  // Smooth Mouse & Touch Drag-to-Move for every Desktop App Icon
+  const beginIconDrag = (clientX: number, clientY: number) => {
+    const startX = clientX;
+    const startY = clientY;
+    const origLeft = parseFloat(icon.style.left || '12') || 12;
+    const origTop = parseFloat(icon.style.top || '12') || 12;
+    let moved = false;
+
+    const onMove = (mx: number, my: number) => {
+      const dx = mx - startX;
+      const dy = my - startY;
+      if (!moved && Math.hypot(dx, dy) > 5) {
+        moved = true;
+        icons.forEach((i) => i.classList.remove('selected'));
+        icon.classList.add('selected', 'is-dragging-icon');
+      }
+      if (!moved) return;
+      const next = clampDesktopIconCoords(origLeft + dx, origTop + dy);
+      icon.style.left = `${next.x}px`;
+      icon.style.top = `${next.y}px`;
+    };
+
+    const onEnd = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      if (!moved) return;
+      icon.classList.remove('is-dragging-icon');
+      const curX = parseFloat(icon.style.left || '12') || 12;
+      const curY = parseFloat(icon.style.top || '12') || 12;
+      const finalPos = snapDesktopIconCoords(curX, curY);
+      icon.style.left = `${finalPos.x}px`;
+      icon.style.top = `${finalPos.y}px`;
+      const appKey = icon.getAttribute('data-app');
+      if (appKey) {
+        desktopIconPositions[appKey] = finalPos;
+        saveDesktopIconPositions();
+      }
+      icon.dataset.justDragged = '1';
+      window.setTimeout(() => {
+        delete icon.dataset.justDragged;
+      }, 140);
+    };
+
+    const handleMouseMove = (ev: MouseEvent) => onMove(ev.clientX, ev.clientY);
+    const handleMouseUp = () => onEnd();
+    const handleTouchMove = (ev: TouchEvent) => {
+      if (ev.touches.length > 0) {
+        onMove(ev.touches[0].clientX, ev.touches[0].clientY);
+      }
+    };
+    const handleTouchEnd = () => onEnd();
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  icon.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    beginIconDrag(e.clientX, e.clientY);
+  });
+
+  icon.addEventListener(
+    'touchstart',
+    (e) => {
+      if (e.touches.length !== 1) return;
+      beginIconDrag(e.touches[0].clientX, e.touches[0].clientY);
+    },
+    { passive: true },
+  );
+
   icon.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (icon.dataset.justDragged === '1') return;
     icons.forEach((i) => i.classList.remove('selected'));
     icon.classList.add('selected');
     if (!systemRegistry.doubleClickIcons) {
@@ -3163,6 +3505,7 @@ icons.forEach((icon) => {
 
   icon.addEventListener('dblclick', (e) => {
     e.stopPropagation();
+    if (icon.dataset.justDragged === '1') return;
     if (systemRegistry.doubleClickIcons) {
       const appName = icon.getAttribute('data-app');
       if (appName) {
@@ -3306,6 +3649,11 @@ document.getElementById('start-run-dialog')?.addEventListener('click', () => {
   openRunDialog();
 });
 
+document.getElementById('start-media-perms')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  openMediaPermissionsModal();
+});
+
 document.getElementById('start-new-sticky')?.addEventListener('click', () => {
   closeStartMenuUi();
   spawnCustomStickyNote();
@@ -3424,7 +3772,25 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     sfx.playClick();
     const action = (item as HTMLElement).dataset.action;
     contextMenu.style.display = 'none';
-    if (action === 'open-installer') openApp('abilityToInstall', true);
+    if (action === 'open-camera') openApp('cameraApp');
+    else if (action === 'open-media-perms') openMediaPermissionsModal();
+    else if (action === 'toggle-snap-grid') {
+      desktopSnapToGrid = !desktopSnapToGrid;
+      try {
+        window.localStorage.setItem(ICON_SNAP_STORAGE_KEY, desktopSnapToGrid ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      syncSnapGridContextLabel();
+      pushBalloonToast(
+        'Desktop Icon Grid',
+        desktopSnapToGrid ? 'Snap-to-Grid enabled — dragged icons align neatly.' : 'Freeform placement enabled — drop icons anywhere on desktop.',
+        '⊞',
+      );
+    } else if (action === 'reset-icon-layout') {
+      layoutDesktopIcons(true);
+      pushBalloonToast('App Icons Reset', 'All desktop app icons have been auto-arranged back to the default grid.', '↻');
+    } else if (action === 'open-installer') openApp('abilityToInstall', true);
     else if (action === 'open-regedit') openApp('regedit');
     else if (action === 'open-taskmgr') openApp('taskManager');
     else if (action === 'open-run') openRunDialog();
@@ -3548,10 +3914,10 @@ windows.forEach((windowElement, idx) => {
       document.addEventListener('mouseup', stopDragging, { once: true });
     };
 
-    const dragWindow = (e: MouseEvent) => {
+    const moveWindowTo = (clientX: number, clientY: number) => {
       if (!isDragging) return;
-      let x = e.clientX - dragOffsetX;
-      let y = e.clientY - dragOffsetY;
+      let x = clientX - dragOffsetX;
+      let y = clientY - dragOffsetY;
       const tbH = getTaskbarHeightPx();
       const isTop = systemRegistry.taskbarPosition === 'top';
       const minY = isTop ? tbH : 0;
@@ -3564,14 +3930,40 @@ windows.forEach((windowElement, idx) => {
       windowElement.style.top = `${y}px`;
     };
 
+    const dragWindow = (e: MouseEvent) => moveWindowTo(e.clientX, e.clientY);
+    const dragWindowTouch = (e: TouchEvent) => {
+      if (e.touches.length > 0) moveWindowTo(e.touches[0].clientX, e.touches[0].clientY);
+    };
+
     const stopDragging = () => {
       if (!isDragging) return;
       isDragging = false;
       titleBar.style.cursor = 'grab';
       document.removeEventListener('mousemove', dragWindow);
+      document.removeEventListener('touchmove', dragWindowTouch);
     };
 
     titleBar.addEventListener('mousedown', startDragging);
+    titleBar.addEventListener(
+      'touchstart',
+      (e) => {
+        if (
+          e.touches.length !== 1 ||
+          (e.target as Element).closest('.window-control-button') ||
+          windowElement.classList.contains('maximized')
+        ) {
+          return;
+        }
+        isDragging = true;
+        bringToFront(windowElement);
+        const rect = windowElement.getBoundingClientRect();
+        dragOffsetX = e.touches[0].clientX - rect.left;
+        dragOffsetY = e.touches[0].clientY - rect.top;
+        document.addEventListener('touchmove', dragWindowTouch, { passive: true });
+        document.addEventListener('touchend', stopDragging, { once: true });
+      },
+      { passive: true },
+    );
   }
 
   // Cascade initial window positions neatly
@@ -4371,6 +4763,9 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '📷 Camera App (CAMERA.EXE — Live Webcam, Mic Audio, Filters & Capture)', kind: 'Hardware App', action: () => openApp('cameraApp') },
+  { label: '🎤 Camera & Microphone Access Permissions (Allow Mic & Webcam)', kind: 'Privacy & Hardware', action: () => openMediaPermissionsModal() },
+  { label: '↻ Auto-Arrange / Reset Desktop App Positions', kind: 'Desktop Layout', action: () => layoutDesktopIcons(true) },
   { label: '💾 Physical Hardware Booter (.ISO / Raw USB .IMG / Linux & Win Installers)', kind: 'Bare-Metal OS', action: () => openPhysicalBooterModal() },
   { label: '🔌 Export Bootable Raw USB / HDD Image (ANGELOS_USB_DISK.img)', kind: 'Physical OS', action: () => downloadBootableUsbDiskImage() },
   { label: '🔒 Always-Local Account Sign-In & User Switcher (Offline Profiles)', kind: 'Local Account Always', action: () => openLocalSignInScreen() },
@@ -4943,14 +5338,30 @@ initPhysicalBooterAndSignIn({
   onDesktopUnlocked: () => finishBootToDesktop(true),
 });
 initMegaShellFeatures();
+registerMediaBridge({
+  addVfsFile: (name, type, parent, content) => {
+    virtualFileSystem.push({ name, type, parent, content });
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  showOsDialog,
+  openApp,
+  pushToast: pushBalloonToast,
+  sfx,
+});
+initMediaPermissionsController();
 applySystemRegistryToOS(true);
 syncTaskbarDock();
 syncLocalAccountStartPill();
+layoutDesktopIcons(false);
+initStartTileReordering();
 resetIdleTimer();
-pushBalloonToast('Angel-OS Windows 11+10 Ready!', 'Physical Boot Media (.ISO / Raw USB .IMG / Linux & Win Installers), Partition Options, Windows Boot Manager, and Always-Local Sign-In ready!', '🪟');
+pushBalloonToast('AngelOS-web Ready!', 'Camera App, Mic/Camera Permissions, draggable movable apps (Desktop, Taskbar & Start), and BIOS Bulk Activate/Deactivate ready!', '🪟');
 
 window.addEventListener('resize', () => {
   openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
+  layoutDesktopIcons(false);
 });
 window.addEventListener('mousemove', () => resetIdleTimer(), { passive: true });
 window.addEventListener('keydown', () => resetIdleTimer(), { passive: true });
