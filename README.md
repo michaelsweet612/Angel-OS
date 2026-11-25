@@ -1,10 +1,10 @@
 <div align="center">
 
-# Angel-OS (`Remix Gemini 95`)
+# AngelOS-web (`Angel-OS`)
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch Angel-OS Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.4.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.4.1-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
 Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
 
@@ -16,15 +16,15 @@ Built with TypeScript, Express, Vite PWA, Web Audio API synthesis, 16-bit x86 As
 
 ## Download & Play Locally
 
-1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)**.
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.4.0-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.4.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run Angel-OS locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
+1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)** (**AngelOS-web**).
+2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.4.1-portable-web.zip`](https://michaelsweet612.github.io/Angel-OS/downloads/Angel-OS-v1.4.1-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain.
 3. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
 
 ---
 
 ## Overview
 
-**Angel-OS** (codenamed **Remix Gemini 95** inside the shell) recreates the tactile nostalgia of a desktop PC—complete with an interactive Award BIOS POST sequence, **Angel-OS Windows Boot Manager**, **Always-Local Account Sign-In (`C:\Users\<Name>`)**, Sound Blaster 16 synthesis, CRT scanlines, MS-DOS `FDISK.EXE`, InstallShield `.EXE` wizards, and a live Registry—fused with modern Windows 11/10 shell ergonomics (Snap Layouts, Virtual Desktops, Universal Search, Copilot sidebar) and generative AI capabilities across its built-in apps.
+**AngelOS-web** (the web edition of **Angel-OS**) recreates the tactile nostalgia of a desktop PC—complete with an interactive Award BIOS POST sequence, **Angel-OS Windows Boot Manager**, **Always-Local Account Sign-In (`C:\Users\<Name>`)**, Sound Blaster 16 synthesis, CRT scanlines, MS-DOS `FDISK.EXE`, InstallShield `.EXE` wizards, and a live Registry—fused with modern Windows 11/10 shell ergonomics (Snap Layouts, Virtual Desktops, Universal Search, Copilot sidebar) and generative AI capabilities across its built-in apps.
 
 It also includes a **Multi-Layer Physical Installation & Booter Toolkit**: you can install software inside the simulated `C:\` / `D:\` drives via Win32 `.EXE` installers, create/format/target partitions during **OS Setup**, sign in strictly with offline **Local Accounts** (never cloud logins), install Angel-OS directly onto your device as an offline-capable **Progressive Web App (PWA)**, or export & build genuine hardware-bootable **`.ISO`** (`El Torito` x86), **raw MBR-partitioned USB/HDD `.IMG`** (`ANGELOS_USB_DISK.img`), and Linux/Windows host booter scripts (`physical-booter/`).
 

@@ -1,6 +1,6 @@
 # Contributing to Angel-OS
 
-Thank you for your interest in contributing to **Angel-OS (`Remix Gemini 95`)**. All participants and contributors are expected to follow our [Code of Conduct](./CODE_OF_CONDUCT.md) and review the licensing and release requirements below before submitting changes.
+Thank you for your interest in contributing to **Angel-OS (`AngelOS-web`)**. All participants and contributors are expected to follow our [Code of Conduct](./CODE_OF_CONDUCT.md) and review the licensing and release requirements below before submitting changes.
 
 ---
 
