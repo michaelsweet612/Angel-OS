@@ -63,6 +63,7 @@ export interface ForeignProgram {
   meta: ProgramMeta;
   iconDataUrl?: string;
   builtin?: boolean;
+  runAtStartup?: boolean;
 }
 
 interface PeInfo {
@@ -595,11 +596,13 @@ function renderDesktopIcons(): void {
     el.innerHTML = `<img src="${esc(icon)}" alt="${esc(label)}" /><span>${esc(label)}</span>`;
     el.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (el.dataset.justDragged === '1') return;
       container.querySelectorAll('.icon').forEach((i) => i.classList.remove('selected'));
       el.classList.add('selected');
     });
     el.addEventListener('dblclick', (e) => {
       e.stopPropagation();
+      if (el.dataset.justDragged === '1') return;
       onOpen();
     });
     container.appendChild(el);
@@ -729,6 +732,10 @@ function stopDos(): void {
   if (host) host.innerHTML = '';
 }
 
+export function stopForeignRuntimeOnClose(): void {
+  stopDos();
+}
+
 export async function openRunner(view: 'library' | 'workbench' = 'library'): Promise<void> {
   await bridge?.openApp('foreignRunnerApp', true);
   if (view === 'library') {
@@ -749,6 +756,10 @@ export function initForeignRunnerApp(windowEl: HTMLDivElement): void {
   });
   q('#frh-install')?.addEventListener('click', () => openForeignFilePicker());
   q('#frh-console-toggle')?.addEventListener('click', () => windowEl.classList.toggle('frh-console-open'));
+  q('#frh-console-clear')?.addEventListener('click', () => {
+    const c = consoleEl();
+    if (c) c.textContent = '';
+  });
   q('#frh-open-wb')?.addEventListener('click', () => void openRunner('workbench'));
 
   const tplSel = q<HTMLSelectElement>('#frh-wb-template');
@@ -779,6 +790,19 @@ export function initForeignRunnerApp(windowEl: HTMLDivElement): void {
   renderLibrary();
 }
 
+async function toggleStartup(id: string): Promise<void> {
+  const p = programs.find((x) => x.id === id);
+  if (!p) return;
+  p.runAtStartup = !p.runAtStartup;
+  await dbPut(p);
+  renderLibrary();
+  bridge?.pushToast(
+    p.runAtStartup ? 'Added to Startup' : 'Removed from Startup',
+    p.runAtStartup ? `${p.name} will auto-launch when Angel-OS boots to the desktop.` : `${p.name} will no longer launch automatically at boot.`,
+    '⚡',
+  );
+}
+
 function renderLibrary(): void {
   const lib = q<HTMLDivElement>('#frh-library');
   if (!lib) return;
@@ -790,7 +814,8 @@ function renderLibrary(): void {
     ? programs
         .map(
           (p) => `<div class="frh-card"><img class="frh-card-img" src="${esc(p.iconDataUrl || kindIconDataUrl(p.kind, p.name))}" alt=""><div class="frh-card-body"><b>${esc(p.name)}</b>
-        <small>${esc(KIND_LABEL[p.kind].label)} · ${fmtSize(p.size)} · ${esc(KIND_LABEL[p.kind].engine)}</small></div>
+        <small>${esc(KIND_LABEL[p.kind].label)} · ${fmtSize(p.size)} · ${esc(KIND_LABEL[p.kind].engine)}${p.runAtStartup ? ' · ⚡ Startup' : ''}</small></div>
+        <button class="win95-btn${p.runAtStartup ? ' frh-startup-on' : ''}" data-startup="${esc(p.id)}" title="Auto-launch when Angel-OS boots">${p.runAtStartup ? '⚡ Startup ON' : '⚡ Startup'}</button>
         <button class="win95-btn" data-run="${esc(p.id)}">▶ Run</button><button class="win95-btn" data-del="${esc(p.id)}" title="Uninstall">🗑</button></div>`,
         )
         .join('')
@@ -811,6 +836,7 @@ function renderLibrary(): void {
       </table>
     </div>`;
   lib.querySelectorAll<HTMLButtonElement>('[data-run]').forEach((b) => b.addEventListener('click', () => void runProgram(b.dataset.run!)));
+  lib.querySelectorAll<HTMLButtonElement>('[data-startup]').forEach((b) => b.addEventListener('click', () => void toggleStartup(b.dataset.startup!)));
   lib.querySelectorAll<HTMLButtonElement>('[data-run-bundled]').forEach((b) => b.addEventListener('click', () => void runBundledJava(b.dataset.runBundled!)));
   lib.querySelectorAll<HTMLButtonElement>('[data-del]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -883,7 +909,7 @@ async function runJarBytes(title: string, bytes: Uint8Array, mainClass: string |
   runnerEl?.classList.add('frh-console-open');
   try {
     if (!(await requireJava(javaVersionForClass(classVersion), pendingId))) return;
-    const path = `/str/fp/${Date.now()}_${title.replace(/[^\w.-]/g, '_')}${title.endsWith('.jar') ? '' : '.jar'}`;
+    const path = `/str/${Date.now()}_${title.replace(/[^\w.-]/g, '_')}${title.endsWith('.jar') ? '' : '.jar'}`;
     g.cheerpOSAddStringFile(path, bytes);
     consoleLine(`[Angel Runtime] java -jar ${title}${mainClass ? `  (Main-Class: ${mainClass})` : ''}`);
     const code = mainClass ? await g.cheerpjRunMain(mainClass, path) : await g.cheerpjRunJar(path);
@@ -923,18 +949,19 @@ async function compileAndRunJava(source: string, fileName: string, fromWorkbench
     const pkg = source.match(/^\s*package\s+([\w.]+)\s*;/m)?.[1];
     const cls = source.match(/public\s+(?:final\s+|abstract\s+)*class\s+(\w+)/)?.[1] || fileName.replace(/\.java$/i, '');
     const stamp = Date.now();
-    const srcPath = `/str/src${stamp}/${cls}.java`;
-    const outDir = `/files/javawb/${stamp}/`;
+    // CheerpJ's /str/ mount is flat (no nested directories).
+    const srcPath = `/str/${cls}.java`;
+    const outDir = `/files/wb${stamp}`;
     g.cheerpOSAddStringFile(srcPath, new TextEncoder().encode(source));
     consoleLine(`[Angel Runtime] javac ${cls}.java  (ECJ, -source 1.8)`);
-    const rc = await g.cheerpjRunMain('org.eclipse.jdt.internal.compiler.batch.Main', '/str/ecj.jar', '-8', '-nowarn', '-proceedOnError:false', '-d', outDir, srcPath);
+    const rc = await g.cheerpjRunMain('org.eclipse.jdt.internal.compiler.batch.Main', '/str/ecj.jar', '-8', '-nowarn', '-d', outDir, srcPath);
     if (rc !== 0) {
       consoleLine(`[Angel Runtime] Compilation failed (exit ${rc}). Fix the errors above and run again.`);
       return;
     }
     const main = pkg ? `${pkg}.${cls}` : cls;
     consoleLine(`[Angel Runtime] Compiled OK → running ${main}`);
-    const code = await g.cheerpjRunMain(main, outDir);
+    const code = await g.cheerpjRunMain(main, `${outDir}/`);
     consoleLine(`[Angel Runtime] ${main} exited with code ${code}.`);
   } catch (e: any) {
     consoleLine(`[Angel Runtime] Java error: ${e?.message || e}`);
@@ -1137,18 +1164,23 @@ export async function runProgram(id: string): Promise<void> {
   const bytes = new Uint8Array(await p.blob.arrayBuffer());
   switch (p.kind) {
     case 'java-jar':
-    case 'win32-java':
       await runJarBytes(p.name, bytes, p.meta.mainClass, p.meta.classVersion, p.id);
       break;
+    case 'win32-java': {
+      // Strip the leading PE/MZ stub by repacking the embedded JAR cleanly for CheerpJ.
+      const zip = await JSZip.loadAsync(bytes);
+      const cleanJar = await zip.generateAsync({ type: 'uint8array' });
+      await runJarBytes(p.name.replace(/\.exe$/i, '.jar'), cleanJar, p.meta.mainClass, p.meta.classVersion, p.id);
+      break;
+    }
     case 'java-class': {
       setView('java', p.name, '☕ CheerpJ JVM');
       runnerEl?.classList.add('frh-console-open');
       try {
         if (!(await requireJava(javaVersionForClass(p.meta.classVersion), p.id))) break;
-        const dir = `/str/cls${Date.now()}/`;
-        g.cheerpOSAddStringFile(`${dir}${p.name}`, bytes);
+        g.cheerpOSAddStringFile(`/str/${p.name}`, bytes);
         consoleLine(`[Angel Runtime] java ${p.meta.mainClass}`);
-        const code = await g.cheerpjRunMain(p.meta.mainClass, dir);
+        const code = await g.cheerpjRunMain(p.meta.mainClass, '/str/');
         consoleLine(`[Angel Runtime] exited with code ${code}.`);
       } catch (e: any) {
         consoleLine(`[Angel Runtime] Java error: ${e?.message || e}`);
@@ -1189,6 +1221,24 @@ export async function runProgram(id: string): Promise<void> {
   }
 }
 
+let startupRan = false;
+/** Launches any installed foreign program marked with ⚡ Startup after the OS boots to desktop. */
+export function runStartupForeignPrograms(): void {
+  if (startupRan) return;
+  startupRan = true;
+  const pending = window.sessionStorage.getItem(PENDING_RUN_KEY);
+  if (pending) {
+    window.sessionStorage.removeItem(PENDING_RUN_KEY);
+    setTimeout(() => void runProgram(pending), 350);
+    return;
+  }
+  const startupProg = programs.find((p) => p.runAtStartup);
+  if (startupProg) {
+    bridge?.pushToast('Startup Program', `Auto-launching ${startupProg.name}…`, '⚡');
+    setTimeout(() => void runProgram(startupProg.id), 450);
+  }
+}
+
 // ============================================================================
 // Boot
 // ============================================================================
@@ -1200,14 +1250,9 @@ export async function initForeignRuntime(): Promise<void> {
     programs = [];
   }
   renderDesktopIcons();
-  const pending = window.sessionStorage.getItem(PENDING_RUN_KEY);
-  if (pending) {
-    window.sessionStorage.removeItem(PENDING_RUN_KEY);
-    setTimeout(() => void runProgram(pending), 1500);
-  }
 }
 
-/** Test/automation hook: installs raw bytes as if dropped from the host PC. */
+/** Test/automation hooks */
 (window as any).__angelosInstallForeign = async (name: string, bytes: Uint8Array | number[]) => {
   const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   const [p] = await installForeignFiles([new File([arr], name)]);
@@ -1215,3 +1260,5 @@ export async function initForeignRuntime(): Promise<void> {
 };
 (window as any).__angelosRunForeign = (id: string) => runProgram(id);
 (window as any).__angelosRunBundledJava = (id: string) => runBundledJava(id);
+(window as any).__angelosToggleStartupForeign = (id: string) => toggleStartup(id);
+(window as any).__angelosListForeign = () => programs.map((p) => ({ id: p.id, name: p.name, kind: p.kind, runAtStartup: !!p.runAtStartup, meta: p.meta }));

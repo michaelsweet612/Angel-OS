@@ -60,6 +60,15 @@ import {
   SynthTrack,
 } from './osGemPlayerLibrary';
 import { initHockeyCardsApp, registerHockeyCardsBridge } from './osHockeyCards';
+import {
+  initForeignRunnerApp,
+  initForeignRuntime,
+  openForeignFilePicker,
+  openRunner,
+  registerForeignRuntimeBridge,
+  runStartupForeignPrograms,
+  stopForeignRuntimeOnClose,
+} from './osForeignRuntime';
 import { APP_SVG_ICONS, saveSystemRegistry } from './osSystemCore';
 import {
   downloadBootableIsoImage,
@@ -852,6 +861,7 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     trophiesApp: 'Trophy Vault',
     javaCreatorApp: 'Old Java Creator',
     hockeyCardsApp: 'Hockey Cards 95',
+    foreignRunnerApp: 'Angel Runtime Host',
   };
   return {
     icon: APP_SVG_ICONS[appName] || APP_SVG_ICONS.appExe,
@@ -1094,6 +1104,10 @@ function toggleMaximize(windowElement: HTMLDivElement): void {
 }
 
 export async function openApp(appName: string, bypassPkgCheck = false): Promise<void> {
+  if (appName === 'foreign-java-workbench') {
+    await openRunner('workbench');
+    return;
+  }
   if (!bypassPkgCheck && !isAppInstalled(appName)) {
     if (appName === 'chrome') {
       showOsDialog(
@@ -1255,6 +1269,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   } else if (appName === 'hockeyCardsApp' && !initializedApps.has('hockeyCardsApp')) {
     initializedApps.add('hockeyCardsApp');
     initHockeyCardsApp(windowElement);
+  } else if (appName === 'foreignRunnerApp' && !initializedApps.has('foreignRunnerApp')) {
+    initializedApps.add('foreignRunnerApp');
+    initForeignRunnerApp(windowElement);
   }
 }
 
@@ -1272,6 +1289,9 @@ function closeApp(appName: string): void {
 
   if (appName === 'cameraApp') {
     stopCameraAppStreams();
+  }
+  if (appName === 'foreignRunnerApp') {
+    stopForeignRuntimeOnClose();
   }
 
   if (dosInstances[appName]) {
@@ -3305,7 +3325,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       const host = detectHostHardware();
       const ramKb = getEffectiveRamMB() * 1024;
       appendLine(
-        `OS:         AngelOS-web (v1.8.1 · ${systemRegistry.fileSystemFormat})\n` +
+        `OS:         AngelOS-web (v1.9.0 · ${systemRegistry.fileSystemFormat})\n` +
           `CPU:        ${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO ON]' : ''} · Scale ${systemRegistry.perfCpuScalePct}% (${host.cpuThreads} Host Threads)\n` +
           `Memory:     ${ramKb.toLocaleString()}K [${getEffectiveRamDisplay()}] (${systemRegistry.virtualSwapMB}MB Swap)\n` +
           `GPU / Disp: ${host.gpuRenderer} (${host.screenRes})\n` +
@@ -3449,10 +3469,20 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       MCGEE: 'hockeyCardsApp',
       OBLITERATE: 'hockeyCardsApp',
       CARDS: 'hockeyCardsApp',
+      RUNTIME: 'foreignRunnerApp',
+      WORKBENCH: 'foreign-java-workbench',
+      JAVAWORKBENCH: 'foreign-java-workbench',
+      APK: 'foreignRunnerApp',
+      JAR: 'foreignRunnerApp',
     };
     if (dosDirectMap[upper]) {
       openApp(dosDirectMap[upper]);
       appendLine(`Launching ${upper}...`);
+      return;
+    }
+    if (upper === 'INSTALLPC') {
+      openForeignFilePicker();
+      appendLine('Opening host PC program installer (.jar / .java / .exe / .apk / .html)...');
       return;
     }
     if (upper === 'MIC' || upper === 'MICROPHONE' || upper === 'PERMISSIONS' || upper === 'PRIVACY') {
@@ -3491,7 +3521,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.8.1 · Static Live Web Engine)');
+      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.9.0 · Java JVM, DOS .EXE & Android .APK Runtime Host)');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -3528,6 +3558,9 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         JAVA: 'javaCreatorApp',
         OLDJAVA: 'javaCreatorApp',
         BILLY: 'javaCreatorApp',
+        RUNTIME: 'foreignRunnerApp',
+        WORKBENCH: 'foreign-java-workbench',
+        JAVAWORKBENCH: 'foreign-java-workbench',
         HOCKEY: 'hockeyCardsApp',
         MCGEE: 'hockeyCardsApp',
         OBLITERATE: 'hockeyCardsApp',
@@ -3680,9 +3713,11 @@ function layoutDesktopIcons(resetSaved = false): void {
   const availH = Math.max(300, window.innerHeight - tbH - 24);
   const rowsPerCol = Math.max(4, Math.min(6, Math.floor(availH / GRID_Y)));
 
+  const allIcons = Array.from(container.querySelectorAll<HTMLDivElement>('.icon'));
   const visibleIcons: HTMLElement[] = [];
   const hiddenIcons: HTMLElement[] = [];
-  icons.forEach((icon) => {
+  allIcons.forEach((icon) => {
+    bindDesktopIconEvents(icon);
     if (icon.style.display === 'none') {
       hiddenIcons.push(icon);
     } else {
@@ -3813,7 +3848,10 @@ function initStartTileReordering(): void {
   });
 }
 
-icons.forEach((icon) => {
+function bindDesktopIconEvents(icon: HTMLDivElement): void {
+  if (icon.dataset.iconBound === '1') return;
+  icon.dataset.iconBound = '1';
+
   // Smooth Mouse & Touch Drag-to-Move for every Desktop App Icon
   const beginIconDrag = (clientX: number, clientY: number) => {
     const startX = clientX;
@@ -3827,7 +3865,7 @@ icons.forEach((icon) => {
       const dy = my - startY;
       if (!moved && Math.hypot(dx, dy) > 5) {
         moved = true;
-        icons.forEach((i) => i.classList.remove('selected'));
+        document.querySelectorAll<HTMLDivElement>('#desktop-icons .icon').forEach((i) => i.classList.remove('selected'));
         icon.classList.add('selected', 'is-dragging-icon');
       }
       if (!moved) return;
@@ -3889,10 +3927,13 @@ icons.forEach((icon) => {
     { passive: true },
   );
 
+  // Foreign runtime icons manage their own open handlers in osForeignRuntime.ts
+  if (icon.classList.contains('foreign-icon')) return;
+
   icon.addEventListener('click', (e) => {
     e.stopPropagation();
     if (icon.dataset.justDragged === '1') return;
-    icons.forEach((i) => i.classList.remove('selected'));
+    document.querySelectorAll<HTMLDivElement>('#desktop-icons .icon').forEach((i) => i.classList.remove('selected'));
     icon.classList.add('selected');
     if (!systemRegistry.doubleClickIcons) {
       const appName = icon.getAttribute('data-app');
@@ -3916,7 +3957,9 @@ icons.forEach((icon) => {
       }
     }
   });
-});
+}
+
+icons.forEach((icon) => bindDesktopIconEvents(icon));
 
 const startPinnedView = document.getElementById('start-pinned-view') as HTMLDivElement | null;
 const startAllAppsView = document.getElementById('start-all-apps-view') as HTMLDivElement | null;
@@ -4193,6 +4236,8 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
       layoutDesktopIcons(true);
       pushBalloonToast('App Icons Reset', 'All desktop app icons have been auto-arranged back to the default grid.', '↻');
     } else if (action === 'open-installer') openApp('abilityToInstall', true);
+    else if (action === 'open-runtime-host') void openRunner('library');
+    else if (action === 'install-from-pc') openForeignFilePicker();
     else if (action === 'open-regedit') openApp('regedit');
     else if (action === 'open-taskmgr') openApp('taskManager');
     else if (action === 'open-run') openRunDialog();
@@ -4223,7 +4268,7 @@ let marqueeStart: { x: number; y: number } | null = null;
 desktop.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   if ((e.target as HTMLElement).closest('.window, .icon, .desktop-sticky-note, .win95-context-menu')) return;
-  icons.forEach((i) => i.classList.remove('selected'));
+  document.querySelectorAll<HTMLDivElement>('#desktop-icons .icon').forEach((i) => i.classList.remove('selected'));
   marqueeStart = { x: e.clientX, y: e.clientY };
   if (marquee) {
     marquee.style.left = `${e.clientX}px`;
@@ -4444,6 +4489,7 @@ function finishBootToDesktop(bypassSignIn = false) {
   bootState = 'complete';
   unlockAchievement('first_boot');
   syncLocalAccountStartPill();
+  runStartupForeignPrograms();
   if (bootScreen) {
     bootScreen.classList.add('fade-out');
     const hideId = window.setTimeout(() => {
@@ -5165,6 +5211,9 @@ const searchInput = document.getElementById('win11-search-input') as HTMLInputEl
 const searchResults = document.getElementById('win11-search-results') as HTMLDivElement | null;
 
 const SEARCHABLE_ENTRIES = [
+  { label: '🧩 Angel Runtime Host (Install & Run Real Java .JAR/.JAVA, DOS .EXE, Android .APK & Web Apps)', kind: 'Universal Runtime', action: () => openRunner('library') },
+  { label: '☕ Java Workbench (Write, Compile with Eclipse ECJ & Run Real Java Swing/Console Apps)', kind: 'Real Java IDE', action: () => openRunner('workbench') },
+  { label: '📂 Install Program from My PC (.jar, .java, .class, .exe, .com, .zip, .apk, .html)', kind: 'Host PC Importer', action: () => openForeignFilePicker() },
   { label: '🏒 Hockey Cards 95 (Thomas Mamas McGee · Thomas · Thomas Robins · Random McGees & Obliterate · 0% 4K)', kind: 'Trading Cards App', action: () => openApp('hockeyCardsApp') },
   { label: '☕ Old Java Creator 1995 (Billy AI — Install via Ability to Install · 10 Interactions)', kind: 'Java-from-Trash IDE', action: () => openApp('javaCreatorApp') },
   { label: '📷 Camera App (CAMERA.EXE — Live Webcam, Mic Audio, Filters & Capture)', kind: 'Hardware App', action: () => openApp('cameraApp') },
@@ -5777,16 +5826,23 @@ registerHockeyCardsBridge({
   pushToast: pushBalloonToast,
   sfx,
 });
+registerForeignRuntimeBridge({
+  openApp,
+  pushToast: pushBalloonToast,
+  sfx,
+  unlockAchievement,
+});
 applySystemRegistryToOS(true);
 syncTaskbarDock();
 syncLocalAccountStartPill();
 layoutDesktopIcons(false);
 initStartTileReordering();
+void initForeignRuntime();
 resetIdleTimer();
 pushBalloonToast(
-  'AngelOS-web v1.8.1 Ready!',
-  'Open Hockey Cards 95 to collect Thomas Mamas McGee, Thomas, Thomas Robins, random McGee & Obliterate players (0% 4K Realism)!',
-  '🏒',
+  'AngelOS-web v1.9.0 Ready!',
+  'Angel Runtime Host & Java Workbench active — drag any .jar, .java, .exe, .com, .zip, .apk, or .html onto the desktop!',
+  '🧩',
 );
 
 window.addEventListener('angelos:icons-changed', () => {

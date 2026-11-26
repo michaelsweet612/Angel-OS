@@ -2415,6 +2415,55 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
       </div>
 
+      <!-- ==================== ANGEL RUNTIME HOST (JAVA JVM · DOS · APK · WEB) ==================== -->
+      <div class="window resizable" id="foreignRunnerApp" style="width: 880px; height: 610px">
+        <div class="window-titlebar">
+          <span class="window-title">🧩 Angel Runtime Host — Java JVM · DOS .EXE · Android .APK · Web Apps</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content frh-shell">
+          <div class="frh-toolbar">
+            <button class="win95-btn" id="frh-stop" title="Stop &amp; return to Library">📚 Library</button>
+            <button class="win95-btn" id="frh-install" style="background: #dcfce7; font-weight: 700">📂 Install from My PC…</button>
+            <button class="win95-btn" id="frh-open-wb" style="background: #ffedd5; font-weight: 700">☕ Java Workbench</button>
+            <span class="frh-title" id="frh-title">Angel Runtime Host — Library</span>
+            <span class="frh-kind-badge" id="frh-kind" style="display: none"></span>
+            <button class="win95-btn" id="frh-console-toggle" title="Toggle Java stdout/stderr console">⌨ Console</button>
+          </div>
+
+          <div class="frh-stage" id="frh-stage" data-view="library">
+            <div id="frh-library" class="frh-pane frh-library"></div>
+
+            <div id="frh-workbench" class="frh-pane frh-workbench">
+              <div class="frh-wb-bar">
+                <label for="frh-wb-template">Template:</label>
+                <select id="frh-wb-template" class="win95-input"></select>
+                <button class="win95-btn" id="frh-wb-run" style="background: #bbf7d0; font-weight: 700">▶ Compile &amp; Run (Real Java)</button>
+                <button class="win95-btn" id="frh-wb-save">💾 Save to Desktop (.java)</button>
+              </div>
+              <textarea id="frh-wb-editor" class="frh-wb-editor" spellcheck="false"></textarea>
+            </div>
+
+            <div id="frh-java-host" class="frh-pane frh-java-host"></div>
+            <div id="frh-dos-host" class="frh-pane frh-dos-host"></div>
+            <iframe id="frh-web-host" class="frh-pane frh-web-host" sandbox="allow-scripts allow-forms allow-pointer-lock allow-modals"></iframe>
+            <div id="frh-info-host" class="frh-pane frh-info-host"></div>
+          </div>
+
+          <div class="frh-console-wrap">
+            <div class="frh-console-hdr">
+              <span>☕ JVM / Runtime Console (stdout &amp; stderr)</span>
+              <button class="win95-btn" id="frh-console-clear" style="padding: 1px 7px; font-size: 10px">Clear</button>
+            </div>
+            <pre id="console" class="frh-console"></pre>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== RIGHT-CLICK DESKTOP CONTEXT MENU ==================== -->
       <div id="desktop-context-menu" class="win95-context-menu" style="display: none">
         <div class="ctx-item" data-action="open-camera">📷 Open Camera App (CAMERA.EXE)</div>
@@ -2424,6 +2473,8 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="ctx-item" data-action="reset-icon-layout">↻ Auto-Arrange / Reset App Icons</div>
         <div class="ctx-divider"></div>
         <div class="ctx-item" data-action="open-installer">💿 Ability to Install (Software &amp; OS)</div>
+        <div class="ctx-item" data-action="open-runtime-host">🧩 Angel Runtime Host (Java / EXE / APK)</div>
+        <div class="ctx-item" data-action="install-from-pc">📂 Install Program from My PC...</div>
         <div class="ctx-item" data-action="open-display">⚙️ Master Settings &amp; Control Panel...</div>
         <div class="ctx-item" data-action="open-regedit">🗂️ Open REGEDIT.EXE</div>
         <div class="ctx-item" data-action="open-taskmgr">⚡ Task Manager (Ctrl+Shift+Esc)</div>
@@ -2434,7 +2485,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="ctx-item" data-action="open-paint">🎨 Open GemPaint Studio</div>
         <div class="ctx-item" data-action="open-dos">💻 Open MS-DOS Prompt</div>
         <div class="ctx-divider"></div>
-        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (20 Secrets)</div>
+        <div class="ctx-item" data-action="open-trophies">🏆 Trophy Vault (21 Secrets)</div>
         <div class="ctx-item" data-action="cycle-theme">🌈 Next Desktop Theme</div>
         <div class="ctx-item" data-action="toggle-crt">📺 Toggle CRT Scanlines</div>
         <div class="ctx-item" data-action="toggle-sfx">🔊 Toggle Retro Sound Effects</div>
@@ -2608,6 +2659,8 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>
             <div class="start-menu-item" data-app="javaCreatorApp" data-pkg-id="app_old_java_creator" style="display: none">☕ Old Java Creator 1995 (Billy AI · 10 Interactions)</div>
             <div class="start-menu-item" data-app="hockeyCardsApp" data-pkg-id="app_hockey_cards">🏒 Hockey Cards 95 (McGee &amp; Obliterate · 0% 4K)</div>
+            <div class="start-menu-item" data-app="foreignRunnerApp">🧩 Angel Runtime Host (Java JVM · DOS .EXE · Android .APK)</div>
+            <div class="start-menu-item" data-app="foreign-java-workbench">☕ Java Workbench (Real Eclipse ECJ Compiler + JVM)</div>
             <div class="start-menu-item" data-app="notepad" data-pkg-id="app_notepad">📝 GemNotes WordPad</div>
             <div class="start-menu-item" data-app="paint" data-pkg-id="app_paint">🎨 GemPaint Studio</div>
             <div class="start-menu-item" data-app="calcApp">🧮 Scientific Calculator 95</div>

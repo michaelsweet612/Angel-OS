@@ -696,6 +696,9 @@ export const APP_SVG_ICONS: Record<string, string> = {
   hockeyCardsApp: svgDataUri(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="11" y="6" width="42" height="52" rx="4" fill="#facc15" stroke="#000" stroke-width="2.4"/><rect x="15" y="10" width="34" height="28" fill="#0ea5e9" stroke="#000" stroke-width="1.8"/><circle cx="32" cy="24" r="10" fill="#fed7aa" stroke="#000" stroke-width="1.8"/><path d="M21 20 C22 11 42 11 43 20 Z" fill="#dc2626" stroke="#000" stroke-width="1.5"/><circle cx="28" cy="23" r="3" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="28" cy="23" r="1.2" fill="#000"/><circle cx="36" cy="22" r="2" fill="#fff" stroke="#000" stroke-width="1"/><circle cx="36" cy="22" r="1" fill="#000"/><rect x="27" y="28" width="10" height="4" fill="#450a0a"/><rect x="29" y="28" width="2.5" height="2.5" fill="#fff"/><rect x="34" y="28" width="2.5" height="2.5" fill="#facc15"/><rect x="15" y="41" width="34" height="13" fill="#0f172a"/><text x="32" y="51" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="9" fill="#fde047">MCGEE</text></svg>',
   ),
+  foreignRunnerApp: svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="5" y="9" width="54" height="40" rx="4" fill="#1e293b" stroke="#000" stroke-width="2.4"/><rect x="10" y="14" width="44" height="30" fill="#0ea5e9"/><text x="20" y="35" font-size="15">☕</text><text x="34" y="35" font-size="14">🤖</text><rect x="22" y="49" width="20" height="5" fill="#94a3b8" stroke="#000" stroke-width="1.5"/><rect x="14" y="54" width="36" height="5" rx="2" fill="#cbd5e1" stroke="#000" stroke-width="1.5"/></svg>',
+  ),
 };
 
 const REGISTRY_STORAGE_KEY = '__gemini95_system_registry_v4';
