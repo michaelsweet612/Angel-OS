@@ -1,0 +1,12 @@
+Third-Party Component Notice (public/java/)
+===========================================
+
+The Angel-OS bundled Java programs (Calc95.jar, Snake95.jar, AngelPad.jar and
+their source under java-src/) are part of Angel-OS and are licensed strictly for
+personal download and local execution under the root LICENSE file.
+
+The file `ecj.jar` in this directory is an unmodified binary distribution of the
+Eclipse JDT Core Batch Compiler (eclipse-ecj 3.16.0), copyright 2000-2018 IBM
+Corporation and Eclipse contributors, licensed separately under the Eclipse
+Public License 1.0 (https://www.eclipse.org/legal/epl-v10.html). Upstream
+source: https://github.com/eclipse-jdt/eclipse.jdt.core

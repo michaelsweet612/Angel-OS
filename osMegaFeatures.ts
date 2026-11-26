@@ -187,6 +187,7 @@ const TROPHY_CATALOG: TrophyDef[] = [
   { id: 'billy_java_10', icon: '☕', title: '10 Rounds with Billy', desc: 'Interacted 10 times with Billy AI in Old Java Creator 1995 and unlocked Ultra Trash Mode.', points: 30 },
   { id: 'gemplayer_dj_5000', icon: '🎹', title: '5,000-Track DJ', desc: 'Spun themes and random selections inside GemPlayer 95 Mega Jukebox.', points: 20 },
   { id: 'hockey_cards_obliterate', icon: '🏒', title: 'McGee Card Obliterator', desc: 'Obliterated a goofy non-4K hockey card in Hockey Cards 95 (McGee & Obliterate Edition).', points: 25 },
+  { id: 'foreign_program_installed', icon: '🧩', title: 'Host Program Importer', desc: 'Installed a real external program (.jar, .java, .exe, .apk, or web app) into Angel Runtime Host.', points: 30 },
 ];
 
 const TROPHY_LS_KEY = 'gemini95_trophies_v1';

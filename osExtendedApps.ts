@@ -1,4 +1,5 @@
 import { fetchLivePageClientSide, isBrowseBackendMissing, markBrowseBackend, type StaticWebResult } from './osStaticWeb';
+import { mountForeignInstallerBar } from './osForeignRuntime';
 import {
   APP_SVG_ICONS,
   BrowserAiEra,
@@ -2373,6 +2374,7 @@ export function initAbilityToInstallApp(windowElement: HTMLDivElement): void {
     bridgeRef?.openExplorerAt(systemRegistry.defaultExeDownloadDir || 'C:\\Downloads');
   });
 
+  mountForeignInstallerBar(windowElement);
   switchInstallerMode(currentInstallerMode);
 }
 
