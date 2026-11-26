@@ -1650,9 +1650,29 @@ export function toggleHardwareFullscreen(): void {
 }
 
 export function initPwaAndHostOsController(): void {
-  // Register Workbox Service Worker for offline OS caching
+  // In dev mode, proactively purge any stale dev Service Workers/caches so live UI updates appear immediately.
+  // In production builds, register the Workbox Service Worker for offline OS caching.
   try {
-    registerSW({ immediate: true });
+    if (import.meta.env.DEV) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((reg) => {
+            void reg.unregister();
+          });
+        }).catch(() => {});
+      }
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((k) => {
+            if (k.includes('workbox') || k.includes('precache')) {
+              void caches.delete(k);
+            }
+          });
+        }).catch(() => {});
+      }
+    } else {
+      registerSW({ immediate: true });
+    }
   } catch {
     // Ignore SW registration errors in restricted sandboxes
   }

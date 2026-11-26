@@ -515,6 +515,35 @@ async function startServer() {
   });
 
   if (process.env.NODE_ENV !== 'production') {
+    // Serve a self-unregistering worker for any browser still holding an old dev-sw.js / sw.js cache
+    const clearSwScript = `
+self.addEventListener('install', () => { self.skipWaiting(); });
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: 'window' });
+      for (const client of clients) {
+        client.navigate(client.url);
+      }
+    } catch {}
+  })());
+});
+`;
+    app.get(['/dev-sw.js', '/sw.js'], (_req, res) => {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.send(clearSwScript);
+    });
+    app.use((req, res, next) => {
+      if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      }
+      next();
+    });
+
     const {createServer: createViteServer} = await import('vite');
     const vite = await createViteServer({
       server: {middlewareMode: true, hmr: false, ws: false},

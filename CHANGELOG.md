@@ -4,6 +4,23 @@ All notable releases of Angel OS are documented here in accordance with the repo
 
 ---
 
+## v2.0.2 — 2026-11-26
+
+### Added
+- **Dev Cache & Stale Service Worker Auto-Purge (`server.ts`, `osDualInstall.ts`, `vite.config.ts`):** Added `Cache-Control: no-store` headers for dev HTML/assets, a self-unregistering `/dev-sw.js` and `/sw.js` cleanup worker in development mode, client-side stale dev Service Worker unregistration, and Workbox `cleanupOutdatedCaches`, `skipWaiting`, and `clientsClaim` flags for production builds.
+- **Raised Tactile System Tray Button Styling (`index.css`):** Upgraded `#taskbar .tray-group-btn` so the unified **Control Center** button (`Wi-Fi`, `CRT`, `Volume`, `Battery`) and the combined **Date/Time + Bell** button render as two clearly separated, raised beveled buttons at rest with crisp hover and pressed states.
+
+### Removed
+- **Development-mode Workbox Service Worker caching (`devOptions.enabled: true` in `vite.config.ts`):** Disabled the dev-mode PWA service worker in Vite.
+- **Unconditional dev Service Worker registration (`osDualInstall.ts`):** Removed dev-mode execution of `registerSW({ immediate: true })`.
+- **Orphaned `#tray-notif-btn` CSS selector (`index.css`):** Removed the obsolete rule targeting the retired standalone bell button.
+
+### Why Removed
+- **Development-mode Service Worker caching:** Running a precaching Service Worker in development caused browsers to continue serving stale `index.html` snapshots and older taskbar markup even after rebuilding or reloading. Disabling dev-mode SW caching and serving an auto-cleanup worker ensures live UI updates appear immediately while keeping production PWA offline caching intact.
+- **Orphaned `#tray-notif-btn` selector:** The standalone bell button was replaced by the unified `#tray-datetime-notif-btn` control in `v2.0.1`, leaving the old CSS rule unused.
+
+---
+
 ## v2.0.1 — 2026-11-26
 
 ### Added
