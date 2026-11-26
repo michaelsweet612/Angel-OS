@@ -495,6 +495,14 @@ function getFilteredEntries(): SystemLogEntry[] {
   return entries.filter(matchesActiveFilter);
 }
 
+function buildTimestampedTxtFilename(spec: SystemLogFileSpec): string {
+  const baseName = spec.fileName.replace(/\.[^.]+$/, '').toUpperCase();
+  const d = new Date();
+  const datePart = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
+  const timePart = `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  return `${baseName}_${datePart}_${timePart}.txt`;
+}
+
 function serializeActiveLogText(): { fileName: string; content: string; lineCount: number } {
   const spec = SYSTEM_LOG_FILES[viewState.activeFile];
   const filtered = getFilteredEntries();
@@ -502,6 +510,28 @@ function serializeActiveLogText(): { fileName: string; content: string; lineCoun
   const body = filtered.map(formatPlainTextLine).join('\r\n');
   return {
     fileName: spec.fileName,
+    content: body ? `${header}\r\n${body}\r\n` : `${header}\r\n[EOF — 0 matching entries]\r\n`,
+    lineCount: filtered.length,
+  };
+}
+
+function serializeCurrentViewForTxtExport(): { fileName: string; content: string; lineCount: number } {
+  const spec = SYSTEM_LOG_FILES[viewState.activeFile];
+  const filtered = getFilteredEntries();
+  const now = formatNowParts();
+  const divider = '================================================================================';
+  const searchDisplay = viewState.searchQuery.trim() ? `"${viewState.searchQuery.trim()}"` : 'NONE';
+  const header = [
+    divider,
+    `FILE: ${spec.dosPath}   |   FORMAT: ANSI CR/LF   |   HOST: GEMINI-95`,
+    `DESC: ${spec.description}`,
+    `EXPORTED: ${now.isoDate} ${now.timestamp}   |   TAB: ${spec.tabLabel}   |   LINES: ${filtered.length}/${entries.length}`,
+    `FILTERS: LEVEL=${viewState.levelFilter}   |   SEARCH=${searchDisplay}`,
+    divider,
+  ].join('\r\n');
+  const body = filtered.map(formatPlainTextLine).join('\r\n');
+  return {
+    fileName: buildTimestampedTxtFilename(spec),
     content: body ? `${header}\r\n${body}\r\n` : `${header}\r\n[EOF — 0 matching entries]\r\n`,
     lineCount: filtered.length,
   };
@@ -788,18 +818,22 @@ export function initSystemLogsComponent(windowElement: HTMLDivElement): void {
     logsBridge?.pushToast('Log Saved to C:\\', `Saved ${fileName} (${lineCount} lines) to C:\\Documents.`, '📜');
   });
 
-  // Download active .LOG file to host computer
+  // Export current filtered log view to a timestamped .TXT file on the user's machine
   windowElement.querySelector('#syslogs-download-btn')?.addEventListener('click', () => {
     logsBridge?.playClick();
-    const { fileName, content } = serializeActiveLogText();
+    const { fileName, content, lineCount } = serializeCurrentViewForTxtExport();
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-    recordSystemLog('VFS', 'SYSLOGS.EXE', `Exported ${fileName} (${content.length} bytes) to host download.`, 'OK');
+    logsBridge?.pushToast('Exported .TXT Log', `Downloaded ${fileName} (${lineCount} lines) to your device.`, '📄');
+    recordSystemLog('VFS', 'SYSLOGS.EXE', `Exported ${fileName} (${lineCount} lines, ${blob.size} bytes) to local machine.`, 'OK');
   });
 
   // Clear log buffer
