@@ -1,4 +1,4 @@
-// ==================== GEMPLAYER 95 MEGA SYNTH & 5,000-TRACK LIBRARY (osGemPlayerLibrary.ts) ====================
+// ==================== ANGELPLAYER MEGA SYNTH & 5,000-TRACK LIBRARY (osGemPlayerLibrary.ts) ====================
 // Hand-crafted signature chiptune themes (Mario Theme, Legend of Z Intro, Hello Neighbor Chase,
 // Big Boy Jim Boss Battle, Harry Potter Theme + 4 classic 1995 tracks) plus 5,000 unique
 // deterministically generated random music selections with distinct names, genres, scales & rhythms.

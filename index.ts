@@ -468,13 +468,13 @@ const virtualFileSystem: VfsItem[] = [
     type: 'text',
     parent: 'C:\\',
     content:
-      '=== WELCOME TO GEMINI 95 (BUILD 1995.1000X) ===\n\n' +
+      '=== WELCOME TO ANGEL OS (BUILD 2026.X) ===\n\n' +
       'Two Ways to Install Software & the Operating System:\n' +
       '1. .EXE Setup Files & Portable App:\n' +
-      '   - Open C:\\Downloads in My Gemtop (or surf http://www.tucows-95-downloads.com in the Browser) to run standalone *_SETUP.EXE installers!\n' +
-      '   - Or download Gemini95_Portable_App.html / .BAT straight to your real PC.\n' +
+      '   - Open C:\\Downloads in My AngelTop (or surf http://www.tucows-95-downloads.com in the Browser) to run standalone *_SETUP.EXE installers!\n' +
+      '   - Or download AngelOS-web_Portable_App.html / .BAT straight to your real PC.\n' +
       '2. Physical Operating System Install:\n' +
-      '   - Run FDISK.EXE to partition Primary C:\\ & Logical D:\\, format system tracks, export a real x86 El Torito Bootable .ISO, or install Gemini 95 onto your device as a Standalone Offline PWA!',
+      '   - Run FDISK.EXE to partition Primary C:\\ & Logical D:\\, format system tracks, export a real x86 El Torito Bootable .ISO, or install Angel OS onto your device as a Standalone Offline PWA!',
   },
   {
     name: 'secret_photo.jpg',
@@ -516,12 +516,12 @@ const virtualFileSystem: VfsItem[] = [
     content: 'MZ Win32 Self-Extracting Installer — System Resource Monitor (SYSMON.EXE)',
   },
   {
-    name: 'GEMINI95_OS_SETUP.EXE',
+    name: 'ANGELOS_OS_SETUP.EXE',
     type: 'installer_exe',
     parent: 'C:\\Downloads',
     pkgId: 'os_setup',
     sizeMB: 68.4,
-    content: 'MZ Win32 Self-Extracting Full OS Recovery & Upgrade Executable',
+    content: 'MZ Win32 Self-Extracting Full Angel OS Recovery & Upgrade Executable',
   },
   {
     name: 'y2k_bunker_plan.txt',
@@ -541,7 +541,7 @@ const virtualFileSystem: VfsItem[] = [
     content:
       'LOCAL ISP DIAL-UP NUMBERS (28.8k / 56k V.90):\n' +
       '1. CyberSurf 95: 555-0195\n' +
-      '2. AOL Keyword: GEMINI\n' +
+      '2. AOL Keyword: ANGELOS\n' +
       '3. BBS Underground: 555-1337 (8-N-1)',
   },
   {
@@ -555,7 +555,7 @@ const virtualFileSystem: VfsItem[] = [
     type: 'text',
     parent: 'C:\\System95',
     content:
-      '@ECHO OFF\nPROMPT $P$G\nPATH C:\\GEMINI95;C:\\DOS\nLH C:\\GEMINI95\\MOUSE.COM\nSET SOUND=SB16_A220_I5_D1\nECHO Gemini 95 AI Neural Co-Processor Initialized.\n',
+      '@ECHO OFF\nPROMPT $P$G\nPATH C:\\ANGELOS;C:\\DOS\nLH C:\\ANGELOS\\MOUSE.COM\nSET SOUND=SB16_A220_I5_D1\nECHO Angel OS Neural Co-Processor Initialized.\n',
   },
   {
     name: 'COMMAND.COM',
@@ -844,19 +844,19 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     return { icon: meta.iconUrl, title: meta.shortTitle };
   }
   const titles: Record<string, string> = {
-    myComputer: 'My Gemtop',
+    myComputer: 'My AngelTop',
     abilityToInstall: 'Ability to Install',
     controlPanel: 'Settings & Control',
     regedit: 'REGEDIT.EXE',
     perfAdjust: 'Perf & Adjustment Levels',
     sysMonitor: 'System Monitor',
-    notepad: 'GemNotes',
-    paint: 'GemPaint',
+    notepad: 'AngelNotes',
+    paint: 'AngelPaint',
     doom: 'Doom II',
-    gemini: 'Gemini AIM',
-    minesweeper: 'GemSweeper',
+    gemini: 'Angel AIM',
+    minesweeper: 'AngelSweeper',
     imageViewer: 'Image Viewer',
-    mediaPlayer: 'GemPlayer',
+    mediaPlayer: 'AngelPlayer',
     dosPrompt: 'MS-DOS Prompt',
     calcApp: 'Calculator 95',
     solitaireApp: 'Solitaire 95',
@@ -1485,7 +1485,7 @@ function renderExplorerFolder(pathStr: string) {
 }
 
 function openTextFileInNotepad(filename: string, content: string) {
-  logVfsEvent('READ', filename, `${content.length} chars opened in GemNotes`);
+  logVfsEvent('READ', filename, `${content.length} chars opened in AngelNotes`);
   openApp('notepad').then(() => {
     const textarea = document.querySelector('#notepad .notepad-textarea') as HTMLTextAreaElement | null;
     const titleEl = document.getElementById('notepad-window-title');
@@ -1493,7 +1493,7 @@ function openTextFileInNotepad(filename: string, content: string) {
       textarea.value = content;
       textarea.dispatchEvent(new Event('input'));
     }
-    if (titleEl) titleEl.textContent = `GemNotes — ${filename}`;
+    if (titleEl) titleEl.textContent = `AngelNotes — ${filename}`;
   });
 }
 
@@ -1578,7 +1578,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         executeVfsSetupExe(dropped.fileName, data.pkgId, dropped.folder);
       } else {
         showOsDialog(
-          `Downloaded "${dropped.fileName}" to ${dropped.folder}! Open My Gemtop -> Downloads (or type ${dropped.fileName} in MS-DOS) to run the .EXE installer.`,
+          `Downloaded "${dropped.fileName}" to ${dropped.folder}! Open My AngelTop -> Downloads (or type ${dropped.fileName} in MS-DOS) to run the .EXE installer.`,
           'Tucows 95 .EXE Download Complete',
         );
       }
@@ -1659,23 +1659,23 @@ function initNotepadStory(windowElement: HTMLDivElement): void {
   newBtn?.addEventListener('click', () => {
     sfx.playClick();
     textarea.value = '';
-    if (titleEl) titleEl.textContent = 'GemNotes — Untitled.txt';
+    if (titleEl) titleEl.textContent = 'AngelNotes — Untitled.txt';
     updateCounts();
   });
 
   saveBtn?.addEventListener('click', () => {
     sfx.playClick();
-    const fileName = `GEMNOTE_${Math.floor(100 + Math.random() * 900)}.TXT`;
+    const fileName = `ANGELNOTE_${Math.floor(100 + Math.random() * 900)}.TXT`;
     virtualFileSystem.push({
       name: fileName,
       type: 'text',
       parent: 'C:\\Documents',
       content: textarea.value,
     });
-    logVfsEvent('WRITE', `C:\\Documents\\${fileName}`, `${textarea.value.length} bytes saved from GemNotes`, 'OK');
-    if (titleEl) titleEl.textContent = `GemNotes — ${fileName}`;
+    logVfsEvent('WRITE', `C:\\Documents\\${fileName}`, `${textarea.value.length} bytes saved from AngelNotes`, 'OK');
+    if (titleEl) titleEl.textContent = `AngelNotes — ${fileName}`;
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
-    showOsDialog(`Saved "${fileName}" to C:\\Documents! You can open it anytime from My Gemtop.`, 'GemNotes Saved');
+    showOsDialog(`Saved "${fileName}" to C:\\Documents! You can open it anytime from My AngelTop.`, 'AngelNotes Saved');
   });
 
   async function runNotepadAi(prompt: string, btn: HTMLButtonElement, label: string) {
@@ -1683,10 +1683,10 @@ function initNotepadStory(windowElement: HTMLDivElement): void {
     btn.disabled = true;
     btn.textContent = '⏳ Working...';
     const baseText = textarea.value ? textarea.value + '\n\n' : '';
-    textarea.value = baseText + '[Synthesizing via Gemini 95 Neural Co-Processor...]\n';
+    textarea.value = baseText + '[Synthesizing via Angel OS Neural Co-Processor...]\n';
     try {
-      if (!geminiInstance && !(await initializeGeminiIfNeeded('GemNotes'))) {
-        throw new Error('Failed to initialize Gemini API.');
+      if (!geminiInstance && !(await initializeGeminiIfNeeded('AngelNotes'))) {
+        throw new Error('Failed to initialize AI API.');
       }
       const stream = await geminiInstance.models.generateContentStream({
         model: 'gemini-4-hydrogen',
@@ -2019,9 +2019,9 @@ function initSimplePaintApp(windowElement: HTMLDivElement): void {
       parent: 'C:\\Pictures',
       content: canvas.toDataURL('image/png'),
     });
-    logVfsEvent('WRITE', `C:\\Pictures\\${fileName}`, 'PNG image saved from GemPaint 95', 'OK');
+    logVfsEvent('WRITE', `C:\\Pictures\\${fileName}`, 'PNG image saved from AngelPaint', 'OK');
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
-    showOsDialog(`Saved "${fileName}" to C:\\Pictures! Open My Gemtop to view it anytime.`, 'GemPaint Saved');
+    showOsDialog(`Saved "${fileName}" to C:\\Pictures! Open My AngelTop to view it anytime.`, 'AngelPaint Saved');
   });
 
   critiqueNowBtn?.addEventListener('click', () => {
@@ -2122,7 +2122,7 @@ function initGeminiChat(windowElement: HTMLDivElement): void {
       .join('\n');
     const fname = `AIM_CHAT_${Math.floor(100 + Math.random() * 900)}.TXT`;
     virtualFileSystem.push({ name: fname, type: 'text', parent: 'C:\\Documents', content: transcript });
-    logVfsEvent('WRITE', `C:\\Documents\\${fname}`, `${transcript.length} bytes exported from Gemini AIM`, 'OK');
+    logVfsEvent('WRITE', `C:\\Documents\\${fname}`, `${transcript.length} bytes exported from Angel AIM`, 'OK');
     openTextFileInNotepad(fname, transcript);
   });
 
@@ -3009,7 +3009,7 @@ async function initMediaPlayer(windowElement: HTMLDivElement): Promise<void> {
     if (isAmbush) {
       pushBalloonToast(
         track.id === 'feat_hello_neighbor' ? '🔦 Random Chase Ambush!' : '💪 Boss Battle Ambush!',
-        `GemPlayer 95 randomly launched ${track.title}!`,
+        `AngelPlayer randomly launched ${track.title}!`,
         track.icon,
       );
     }
@@ -3252,8 +3252,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     if (outputBox) outputBox.scrollTop = outputBox.scrollHeight;
   }
 
-  appendLine('Microsoft(R) Windows 95 — Gemini Neural MS-DOS Prompt');
-  appendLine('   (C)Copyright 1981-1995. Type HELP for commands, or ask ANY question!');
+  appendLine('Angel OS — Command Interpreter (COMMAND.COM)');
+  appendLine('   Copyright (C) 2026 Angel OS. Type HELP for commands, or ask ANY question!');
   appendLine('');
 
   function toggleMatrixEffect() {
@@ -3289,7 +3289,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
 
   async function handleCommand(rawCmd: string) {
     const trimmed = rawCmd.trim();
-    appendLine(`C:\\GEMINI95>${trimmed}`);
+    appendLine(`C:\\ANGELOS>${trimmed}`);
     if (!trimmed) return;
     sfx.playClick();
 
@@ -3300,7 +3300,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
           '  DIR       List files in C:\\ & D:\\ Virtual File System\n' +
           '  TREE      Render ASCII directory tree of C:\\ & D:\\\n' +
           '  FDISK     Launch MS-DOS Fixed Disk Partitioner (FDISK.EXE)\n' +
-          '  ISO       Build & download bootable x86 CD-ROM (GEMINI95_BOOTCD.ISO)\n' +
+          '  ISO       Build & download bootable x86 CD-ROM (ANGELOS_BOOTCD.ISO)\n' +
           '  INSTALL   Launch Ability to Install (Dual-Mode .EXE + Physical OS)\n' +
           '  SETUP     Launch Full Blue-Screen OS Reinstaller (SETUP.EXE)\n' +
           '  *.EXE     Type any .EXE filename (e.g. MSIE30_SETUP.EXE) to run it!\n' +
@@ -3313,8 +3313,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
           '  MATRIX    Toggle falling Matrix phosphor code rain\n' +
           '  COLOR     Cycle Green / Amber / White CRT phosphor\n' +
           '  CLS       Clear terminal screen\n' +
-          '  CHIME     Play Windows 95 Startup Synth Chime\n' +
-          '  * Or type ANY question/prompt to query the Gemini 95 AI DOS Kernel!',
+          '  CHIME     Play Angel OS Startup Synth Chime\n' +
+          '  * Or type ANY question/prompt to query the Angel OS AI DOS Kernel!',
       );
       return;
     }
@@ -3618,8 +3618,8 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       }
     }
 
-    // Fallback to Gemini AI DOS Kernel!
-    appendLine('[Querying GEMINI.SYS AI Kernel...]');
+    // Fallback to Angel OS AI DOS Kernel!
+    appendLine('[Querying ANGEL.SYS AI Kernel...]');
     try {
       if (!geminiInstance && !(await initializeGeminiIfNeeded('DOS'))) return;
       const res = await geminiInstance.models.generateContent({
@@ -3627,7 +3627,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         contents: trimmed,
         config: {
           systemInstruction:
-            'You are GEMINI.SYS, an intelligent 1995 MS-DOS command-line AI kernel inside Windows 95. Answer the user command or question in plain text suitable for an 80-column DOS terminal (concise, witty, 3-8 lines max, no markdown bold stars).',
+            'You are ANGEL.SYS, an intelligent Angel OS MS-DOS command-line AI kernel. Answer the user command or question in plain text suitable for an 80-column DOS terminal (concise, witty, 3-8 lines max, no markdown bold stars).',
         },
       });
       appendLine(res.text?.trim() || 'OK.');
@@ -5290,12 +5290,12 @@ const SEARCHABLE_ENTRIES = [
   { label: '🎛️ Performance & Adjustment Levels (Auto RAM/CPU/GPU/Fans/Temps)', kind: 'Hardware Control', action: () => openApp('perfAdjust') },
   { label: '📊 System Resource Monitor (SYSMON.EXE)', kind: 'System Utility', action: () => openApp('sysMonitor') },
   { label: '🌐 Google Chrome / Multi-Engine Browser (Chrome · Netscape · IE 3.0)', kind: 'Application', action: () => openApp('chrome') },
-  { label: '💻 My Gemtop (C:\\ & D:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
-  { label: '💬 Gemini AIM (1995 Instant Messenger)', kind: 'Application', action: () => openApp('gemini') },
-  { label: '📝 GemNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
-  { label: '🎨 GemPaint 95 (Pixel Studio & AI Critic)', kind: 'Application', action: () => openApp('paint') },
-  { label: '💣 GemSweeper Deluxe (Minesweeper + AI Advisor)', kind: 'Application', action: () => openApp('minesweeper') },
-  { label: '🎹 GemPlayer 95 (Mario · Legend of Z · Neighbor Chase · Big Boy Jim Boss · Harry Potter + 5,000 Random Musics)', kind: 'Application', action: () => openApp('mediaPlayer') },
+  { label: '💻 My AngelTop (C:\\ & D:\\ Virtual File Explorer)', kind: 'Application', action: () => openApp('myComputer') },
+  { label: '💬 Angel AIM (Instant Messenger)', kind: 'Application', action: () => openApp('gemini') },
+  { label: '📝 AngelNotes (AI Retro Word Processor)', kind: 'Application', action: () => openApp('notepad') },
+  { label: '🎨 AngelPaint (Pixel Studio & AI Critic)', kind: 'Application', action: () => openApp('paint') },
+  { label: '💣 AngelSweeper Deluxe (Minesweeper + AI Advisor)', kind: 'Application', action: () => openApp('minesweeper') },
+  { label: '🎹 AngelPlayer (Mario · Legend of Z · Neighbor Chase · Big Boy Jim Boss · Harry Potter + 5,000 Random Musics)', kind: 'Application', action: () => openApp('mediaPlayer') },
   { label: '📟 MS-DOS Prompt (COMMAND.COM + AI Kernel)', kind: 'Application', action: () => openApp('dosPrompt') },
   { label: '👹 Doom II (MS-DOS Protected Mode)', kind: 'Game', action: () => openApp('doom') },
   { label: '⚙️ Award / UEFI CMOS BIOS Setup (5,120+ Advanced Features)', kind: 'Firmware', action: () => openCmosBiosSetup() },

@@ -182,7 +182,7 @@ function buildRetroFileHeader(spec: SystemLogFileSpec, lineCount: number): strin
   const divider = '================================================================================';
   return [
     divider,
-    `FILE: ${spec.dosPath}   |   FORMAT: ANSI CR/LF   |   HOST: GEMINI-95`,
+    `FILE: ${spec.dosPath}   |   FORMAT: ANSI CR/LF   |   HOST: ANGEL-OS`,
     `DESC: ${spec.description}`,
     `DATE: ${now.isoDate}   |   LINES: ${lineCount}   |   RING_BUFFER: ${entries.length}/${MAX_LOG_ENTRIES}`,
     divider,
@@ -308,14 +308,14 @@ function loadPersistedState(): void {
         source: 'VFS_FAT16',
         level: 'OK',
         eventId: '0x3001',
-        message: 'Mounted Virtual Volume C:\\ (GEMINI95) — C:\\Documents, C:\\Pictures, C:\\Downloads, C:\\System95 online.',
+        message: 'Mounted Virtual Volume C:\\ (ANGEL_OS) — C:\\Documents, C:\\Pictures, C:\\Downloads, C:\\System95 online.',
       },
       {
         stream: 'BOOT',
         source: 'EXPLORER.EXE',
         level: 'INFO',
         eventId: '0x1095',
-        message: 'Gemini 95 Hybrid Desktop Shell initialized — SystemLogs ring buffer active.',
+        message: 'Angel OS Hybrid Desktop Shell initialized — SystemLogs ring buffer active.',
       },
     ];
     for (const s of seeds) {
@@ -523,7 +523,7 @@ function serializeCurrentViewForTxtExport(): { fileName: string; content: string
   const searchDisplay = viewState.searchQuery.trim() ? `"${viewState.searchQuery.trim()}"` : 'NONE';
   const header = [
     divider,
-    `FILE: ${spec.dosPath}   |   FORMAT: ANSI CR/LF   |   HOST: GEMINI-95`,
+    `FILE: ${spec.dosPath}   |   FORMAT: ANSI CR/LF   |   HOST: ANGEL-OS`,
     `DESC: ${spec.description}`,
     `EXPORTED: ${now.isoDate} ${now.timestamp}   |   TAB: ${spec.tabLabel}   |   LINES: ${filtered.length}/${entries.length}`,
     `FILTERS: LEVEL=${viewState.levelFilter}   |   SEARCH=${searchDisplay}`,

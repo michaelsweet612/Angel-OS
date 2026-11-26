@@ -105,7 +105,7 @@ export function dropSetupExeToVfs(pkgIdOrOs: string, customFolder?: string): { f
   }
   ensureDownloadFolderExists(folder);
 
-  let fileName = 'GEMINI95_OS_SETUP.EXE';
+  let fileName = 'ANGELOS_OS_SETUP.EXE';
   let pkgRef: SoftwarePackage | undefined;
   let sizeMB = 68.4;
 
@@ -122,7 +122,7 @@ export function dropSetupExeToVfs(pkgIdOrOs: string, customFolder?: string): { f
       fileName,
       'installer_exe',
       folder,
-      `MZ\x90\x00PE\x00\x00 Win32 Self-Extracting Setup Archive (${sizeMB.toFixed(1)} MB) — ${pkgRef ? pkgRef.name : 'Gemini 95 Full Operating System Setup'}`,
+      `MZ\x90\x00PE\x00\x00 Win32 Self-Extracting Setup Archive (${sizeMB.toFixed(1)} MB) — ${pkgRef ? pkgRef.name : 'Angel OS Full Operating System Setup'}`,
       undefined,
       pkgIdOrOs,
       sizeMB,
@@ -144,7 +144,7 @@ export function executeVfsSetupExe(fileName: string, pkgId?: string, parentFolde
 
   const upper = fileName.toUpperCase();
   const isOsSetup =
-    pkgId === 'os_setup' || upper === 'GEMINI95_OS_SETUP.EXE' || upper === 'SETUP.EXE';
+    pkgId === 'os_setup' || upper === 'ANGELOS_OS_SETUP.EXE' || upper === 'GEMINI95_OS_SETUP.EXE' || upper === 'SETUP.EXE';
 
   let matchedPkg = pkgId && pkgId !== 'os_setup' ? packageCatalog.find((p) => p.pkgId === pkgId) : undefined;
   if (!matchedPkg && !isOsSetup) {
@@ -210,7 +210,7 @@ export function executeVfsSetupExe(fileName: string, pkgId?: string, parentFolde
   const displaySizeMB = isOsSetup ? 68.4 : matchedPkg ? matchedPkg.sizeMB : 4.2;
   const displayBytes = Math.round(displaySizeMB * 1048576).toLocaleString();
   const displayPublisher = isOsSetup
-    ? 'Gemini Neural Systems, Inc. (Signed OS Media)'
+    ? 'Angel OS Systems, Inc. (Signed OS Media)'
     : matchedPkg
       ? matchedPkg.publisher
       : 'Shareware Win32 Self-Extractor';
@@ -312,7 +312,7 @@ export function buildSharewareDepotHtml(): string {
     </div>
   </div>
   <div class="sub">
-    <span><b>Tip:</b> Click <b>📥 Save .EXE</b> to drop the setup file into <code>C:\\Downloads</code> (openable in My Gemtop or MS-DOS), or <b>▶ Run .EXE</b> to extract immediately!</span>
+    <span><b>Tip:</b> Click <b>📥 Save .EXE</b> to drop the setup file into <code>C:\\Downloads</code> (openable in My AngelTop or MS-DOS), or <b>▶ Run .EXE</b> to extract immediately!</span>
   </div>
   <div class="wrap">
     <div id="dl-banner"></div>
@@ -327,7 +327,7 @@ export function buildSharewareDepotHtml(): string {
     </div>
     <div class="os-box">
       <div>
-        <b style="font-size:13px;color:#800000;">💿 GEMINI95_OS_SETUP.EXE — Full Standalone OS Recovery &amp; Upgrade Package (68.4 MB)</b><br/>
+        <b style="font-size:13px;color:#800000;">💿 ANGELOS_OS_SETUP.EXE — Full Standalone OS Recovery &amp; Upgrade Package (68.4 MB)</b><br/>
         <span style="font-size:11px;">Complete self-extracting Win95 Operating System installer executable. Can repair C:\\ or clean-reinstall the OS.</span>
       </div>
       <div style="white-space:nowrap;">
@@ -565,7 +565,7 @@ const FDISK_GUIDE_STEPS: FdiskGuideStepSpec[] = [
         `│ Pri C: ${String(cMB).padStart(4)}M │ Ext Logical D: ${String(dMB).padStart(4)}M │ Free: ${String(freeMB).padStart(4)}M │`,
         '└────────────────────────────────────────────────────────┘',
         dMB > 0
-          ? `✓ Drive D:\\ (${dMB} MB) mounted in My Gemtop Explorer`
+          ? `✓ Drive D:\\ (${dMB} MB) mounted in My AngelTop Explorer`
           : freeMB >= 25
             ? `► ${freeMB} MB unallocated cylinders ready for Drive D:\\`
             : '✓ 100% cylinders assigned to C:\\ (Single-Drive Mode)',
@@ -921,7 +921,7 @@ export function initFdiskController(): void {
       formatted: false, // Authentic DOS FDISK: newly created partition starts unformatted until FORMAT C: /S or OS Setup!
       fileSystem: systemRegistry.fileSystemFormat,
       sizeMB: requested,
-      label: 'GEMINI_95',
+      label: 'ANGEL_OS',
     };
     systemRegistry.primaryPartitionSizeMB = requested;
     applySystemRegistryToOS();
@@ -985,7 +985,7 @@ export function initFdiskController(): void {
     savePartitionTable(partitionTable);
     logHardwareEvent('FDISK.EXE', `Created & mounted Logical DOS Drive D:\\ (${rem} MB ${systemRegistry.fileSystemFormat})`, 'OK', '0x2033');
     renderFdiskScreen();
-    setFdiskConsoleLog(`Created & formatted Extended Logical DOS Drive D: (${rem} MB · ${systemRegistry.fileSystemFormat}). Mounted in My Gemtop!`);
+    setFdiskConsoleLog(`Created & formatted Extended Logical DOS Drive D: (${rem} MB · ${systemRegistry.fileSystemFormat}). Mounted in My AngelTop!`);
     notifyFdiskGuideAfterAction(2);
   };
 
@@ -1034,7 +1034,7 @@ export function initFdiskController(): void {
       const pct = Math.min(100, Math.round((cyl / maxCyl) * 100));
       getOsBridge()?.sfx.playFloppySeek();
       setFdiskConsoleLog(
-        `FORMAT C: /S /V:GEMINI_95 — Formatting ${partitionTable.primaryC.sizeMB}M (${systemRegistry.fileSystemFormat})... Cylinder ${cyl}/${maxCyl} (${pct}%)`,
+        `FORMAT C: /S /V:ANGEL_OS — Formatting ${partitionTable.primaryC.sizeMB}M (${systemRegistry.fileSystemFormat})... Cylinder ${cyl}/${maxCyl} (${pct}%)`,
       );
       if (cyl >= maxCyl) {
         if (fdiskFormatInterval) clearInterval(fdiskFormatInterval);
@@ -1095,7 +1095,7 @@ export function initFdiskController(): void {
       formatted: true,
       fileSystem: systemRegistry.fileSystemFormat,
       sizeMB: 1495,
-      label: 'GEMINI_95',
+      label: 'ANGEL_OS',
     };
     partitionTable.logicalD = {
       exists: true,
@@ -1124,7 +1124,7 @@ export function initFdiskController(): void {
       formatted: true,
       fileSystem: systemRegistry.fileSystemFormat,
       sizeMB: 1995,
-      label: 'GEMINI_95',
+      label: 'ANGEL_OS',
     };
     partitionTable.logicalD.exists = false;
     systemRegistry.primaryPartitionSizeMB = 1995;

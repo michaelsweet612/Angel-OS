@@ -191,7 +191,7 @@ const TROPHY_CATALOG: TrophyDef[] = [
   { id: 'recycle_cleaner', icon: '🗑️', title: 'Disk Clean Freak', desc: 'Restored or emptied items inside Recycle Bin 95.', points: 10 },
   { id: 'bios_tinkerer', icon: '⚙️', title: 'Silicon Whisperer', desc: 'Activated advanced firmware registers inside CMOS BIOS Setup.', points: 25 },
   { id: 'billy_java_10', icon: '☕', title: '10 Rounds with Billy', desc: 'Interacted 10 times with Billy AI in Old Java Creator 1995 and unlocked Ultra Trash Mode.', points: 30 },
-  { id: 'gemplayer_dj_5000', icon: '🎹', title: '5,000-Track DJ', desc: 'Spun themes and random selections inside GemPlayer 95 Mega Jukebox.', points: 20 },
+  { id: 'gemplayer_dj_5000', icon: '🎹', title: '5,000-Track DJ', desc: 'Spun themes and random selections inside AngelPlayer Mega Jukebox.', points: 20 },
   { id: 'hockey_cards_obliterate', icon: '🏒', title: 'McGee Card Obliterator', desc: 'Obliterated a goofy non-4K hockey card in Hockey Cards 95 (McGee & Obliterate Edition).', points: 25 },
   { id: 'foreign_program_installed', icon: '🧩', title: 'Host Program Importer', desc: 'Installed a real external program (.jar, .java, .exe, .apk, or web app) into Angel Runtime Host.', points: 30 },
 ];
@@ -1867,7 +1867,7 @@ export function initCalendarApp(windowElement: HTMLDivElement): void {
 const SYSTEM_PROCESSES = [
   { pid: 4, name: 'KERNEL32.DLL', mem: '4,120 K', desc: 'Win32 Base Kernel Core', protected: true },
   { pid: 108, name: 'EXPLORER.EXE', mem: '6,840 K', desc: 'Windows 95 Desktop Shell', protected: true },
-  { pid: 214, name: 'GEMINI.SYS', mem: '8,210 K', desc: 'Neural Retro Co-Processor', protected: false },
+  { pid: 214, name: 'ANGEL.SYS', mem: '8,210 K', desc: 'Angel OS Neural Co-Processor', protected: false },
   { pid: 333, name: 'ANGEL_PILOT.EXE', mem: '0,004 K', desc: 'In-Training Slacker Copilot (0% AI)', protected: false },
   { pid: 440, name: 'SB16_DSP.VXD', mem: '1,280 K', desc: 'Sound Blaster 16 Audio Synth', protected: false },
 ];
@@ -1960,7 +1960,7 @@ export function initTaskManagerApp(windowElement: HTMLDivElement): void {
             megaBridge?.closeApp(appId);
             refreshTaskMgr();
           } else {
-            pushBalloonToast('Process Restarted', `${pname} automatically respawned by GEMINI.SYS watchdog.`, '⚙️');
+            pushBalloonToast('Process Restarted', `${pname} automatically respawned by ANGEL.SYS watchdog.`, '⚙️');
           }
         });
       });
@@ -2119,7 +2119,7 @@ export function initRecycleBinApp(windowElement: HTMLDivElement): void {
     megaBridge?.refreshExplorerIfOpen();
     renderRecycleBinUI();
     unlockAchievement('recycle_cleaner');
-    pushBalloonToast('All Items Restored', 'Every item returned to My Gemtop C:\\!', '♻️');
+    pushBalloonToast('All Items Restored', 'Every item returned to My AngelTop C:\\!', '♻️');
   });
 }
 
@@ -2195,7 +2195,7 @@ export function initClipViewerApp(windowElement: HTMLDivElement): void {
   windowElement.querySelector('#clip-snip-paint-btn')?.addEventListener('click', () => {
     const paintCanvas = document.getElementById('paint-canvas') as HTMLCanvasElement | null;
     if (!paintCanvas || paintCanvas.width < 10) {
-      pushBalloonToast('GemPaint Not Ready', 'Open GemPaint Studio first so Snipping Tool can capture its canvas!', '✂️');
+      pushBalloonToast('AngelPaint Not Ready', 'Open AngelPaint Studio first so Snipping Tool can capture its canvas!', '✂️');
       return;
     }
     const dataUrl = paintCanvas.toDataURL('image/png');

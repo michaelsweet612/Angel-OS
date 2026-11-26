@@ -636,7 +636,7 @@ export function initOldJavaCreatorApp(windowElement: HTMLDivElement): void {
     javaBridge?.addVfsFile(fname, 'text', 'C:\\Documents', editor.value);
     javaBridge?.refreshExplorerIfOpen();
     if (statusEl) statusEl.textContent = `💾 Saved ${fname} to C:\\Documents!`;
-    javaBridge?.pushToast('Saved Broken Java to C:\\Documents', `Saved "${fname}" to My Gemtop → C:\\Documents!`, '☕');
+    javaBridge?.pushToast('Saved Broken Java to C:\\Documents', `Saved "${fname}" to My AngelTop → C:\\Documents!`, '☕');
   });
 
   // Download .java to real computer

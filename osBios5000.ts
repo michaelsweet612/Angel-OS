@@ -220,7 +220,7 @@ const FLAGSHIP_BY_CATEGORY: Record<
       subsystem: 'Execution Core',
       defaultValue: 'Disabled',
       options: ['Disabled', 'Enabled (512-bit)', 'Turbo Fusion'],
-      description: 'Activates 512-bit SIMD vector execution lanes on the Gemini Neural Co-Processor.',
+      description: 'Activates 512-bit SIMD vector execution lanes on the Angel Neural Co-Processor.',
       liveEffect: true,
       effectBadge: 'SIMD BOOST',
     },

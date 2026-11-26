@@ -358,7 +358,7 @@ export function applySystemRegistryToOS(skipSave = false): void {
   const biosCpu = document.getElementById('bios-cpu-label');
   if (biosCpu) {
     const tpmTag = isBiosTpmVerified() ? ' · TPM 2.0 + Secure Boot' : '';
-    biosCpu.textContent = `${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO]' : ''}${getBiosCpuLabelSuffix()} + Gemini Neural Co-Processor${tpmTag}`;
+    biosCpu.textContent = `${systemRegistry.cpuModel}${systemRegistry.cpuTurboBoost ? ' [TURBO]' : ''}${getBiosCpuLabelSuffix()} + Angel Neural Co-Processor${tpmTag}`;
   }
   const biosRam = document.getElementById('bios-ram-counter');
   if (biosRam) {
@@ -994,7 +994,7 @@ function buildEnginePortalHtml(engine: BrowserEngineId): string {
   .counter { display: inline-block; margin-top: 12px; background: #000; color: #00ff00; border: 2px inset #808080; padding: 4px 10px; font-weight: bold; letter-spacing: 3px; }
 </style></head><body>
   <marquee>★ NETSCAPE NAVIGATOR 95 GOLD ★ MULTI-TAB LIVE REAL WEB + AI TIME-MACHINE BROWSER ★ SWAP ENGINES ANYTIME IN CHROME SETTINGS OR "ABILITY TO INSTALL"! ★</marquee>
-  <h1>🌐 NETSCAPE GEMINI 95 CYBER-PORTAL</h1>
+  <h1>🌐 NETSCAPE ANGEL OS CYBER-PORTAL</h1>
   <div class="sub">Dual Engine: 🌐 Live Web Proxy + ✨ AI Time-Machine · Customizable in Master Settings</div>
   <table>
     <tr>
@@ -1823,7 +1823,7 @@ Requirements:
     bridgeRef?.addVfsFile(fname, 'text', 'C:\\Documents', sourceTextarea.value || tab.cachedHtml);
     bridgeRef?.refreshExplorerIfOpen();
     bridgeRef?.showOsDialog(
-      `Saved webpage HTML as "C:\\Documents\\${fname}"! You can inspect it in GemNotes or load file:///C:/Documents/${fname} in the browser.`,
+      `Saved webpage HTML as "C:\\Documents\\${fname}"! You can inspect it in AngelNotes or load file:///C:/Documents/${fname} in the browser.`,
       'Saved HTML to C:\\',
     );
   });
@@ -1891,7 +1891,7 @@ function renderPhysicalOsDeckUI(): void {
 
   deck.innerHTML = `
     <div class="phys-os-card">
-      <div class="phys-os-card-hdr">🔧 A. Inside Gemini 95 — Bare-Metal Disk &amp; OS Setup</div>
+      <div class="phys-os-card-hdr">🔧 A. Inside Angel OS — Bare-Metal Disk &amp; OS Setup</div>
       <p style="margin:0;line-height:1.4;">
         Partition &amp; format simulated IDE Fixed Disk 0 with <b>MS-DOS FDISK.EXE</b>, test Master Boot Record (<code>0x55AA</code>) bootability, or run a clean/repair <b>SETUP.EXE</b> OS installation.
       </p>
@@ -1905,7 +1905,7 @@ function renderPhysicalOsDeckUI(): void {
         <button class="win95-btn" id="phys-btn-fdisk" style="height:27px;font-weight:700;">🔧 Launch MS-DOS FDISK.EXE Partitioner</button>
         <button class="win95-btn" id="phys-btn-fdisk-guide" style="height:26px;background:#e0f2fe;font-weight:700;">📖 Interactive FDISK Guide (Step-by-Step)</button>
         <button class="win95-btn" id="phys-btn-os-setup" style="height:27px;background:#ffffcc;font-weight:700;">💿 Boot CD-ROM OS Installer (SETUP.EXE)</button>
-        <button class="win95-btn" id="phys-btn-drop-os-exe" style="height:25px;">📥 Drop GEMINI95_OS_SETUP.EXE to C:\\Downloads</button>
+        <button class="win95-btn" id="phys-btn-drop-os-exe" style="height:25px;">📥 Drop ANGELOS_OS_SETUP.EXE to C:\\Downloads</button>
       </div>
     </div>
 
@@ -1946,7 +1946,7 @@ function renderPhysicalOsDeckUI(): void {
     const res = dropSetupExeToVfs('os_setup');
     if (res) {
       bridgeRef?.showOsDialog(
-        `Saved "${res.fileName}" into ${res.folder}! Double-click it in My Gemtop Explorer or run it in MS-DOS anytime.`,
+        `Saved "${res.fileName}" into ${res.folder}! Double-click it in My AngelTop Explorer or run it in MS-DOS anytime.`,
         'OS Setup .EXE Created',
       );
     }
@@ -2157,7 +2157,7 @@ export function openInstallShieldWizard(pkg: SoftwarePackage, mode: 'install' | 
           Welcome to ${pkg.name} Setup
         </div>
         <p style="margin:2px 0;">
-          The InstallShield® 95 Wizard will ${mode === 'reinstall' ? 'cleanly reinstall & repair' : 'install'} <b>${pkg.name} (v${pkg.version})</b> on your Gemini 95 computer.
+          The InstallShield® Wizard will ${mode === 'reinstall' ? 'cleanly reinstall & repair' : 'install'} <b>${pkg.name} (v${pkg.version})</b> on your Angel OS computer.
         </p>
         <div style="background:#dfdfdf;border:1px inset #808080;padding:8px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;">
           Publisher: ${pkg.publisher}<br/>
@@ -3363,7 +3363,7 @@ export function renderMasterSettingsCurrentTab(): void {
     bindCheck('st-drv-d', (c) => (r.enableSecondaryDriveD = c));
     bindCheck('st-strict-mbr', (c) => (r.strictMbrBootCheck = c));
     container.querySelector('#st-iso-lbl')?.addEventListener('input', (e) => {
-      r.isoVolumeLabel = (e.target as HTMLInputElement).value.trim() || 'GEMINI95_OS';
+      r.isoVolumeLabel = (e.target as HTMLInputElement).value.trim() || 'ANGELOS_BOOT';
       applySystemRegistryToOS();
     });
 
@@ -3683,9 +3683,9 @@ export function initRegeditApp(windowElement: HTMLDivElement): void {
     const regContent =
       'REGEDIT4\n\n' +
       REGISTRY_DESCRIPTORS.map((d) => `[${d.hive}\\${d.subkey}]\n"${d.name}"="${String(systemRegistry[d.key])}"`).join('\n\n');
-    bridgeRef?.addVfsFile('GEMINI95_EXPORT.REG', 'text', 'C:\\System95', regContent);
+    bridgeRef?.addVfsFile('ANGELOS_EXPORT.REG', 'text', 'C:\\System95', regContent);
     bridgeRef?.refreshExplorerIfOpen();
-    bridgeRef?.showOsDialog('Exported REGEDIT4 hive dump to C:\\System95\\GEMINI95_EXPORT.REG!', 'Registry Exported');
+    bridgeRef?.showOsDialog('Exported REGEDIT4 hive dump to C:\\System95\\ANGELOS_EXPORT.REG!', 'Registry Exported');
   });
 
   renderRegeditTree();

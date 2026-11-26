@@ -1121,7 +1121,7 @@ export function initHockeyCardsApp(windowElement: HTMLDivElement): void {
     hockeyBridge?.addVfsFile(fname, 'image', 'C:\\Pictures', dataUrl);
     hockeyBridge?.refreshExplorerIfOpen();
     if (statusEl) statusEl.textContent = `💾 Saved ${fname} to C:\\Pictures!`;
-    hockeyBridge?.pushToast('Saved Hockey Card!', `Saved "${fname}" to My Gemtop → C:\\Pictures!`, '🏒');
+    hockeyBridge?.pushToast('Saved Hockey Card!', `Saved "${fname}" to My AngelTop → C:\\Pictures!`, '🏒');
   });
 
   // Button: Download PNG to Real Computer

@@ -627,7 +627,7 @@ function captureCameraPhoto(): void {
   }
 
   setCameraStatusText(`📸 Captured ${fileName} → saved to C:\\Pictures!`);
-  mediaBridge?.pushToast('Photo Saved to C:\\Pictures', `${fileName} saved in My Gemtop → C:\\Pictures.`, '📸');
+  mediaBridge?.pushToast('Photo Saved to C:\\Pictures', `${fileName} saved in My AngelTop → C:\\Pictures.`, '📸');
 }
 
 function toggleCameraVideoRecording(): void {
