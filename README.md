@@ -1,6 +1,6 @@
 <div align="center">
 
-# AngelOS-web (`Angel-OS`)
+# Angel-OS-web & Angel-OS
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
