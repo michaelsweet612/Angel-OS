@@ -333,6 +333,8 @@ export function applySystemRegistryToOS(skipSave = false): void {
 
   const qsBrightness = document.getElementById('qs-brightness-slider') as HTMLInputElement | null;
   if (qsBrightness) qsBrightness.value = String(systemRegistry.brightness);
+  const qsBrightnessVal = document.getElementById('qs-brightness-val');
+  if (qsBrightnessVal) qsBrightnessVal.textContent = `${systemRegistry.brightness}%`;
 
   // 3. Window Geometry, Typography & Desktop Shell
   root.style.setProperty('--os-border-w', `${systemRegistry.windowBorderWidth}px`);
@@ -412,13 +414,37 @@ export function applySystemRegistryToOS(skipSave = false): void {
   }
   const trayCcBtn = document.getElementById('tray-qs-btn');
   if (trayCcBtn) {
+    const wifiTxt = trayCcBtn.dataset.wifiLabel || 'Wi-Fi On';
     const crtTxt = systemRegistry.crtEnabled ? 'CRT On' : 'CRT Off';
     const soundTxt = systemRegistry.audioEnabled ? `Volume ${systemRegistry.masterVolume}%` : 'Muted';
     const battTxt = trayCcBtn.dataset.batteryLabel || 'AC 100%';
-    trayCcBtn.title = `Control Center — Wi-Fi · ${crtTxt} · ${soundTxt} · ${battTxt}`;
+    trayCcBtn.title = `Control Center — ${wifiTxt} · ${crtTxt} · ${soundTxt} · ${battTxt}`;
   }
-  document.getElementById('qs-tile-audio')?.classList.toggle('active', systemRegistry.audioEnabled);
-  document.getElementById('qs-tile-crt')?.classList.toggle('active', systemRegistry.crtEnabled);
+
+  const qsAudioTile = document.getElementById('qs-tile-audio');
+  if (qsAudioTile) {
+    qsAudioTile.classList.toggle('active', systemRegistry.audioEnabled);
+    qsAudioTile.classList.toggle('is-muted', !systemRegistry.audioEnabled);
+    qsAudioTile.setAttribute('aria-pressed', systemRegistry.audioEnabled ? 'true' : 'false');
+  }
+  const qsAudioSub = document.getElementById('qs-audio-status');
+  if (qsAudioSub) {
+    qsAudioSub.textContent = systemRegistry.audioEnabled ? `${systemRegistry.masterVolume}% · On` : 'Muted';
+  }
+  const qsVolumeSlider = document.getElementById('qs-volume-slider') as HTMLInputElement | null;
+  if (qsVolumeSlider) qsVolumeSlider.value = String(systemRegistry.audioEnabled ? systemRegistry.masterVolume : 0);
+  const qsVolumeVal = document.getElementById('qs-volume-val');
+  if (qsVolumeVal) qsVolumeVal.textContent = systemRegistry.audioEnabled ? `${systemRegistry.masterVolume}%` : 'Muted';
+
+  const qsCrtTile = document.getElementById('qs-tile-crt');
+  if (qsCrtTile) {
+    qsCrtTile.classList.toggle('active', systemRegistry.crtEnabled);
+    qsCrtTile.setAttribute('aria-pressed', systemRegistry.crtEnabled ? 'true' : 'false');
+  }
+  const qsCrtSub = document.getElementById('qs-crt-status');
+  if (qsCrtSub) {
+    qsCrtSub.textContent = systemRegistry.crtEnabled ? 'Scanlines On' : 'Standard';
+  }
 
   // 6. BIOS POST & Explorer Hardware Labels (Including Activated BIOS 5,120 Overrides)
   const biosCpu = document.getElementById('bios-cpu-label');

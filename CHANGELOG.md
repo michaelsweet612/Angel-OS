@@ -4,6 +4,25 @@ All notable releases of Angel OS are documented here in accordance with the repo
 
 ---
 
+## v2.0.3 — 2026-11-26
+
+### Added
+- **Windows 95 Unified Control Center Flyout (`#win11-quick-settings`):** Rebuilt the system tray Control Center flyout with classic Windows 95 window bevels, etched `fieldset`/`legend` groupboxes, sunken active navy toggle states, and recessed footer status readouts matching the unified tray button.
+- **Core Hardware Toggles (`Wi-Fi`, `Display / CRT`, `Volume`, `Battery`):**
+  - **Wi-Fi (`#qs-tile-wifi`):** Toggles wireless LAN connectivity, updates the Control Center status readout (`Connected` / `Off`), toggles a red diagonal slash on the taskbar `#tray-wifi-indicator`, and records a `NET_WLAN` hardware log entry.
+  - **Display / CRT (`#qs-tile-crt`):** Toggles CRT scanlines with live status readout (`Scanlines On` / `Standard`) synchronized with `systemRegistry.crtEnabled` and the tray indicator.
+  - **Volume (`#qs-tile-audio`) & Master Volume Slider (`#qs-volume-slider`):** Toggles mute/unmute and adjusts `systemRegistry.masterVolume` directly with a live tabular percentage readout (`#qs-volume-val`) and synced tray mute indicator.
+  - **Battery (`#qs-tile-battery`):** Displays live battery charge level and power source (`AC` / `On` / `Saver`), toggles Battery Saver power mode (reducing display brightness and CRT overlay intensity via `body.os-battery-saver`), updates the tray battery fill color and recessed footer status (`#qs-footer-battery-text`), and records an `ACPI_PWR` hardware log entry.
+- **Output Levels & Desktop/Devices Groupboxes:** Added tabular percentage readouts beside both the Volume and Brightness sliders and organized secondary desktop toggles (`56k Dial-Up`, `Night Light`, `Center Bar`, `Bar Labels`, `Top Taskbar`, `Auto-Hide`, `Tile Windows`, `Camera`, `Mic Access`) into a compact Win95 3-column grid.
+
+### Removed
+- **Flat ungrouped emoji quick-settings grid (`index.html`, `index.css`):** Removed the legacy 290px ungrouped emoji-tile layout inside `#win11-quick-settings` and the `.qs-icon` emoji wrapper class.
+
+### Why Removed
+- **Flat ungrouped emoji grid:** The previous flyout lacked dedicated **Wi-Fi** and **Battery** controls, omitted a **Volume** slider, and did not match the four hardware indicators displayed inside the unified taskbar Control Center button or the classic Windows 95 groupbox visual grammar.
+
+---
+
 ## v2.0.2 — 2026-11-26
 
 ### Added

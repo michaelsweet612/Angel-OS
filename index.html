@@ -3047,70 +3047,169 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
       </div>
 
-      <!-- 6. QUICK SETTINGS & ACTION CENTER (System Tray Flyout) -->
-      <div id="win11-quick-settings" class="win11-quick-settings" style="display: none">
+      <!-- 6. UNIFIED WINDOWS 95 CONTROL CENTER FLYOUT (System Tray Flyout) -->
+      <div
+        id="win11-quick-settings"
+        class="win11-quick-settings"
+        style="display: none"
+        role="dialog"
+        aria-label="Control Center"
+      >
         <div class="window-titlebar">
-          <span class="window-title">⚙️ Quick Settings (Control Center)</span>
+          <span class="window-title">Control Center</span>
           <div class="window-controls">
-            <button class="window-control-button" id="qs-close-btn">✕</button>
+            <button type="button" class="window-control-button" id="qs-close-btn" title="Close">✕</button>
           </div>
         </div>
-        <div class="qs-tiles-grid">
-          <button class="qs-tile active" id="qs-tile-dialup">
-            <span class="qs-icon">📞</span>
-            <span class="qs-label">56k Dial-Up</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-center-taskbar">
-            <span class="qs-icon">🎯</span>
-            <span class="qs-label">Center Taskbar</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-labels">
-            <span class="qs-icon">🏷️</span>
-            <span class="qs-label">Taskbar Labels</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-nightlight">
-            <span class="qs-icon">🌙</span>
-            <span class="qs-label">Night Light</span>
-          </button>
-          <button class="qs-tile active" id="qs-tile-crt">
-            <span class="qs-icon">📺</span>
-            <span class="qs-label">CRT Scanlines</span>
-          </button>
-          <button class="qs-tile active" id="qs-tile-audio">
-            <span class="qs-icon">🔊</span>
-            <span class="qs-label">Retro SFX</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-top-dock">
-            <span class="qs-icon">⬆️</span>
-            <span class="qs-label">Top Taskbar</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-autohide">
-            <span class="qs-icon">🫥</span>
-            <span class="qs-label">Auto-Hide</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-tilewin">
-            <span class="qs-icon">⊞</span>
-            <span class="qs-label">Tile Windows</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-camera" title="Open Camera App &amp; Camera Access">
-            <span class="qs-icon">📷</span>
-            <span class="qs-label">Camera App</span>
-          </button>
-          <button class="qs-tile" id="qs-tile-mic" title="Allow / Manage Microphone Access">
-            <span class="qs-icon">🎤</span>
-            <span class="qs-label">Mic Access</span>
-          </button>
+
+        <div class="qs-body">
+          <!-- Primary Hardware Toggles matching the Unified Tray Button -->
+          <fieldset class="qs-win95-groupbox">
+            <legend>System Controls</legend>
+            <div class="qs-primary-grid">
+              <button
+                type="button"
+                class="qs-hw-toggle active"
+                id="qs-tile-wifi"
+                aria-pressed="true"
+                title="Toggle Wireless Network (Wi-Fi)"
+              >
+                <span class="qs-hw-icon" aria-hidden="true">
+                  <svg viewBox="0 0 16 16">
+                    <path d="M2 6.2a8.5 8.5 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    <path d="M4.3 8.8a5.2 5.2 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    <circle cx="8" cy="12" r="1.4" fill="currentColor" />
+                  </svg>
+                </span>
+                <span class="qs-hw-text">
+                  <span class="qs-hw-title">Wi-Fi</span>
+                  <span class="qs-hw-sub" id="qs-wifi-status">Connected</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="qs-hw-toggle active"
+                id="qs-tile-crt"
+                aria-pressed="true"
+                title="Toggle CRT Display Scanlines"
+              >
+                <span class="qs-hw-icon" aria-hidden="true">
+                  <svg viewBox="0 0 16 16">
+                    <rect x="1.5" y="2" width="13" height="9.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.35" />
+                    <line x1="3.4" y1="5.2" x2="12.6" y2="5.2" stroke="currentColor" stroke-width="1" />
+                    <line x1="3.4" y1="7.8" x2="12.6" y2="7.8" stroke="currentColor" stroke-width="1" />
+                    <line x1="5" y1="13.6" x2="11" y2="13.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <span class="qs-hw-text">
+                  <span class="qs-hw-title">Display / CRT</span>
+                  <span class="qs-hw-sub" id="qs-crt-status">Scanlines On</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="qs-hw-toggle active"
+                id="qs-tile-audio"
+                aria-pressed="true"
+                title="Toggle System Volume / Mute"
+              >
+                <span class="qs-hw-icon" aria-hidden="true">
+                  <svg viewBox="0 0 16 16">
+                    <polygon points="2,6 5.5,6 9.5,2.5 9.5,13.5 5.5,10 2,10" fill="currentColor" />
+                    <path class="qs-vol-waves" d="M11.5 5.3a3.6 3.6 0 0 1 0 5.4M13.2 3.5a6.2 6.2 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    <line class="qs-vol-mute" x1="11" y1="5" x2="14.8" y2="11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                    <line class="qs-vol-mute" x1="14.8" y1="5" x2="11" y2="11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <span class="qs-hw-text">
+                  <span class="qs-hw-title">Volume</span>
+                  <span class="qs-hw-sub tabular-nums" id="qs-audio-status">70% · On</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="qs-hw-toggle"
+                id="qs-tile-battery"
+                aria-pressed="false"
+                title="Toggle Battery Saver Power Mode"
+              >
+                <span class="qs-hw-icon" aria-hidden="true">
+                  <svg viewBox="0 0 18 16">
+                    <rect x="1.2" y="4" width="13" height="8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.35" />
+                    <rect x="14.7" y="6.3" width="1.8" height="3.4" rx="0.6" fill="currentColor" />
+                    <rect id="qs-battery-bar" x="2.8" y="5.6" width="9.8" height="4.8" rx="0.4" fill="currentColor" />
+                  </svg>
+                </span>
+                <span class="qs-hw-text">
+                  <span class="qs-hw-title">Battery</span>
+                  <span class="qs-hw-sub tabular-nums" id="qs-battery-status">100% · AC</span>
+                </span>
+              </button>
+            </div>
+          </fieldset>
+
+          <!-- Output Level Sliders -->
+          <fieldset class="qs-win95-groupbox qs-sliders-group">
+            <legend>Levels</legend>
+            <div class="qs-sliders">
+              <label class="qs-slider-row" for="qs-volume-slider">
+                <span class="qs-slider-label">Volume</span>
+                <input type="range" id="qs-volume-slider" min="0" max="100" value="70" />
+                <span class="qs-slider-val tabular-nums" id="qs-volume-val">70%</span>
+              </label>
+              <label class="qs-slider-row" for="qs-brightness-slider">
+                <span class="qs-slider-label">Brightness</span>
+                <input type="range" id="qs-brightness-slider" min="55" max="115" value="100" />
+                <span class="qs-slider-val tabular-nums" id="qs-brightness-val">100%</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <!-- Additional Desktop & Device Toggles -->
+          <fieldset class="qs-win95-groupbox">
+            <legend>Desktop &amp; Devices</legend>
+            <div class="qs-tiles-grid">
+              <button type="button" class="qs-tile active" id="qs-tile-dialup">
+                <span class="qs-label">56k Dial-Up</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-nightlight">
+                <span class="qs-label">Night Light</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-center-taskbar">
+                <span class="qs-label">Center Bar</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-labels">
+                <span class="qs-label">Bar Labels</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-top-dock">
+                <span class="qs-label">Top Taskbar</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-autohide">
+                <span class="qs-label">Auto-Hide</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-tilewin">
+                <span class="qs-label">Tile Windows</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-camera" title="Open Camera App &amp; Camera Access">
+                <span class="qs-label">Camera</span>
+              </button>
+              <button type="button" class="qs-tile" id="qs-tile-mic" title="Allow / Manage Microphone Access">
+                <span class="qs-label">Mic Access</span>
+              </button>
+            </div>
+          </fieldset>
         </div>
-        <div class="qs-sliders">
-          <div class="qs-slider-row">
-            <span>☀️ Brightness</span>
-            <input type="range" id="qs-brightness-slider" min="55" max="115" value="100" />
-          </div>
-        </div>
+
         <div class="qs-footer">
-          <button class="win95-btn" id="qs-install-pwa-btn" title="Install as Standalone OS App">📲 Install OS</button>
-          <button class="win95-btn" id="qs-open-bios-btn" title="Open CMOS BIOS (5,120+ Features)">⚙️ BIOS</button>
-          <button class="win95-btn" id="qs-open-themes-btn">🎨 Themes</button>
+          <span class="qs-footer-status tabular-nums" id="qs-footer-battery-text">AC Power · 100%</span>
+          <div class="qs-footer-actions">
+            <button type="button" class="win95-btn qs-footer-btn" id="qs-install-pwa-btn" title="Install as Standalone OS App">Install OS</button>
+            <button type="button" class="win95-btn qs-footer-btn" id="qs-open-bios-btn" title="Open CMOS BIOS (5,120+ Features)">BIOS</button>
+            <button type="button" class="win95-btn qs-footer-btn" id="qs-open-themes-btn">Themes</button>
+          </div>
         </div>
       </div>
 
@@ -3211,6 +3310,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
                   <path d="M2 6.2a8.5 8.5 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   <path d="M4.3 8.8a5.2 5.2 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   <circle cx="8" cy="12" r="1.4" fill="currentColor" />
+                  <line class="tray-wifi-slash" x1="2.2" y1="2.2" x2="13.8" y2="13.8" stroke="#dc2626" stroke-width="1.7" stroke-linecap="round" />
                 </svg>
               </span>
               <span class="tray-status-icon" id="tray-crt-indicator" aria-hidden="true">
@@ -3341,13 +3441,13 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
       <div id="winver-modal" class="installshield-backdrop" style="display:none">
         <div class="sfx-exe-window" style="width:420px">
           <div class="window-titlebar">
-            <span class="window-title">ℹ️ About Angel OS v2.0.2 (WINVER.EXE)</span>
+            <span class="window-title">ℹ️ About Angel OS v2.0.3 (WINVER.EXE)</span>
             <div class="window-controls"><button class="window-control-button" id="winver-close-btn">✕</button></div>
           </div>
           <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#000">
             <div style="background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff;padding:10px 12px;font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:10px;border-radius:4px">
               <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Angel OS" style="width:28px;height:28px" />
-              <span>Angel OS v2.0.2 · Private Cloud &amp; 500-App Edition</span>
+              <span>Angel OS v2.0.3 · Private Cloud &amp; 500-App Edition</span>
             </div>
             <div><b>Shell:</b> Angel OS Desktop Shell · Private Per-User Accounts (Firebase Cloud &amp; Local)</div>
             <div><b>Software Store:</b> 514+ Interactive Installable Applications (14 Live Mini-App Engines)</div>

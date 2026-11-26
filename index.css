@@ -2926,7 +2926,8 @@ body.night-light-active .night-light-overlay {
   height: 15px;
 }
 
-.tray-sound-mute {
+.tray-sound-mute,
+.tray-wifi-slash {
   display: none;
 }
 
@@ -2940,9 +2941,21 @@ body.night-light-active .night-light-overlay {
   display: inline;
 }
 
+.tray-status-icon.is-wifi-off {
+  opacity: 0.65;
+}
+
+.tray-status-icon.is-wifi-off .tray-wifi-slash {
+  display: inline;
+}
+
 .tray-icon-btn.is-crt-off,
 .tray-status-icon.is-crt-off {
   opacity: 0.45;
+}
+
+body.os-battery-saver .crt-overlay {
+  opacity: 0.55;
 }
 
 .taskbar-desk-badge {
@@ -3410,41 +3423,234 @@ body.taskbar-is-centered .win11-search-flyout {
   color: #000;
 }
 
-/* 6. Quick Settings 95 Flyout */
+/* 6. Unified Windows 95 Control Center Flyout */
 .win11-quick-settings {
   position: fixed;
-  bottom: calc(var(--os-taskbar-h) + 6px);
-  right: 8px;
-  width: 290px;
-  background: #c0c0c0;
+  bottom: calc(var(--os-taskbar-h) + 8px);
+  right: 10px;
+  width: 336px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - var(--os-taskbar-h) - 18px);
+  background: var(--win-bg, #c0c0c0);
+  color: var(--text-color, #000000);
   border-top: 2px solid #ffffff;
   border-left: 2px solid #ffffff;
   border-right: 2px solid #000000;
   border-bottom: 2px solid #000000;
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
-  z-index: 3600;
+  box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf, 4px 4px 0 rgba(0, 0, 0, 0.45);
+  z-index: 4400;
   padding: 2px;
+  overflow-y: auto;
+  animation: trayFlyoutReveal 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .win11-quick-settings {
+    animation: none;
+  }
+}
+
+.qs-body {
+  padding: 8px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qs-win95-groupbox {
+  margin: 0;
+  padding: 8px 7px 7px;
+  border: 1px solid #808080;
+  box-shadow: inset 1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+  min-width: 0;
+}
+
+.qs-win95-groupbox legend {
+  padding: 0 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: inherit;
+  letter-spacing: 0.01em;
+}
+
+.qs-primary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.qs-hw-toggle {
+  appearance: none;
+  background: #d4d0c8;
+  color: #000000;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  box-shadow: inset -1px -1px 0 #808080;
+  padding: 7px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  font-family: inherit;
+  transition: background-color 110ms ease;
+}
+
+.qs-hw-toggle:hover {
+  background: #dfdfda;
+}
+
+.qs-hw-toggle:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
+.qs-hw-toggle.active {
+  background: #000080;
+  color: #ffffff;
+  border-top: 2px solid #000000;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #000040;
+}
+
+.qs-hw-toggle.active:hover {
+  background: #0b1c94;
+}
+
+.qs-hw-toggle.active:focus-visible {
+  outline-color: #ffffff;
+}
+
+.qs-hw-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.16);
+}
+
+.qs-hw-toggle.active .qs-hw-icon {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.qs-hw-icon svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.qs-vol-mute {
+  display: none;
+}
+
+.qs-hw-toggle.is-muted .qs-vol-waves {
+  display: none;
+}
+
+.qs-hw-toggle.is-muted .qs-vol-mute {
+  display: inline;
+}
+
+.qs-hw-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.qs-hw-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-hw-sub {
+  font-size: 0.64rem;
+  opacity: 0.82;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-sliders-group {
+  padding-top: 6px;
+}
+
+.qs-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qs-slider-row {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.qs-slider-label {
+  white-space: nowrap;
+}
+
+.qs-slider-row input[type='range'] {
+  width: 100%;
+  margin: 0;
+  accent-color: #000080;
+  cursor: pointer;
+}
+
+.qs-slider-val {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.67rem;
+  font-weight: 700;
 }
 
 .qs-tiles-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
-  padding: 8px;
 }
 
 .qs-tile {
+  appearance: none;
   background: #d4d0c8;
+  color: #000000;
   border-top: 2px solid #ffffff;
   border-left: 2px solid #ffffff;
   border-right: 2px solid #000000;
   border-bottom: 2px solid #000000;
-  padding: 8px 4px;
+  box-shadow: inset -1px -1px 0 #808080;
+  padding: 5px 4px;
+  min-height: 26px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   cursor: pointer;
+  font-family: inherit;
+}
+
+.qs-tile:hover {
+  background: #dfdfda;
+}
+
+.qs-tile:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -3px;
 }
 
 .qs-tile.active {
@@ -3454,39 +3660,123 @@ body.taskbar-is-centered .win11-search-flyout {
   border-left: 2px solid #000000;
   border-right: 2px solid #ffffff;
   border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #000040;
 }
 
-.qs-icon {
-  font-size: 1.05rem;
+.qs-tile.active:focus-visible {
+  outline-color: #ffffff;
 }
 
 .qs-label {
-  font-size: 0.66rem;
+  font-size: 0.67rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.qs-sliders {
-  padding: 4px 10px 8px 10px;
-  border-top: 1px solid #808080;
-}
-
-.qs-slider-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .qs-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 8px;
+  gap: 6px;
+  padding: 5px 7px;
   border-top: 1px solid #808080;
+  box-shadow: inset 0 1px 0 #ffffff;
   background: #b8b8b8;
+  font-size: 0.68rem;
+}
+
+.qs-footer-status {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+  background: #c0c0c0;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qs-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.qs-footer-btn {
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+body.theme-cyberpunk .win11-quick-settings,
+body.theme-matrix .win11-quick-settings,
+body.theme-vaporwave .win11-quick-settings,
+body.theme-highcontrast .win11-quick-settings {
+  background: #141c2c;
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+body.theme-cyberpunk .qs-win95-groupbox,
+body.theme-matrix .qs-win95-groupbox,
+body.theme-vaporwave .qs-win95-groupbox,
+body.theme-highcontrast .qs-win95-groupbox {
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: none;
+}
+
+body.theme-cyberpunk .qs-hw-toggle,
+body.theme-matrix .qs-hw-toggle,
+body.theme-vaporwave .qs-hw-toggle,
+body.theme-highcontrast .qs-hw-toggle,
+body.theme-cyberpunk .qs-tile,
+body.theme-matrix .qs-tile,
+body.theme-vaporwave .qs-tile,
+body.theme-highcontrast .qs-tile {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: none;
+}
+
+body.theme-cyberpunk .qs-hw-toggle.active,
+body.theme-matrix .qs-hw-toggle.active,
+body.theme-vaporwave .qs-hw-toggle.active,
+body.theme-highcontrast .qs-hw-toggle.active,
+body.theme-cyberpunk .qs-tile.active,
+body.theme-matrix .qs-tile.active,
+body.theme-vaporwave .qs-tile.active,
+body.theme-highcontrast .qs-tile.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #60a5fa;
+}
+
+body.theme-cyberpunk .qs-footer,
+body.theme-matrix .qs-footer,
+body.theme-vaporwave .qs-footer,
+body.theme-highcontrast .qs-footer {
+  background: #0f172a;
+  border-top-color: rgba(148, 163, 184, 0.28);
+  box-shadow: none;
+}
+
+body.theme-cyberpunk .qs-footer-status,
+body.theme-matrix .qs-footer-status,
+body.theme-vaporwave .qs-footer-status,
+body.theme-highcontrast .qs-footer-status {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.3);
 }
 
 /* ==================== TASKBAR TOP-DOCKED & AUTO-HIDE MODES ==================== */

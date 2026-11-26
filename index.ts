@@ -5996,39 +5996,101 @@ document.getElementById('tray-datetime-notif-btn')?.addEventListener('click', (e
 
 renderMiniCalendar(true);
 
-// Live Battery indicator inside unified Control Center button (graceful 100% AC fallback)
-function initTrayBatteryIndicator() {
+// Unified Control Center state (Wi-Fi, Display/CRT, Volume, Battery Saver)
+let controlCenterWifiEnabled = true;
+let controlCenterBatterySaver = false;
+let preBatterySaverBrightness = 100;
+let liveBatteryPct = 100;
+let liveBatteryCharging = true;
+
+function syncControlCenterHardwareUi() {
+  const ccBtn = document.getElementById('tray-qs-btn');
+  const wifiTray = document.getElementById('tray-wifi-indicator');
+  const wifiTile = document.getElementById('qs-tile-wifi');
+  const wifiSub = document.getElementById('qs-wifi-status');
+  if (wifiTray) wifiTray.classList.toggle('is-wifi-off', !controlCenterWifiEnabled);
+  if (wifiTile) {
+    wifiTile.classList.toggle('active', controlCenterWifiEnabled);
+    wifiTile.setAttribute('aria-pressed', controlCenterWifiEnabled ? 'true' : 'false');
+  }
+  if (wifiSub) wifiSub.textContent = controlCenterWifiEnabled ? 'Connected' : 'Off';
+
+  const battTray = document.getElementById('tray-battery-indicator');
+  const battTile = document.getElementById('qs-tile-battery');
+  const battSub = document.getElementById('qs-battery-status');
+  const battBar = document.getElementById('qs-battery-bar');
+  const footerBatt = document.getElementById('qs-footer-battery-text');
   const fillEl = document.getElementById('tray-battery-fill');
   const boltEl = document.getElementById('tray-battery-bolt');
-  const ccBtn = document.getElementById('tray-qs-btn');
 
-  const applyBatteryVisual = (levelRatio: number, charging: boolean) => {
-    const pct = Math.max(0, Math.min(100, Math.round(levelRatio * 100)));
-    if (fillEl) {
-      const width = Math.max(1.2, (pct / 100) * 9.8);
-      fillEl.setAttribute('width', width.toFixed(1));
-      const color = charging ? '#16a34a' : pct <= 15 ? '#dc2626' : pct <= 30 ? '#d97706' : '#16a34a';
-      fillEl.setAttribute('fill', color);
-    }
-    if (boltEl) {
-      boltEl.style.display = charging ? 'inline' : 'none';
-    }
-    if (ccBtn) {
-      const battLabel = charging ? `Charging ${pct}%` : `Battery ${pct}%`;
-      ccBtn.dataset.batteryLabel = battLabel;
-      const crtTxt = systemRegistry.crtEnabled ? 'CRT On' : 'CRT Off';
-      const soundTxt = systemRegistry.audioEnabled ? `Volume ${systemRegistry.masterVolume}%` : 'Muted';
-      ccBtn.title = `Control Center — Wi-Fi · ${crtTxt} · ${soundTxt} · ${battLabel}`;
-    }
-  };
+  const fillWidth = Math.max(1.2, (liveBatteryPct / 100) * 9.8).toFixed(1);
+  if (fillEl) {
+    fillEl.setAttribute('width', fillWidth);
+    const color = controlCenterBatterySaver
+      ? '#d97706'
+      : liveBatteryCharging
+        ? '#16a34a'
+        : liveBatteryPct <= 15
+          ? '#dc2626'
+          : liveBatteryPct <= 30
+            ? '#d97706'
+            : '#16a34a';
+    fillEl.setAttribute('fill', color);
+  }
+  if (battBar) battBar.setAttribute('width', fillWidth);
+  if (boltEl) boltEl.style.display = liveBatteryCharging ? 'inline' : 'none';
+  if (battTray) battTray.classList.toggle('is-battery-saver', controlCenterBatterySaver);
 
-  applyBatteryVisual(1, true);
+  if (battTile) {
+    battTile.classList.toggle('active', controlCenterBatterySaver);
+    battTile.setAttribute('aria-pressed', controlCenterBatterySaver ? 'true' : 'false');
+  }
+  if (battSub) {
+    battSub.textContent = controlCenterBatterySaver
+      ? `${liveBatteryPct}% · Saver`
+      : liveBatteryCharging
+        ? `${liveBatteryPct}% · AC`
+        : `${liveBatteryPct}% · On`;
+  }
+  if (footerBatt) {
+    const modeTxt = controlCenterBatterySaver
+      ? 'Battery Saver'
+      : liveBatteryCharging
+        ? 'AC Power'
+        : 'On Battery';
+    footerBatt.textContent = `${modeTxt} · ${liveBatteryPct}%`;
+  }
+
+  document.body.classList.toggle('os-battery-saver', controlCenterBatterySaver);
+
+  if (ccBtn) {
+    const wifiLabel = controlCenterWifiEnabled ? 'Wi-Fi On' : 'Wi-Fi Off';
+    const battLabel = controlCenterBatterySaver
+      ? `Battery Saver (${liveBatteryPct}%)`
+      : liveBatteryCharging
+        ? `Charging ${liveBatteryPct}%`
+        : `Battery ${liveBatteryPct}%`;
+    ccBtn.dataset.wifiLabel = wifiLabel;
+    ccBtn.dataset.batteryLabel = battLabel;
+    const crtTxt = systemRegistry.crtEnabled ? 'CRT On' : 'CRT Off';
+    const soundTxt = systemRegistry.audioEnabled ? `Volume ${systemRegistry.masterVolume}%` : 'Muted';
+    ccBtn.title = `Control Center — ${wifiLabel} · ${crtTxt} · ${soundTxt} · ${battLabel}`;
+  }
+}
+
+// Live Battery indicator inside unified Control Center button (graceful 100% AC fallback)
+function initTrayBatteryIndicator() {
+  syncControlCenterHardwareUi();
   const navAny = navigator as Navigator & { getBattery?: () => Promise<{ level: number; charging: boolean; addEventListener: (ev: string, fn: () => void) => void }> };
   if (typeof navAny.getBattery === 'function') {
     navAny
       .getBattery()
       .then((battery) => {
-        const sync = () => applyBatteryVisual(battery.level, battery.charging);
+        const sync = () => {
+          liveBatteryPct = Math.max(0, Math.min(100, Math.round(battery.level * 100)));
+          liveBatteryCharging = Boolean(battery.charging);
+          syncControlCenterHardwareUi();
+        };
         sync();
         battery.addEventListener('levelchange', sync);
         battery.addEventListener('chargingchange', sync);
@@ -6045,6 +6107,39 @@ document.getElementById('qs-close-btn')?.addEventListener('click', () => {
   syncTrayFlyoutButtonStates();
 });
 
+document.getElementById('qs-tile-wifi')?.addEventListener('click', () => {
+  sfx.playClick();
+  controlCenterWifiEnabled = !controlCenterWifiEnabled;
+  syncControlCenterHardwareUi();
+  logHardwareEvent(
+    'NET_WLAN',
+    controlCenterWifiEnabled ? 'Wireless LAN adapter connected (AngelNet 802.11).' : 'Wireless LAN adapter disabled by user.',
+    controlCenterWifiEnabled ? 'OK' : 'WARN',
+  );
+});
+
+document.getElementById('qs-tile-battery')?.addEventListener('click', () => {
+  sfx.playClick();
+  controlCenterBatterySaver = !controlCenterBatterySaver;
+  if (controlCenterBatterySaver) {
+    preBatterySaverBrightness = systemRegistry.brightness;
+    if (systemRegistry.brightness > 82) {
+      systemRegistry.brightness = 82;
+    }
+  } else {
+    systemRegistry.brightness = preBatterySaverBrightness || 100;
+  }
+  applySystemRegistryToOS();
+  syncControlCenterHardwareUi();
+  logHardwareEvent(
+    'ACPI_PWR',
+    controlCenterBatterySaver
+      ? `Battery Saver mode ENABLED (${liveBatteryPct}% — display dimmed to ${systemRegistry.brightness}%).`
+      : `Battery Saver mode DISABLED (${liveBatteryPct}% — standard power profile restored).`,
+    'INFO',
+  );
+});
+
 document.getElementById('qs-tile-dialup')?.addEventListener('click', (e) => {
   sfx.playModemHandshake();
   (e.currentTarget as HTMLElement).classList.toggle('active');
@@ -6058,9 +6153,8 @@ document.getElementById('qs-tile-crt')?.addEventListener('click', () => {
   toggleCrtScanlines();
 });
 
-document.getElementById('qs-tile-audio')?.addEventListener('click', (e) => {
+document.getElementById('qs-tile-audio')?.addEventListener('click', () => {
   toggleRetroSfxAudio();
-  (e.currentTarget as HTMLElement).classList.toggle('active', sfx.enabled);
 });
 
 document.getElementById('qs-tile-top-dock')?.addEventListener('click', () => {
@@ -6080,7 +6174,17 @@ document.getElementById('qs-tile-autohide')?.addEventListener('click', () => {
 
 document.getElementById('qs-tile-tilewin')?.addEventListener('click', () => {
   if (quickSettings) quickSettings.style.display = 'none';
+  syncTrayFlyoutButtonStates();
   autoTileOpenWindows();
+});
+
+const volumeSlider = document.getElementById('qs-volume-slider') as HTMLInputElement | null;
+volumeSlider?.addEventListener('input', () => {
+  const nextVol = Math.max(0, Math.min(100, Number(volumeSlider.value) || 0));
+  systemRegistry.masterVolume = nextVol;
+  systemRegistry.audioEnabled = nextVol > 0;
+  applySystemRegistryToOS();
+  renderMasterSettingsCurrentTab();
 });
 
 const brightnessSlider = document.getElementById('qs-brightness-slider') as HTMLInputElement | null;
