@@ -19,6 +19,7 @@ import {
   savePartitionTable,
   SoftwarePackage,
 } from './osSystemCore';
+import { logHardwareEvent, logVfsEvent } from './osSystemLogs';
 import {
   applySystemRegistryToOS,
   getOsBridge,
@@ -925,6 +926,7 @@ export function initFdiskController(): void {
     systemRegistry.primaryPartitionSizeMB = requested;
     applySystemRegistryToOS();
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', `Created Primary DOS Partition C:\\ (${requested} MB, ${systemRegistry.fileSystemFormat}, Active)`, 'OK', '0x2030');
     renderFdiskScreen();
     setFdiskConsoleLog(`Created Primary DOS Partition C: (${requested} MB, Active). Run "FORMAT C: /S" or "Launch OS Setup" to write system tracks!`);
     notifyFdiskGuideAfterAction(0);
@@ -938,6 +940,7 @@ export function initFdiskController(): void {
     partitionTable.primaryC.active = false;
     partitionTable.primaryC.formatted = false;
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', 'Deleted Primary DOS Partition C:\\ — drive unbootable until recreated', 'WARN', '0x2031');
     renderFdiskScreen();
     setFdiskConsoleLog('WARNING: Primary DOS Partition C: deleted! System will halt on next BIOS boot until C: is recreated and formatted.');
   });
@@ -949,6 +952,7 @@ export function initFdiskController(): void {
     }
     partitionTable.primaryC.active = typeof forceActive === 'boolean' ? forceActive : !partitionTable.primaryC.active;
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', `Partition C:\\ active boot flag set to ${partitionTable.primaryC.active ? '0x80 ACTIVE' : '0x00 INACTIVE'}`, partitionTable.primaryC.active ? 'OK' : 'WARN', '0x2032');
     renderFdiskScreen();
     setFdiskConsoleLog(
       partitionTable.primaryC.active
@@ -979,6 +983,7 @@ export function initFdiskController(): void {
     systemRegistry.enableSecondaryDriveD = true;
     applySystemRegistryToOS();
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', `Created & mounted Logical DOS Drive D:\\ (${rem} MB ${systemRegistry.fileSystemFormat})`, 'OK', '0x2033');
     renderFdiskScreen();
     setFdiskConsoleLog(`Created & formatted Extended Logical DOS Drive D: (${rem} MB · ${systemRegistry.fileSystemFormat}). Mounted in My Gemtop!`);
     notifyFdiskGuideAfterAction(2);
@@ -989,6 +994,7 @@ export function initFdiskController(): void {
   bind('fdisk-delete-d-btn', () => {
     partitionTable.logicalD.exists = false;
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', 'Removed Logical DOS Drive D:\\ — space returned to unallocated cylinders', 'WARN', '0x2034');
     renderFdiskScreen();
     setFdiskConsoleLog('Logical DOS Drive D: removed. Freed space returned to Unallocated pool.');
   });
@@ -998,6 +1004,7 @@ export function initFdiskController(): void {
     bridge?.sfx.playFloppySeek();
     partitionTable.mbrSignatureValid = true;
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', 'Wrote x86 Master Boot Record (446-byte loader + 0x55AA signature) to Cylinder 0 Head 0 Sector 1', 'OK', '0x2035');
     renderFdiskScreen();
     setFdiskConsoleLog('FDISK /MBR: Wrote clean 446-byte x86 bootstrap code + 0x55AA signature to Cylinder 0, Head 0, Sector 1.');
     notifyFdiskGuideAfterAction(3);
@@ -1009,6 +1016,7 @@ export function initFdiskController(): void {
     getOsBridge()?.sfx.playChordError();
     partitionTable.mbrSignatureValid = false;
     savePartitionTable(partitionTable);
+    logHardwareEvent('FDISK.EXE', 'Zeroed MBR boot signature (0x0000) — BIOS boot check will halt', 'ERR', '0x2036');
     renderFdiskScreen();
     setFdiskConsoleLog('Zeroed MBR boot signature (0x0000). Rebooting now will trigger BIOS "Missing operating system" hardware halt!');
   });
@@ -1036,6 +1044,7 @@ export function initFdiskController(): void {
         partitionTable.primaryC.fileSystem = systemRegistry.fileSystemFormat;
         partitionTable.mbrSignatureValid = true;
         savePartitionTable(partitionTable);
+        logVfsEvent('WRITE', 'C:\\', `FORMAT C: /S completed (${partitionTable.primaryC.sizeMB}MB ${systemRegistry.fileSystemFormat}, IO.SYS + MSDOS.SYS + COMMAND.COM transferred)`, 'OK');
         renderFdiskScreen();
         setFdiskConsoleLog('Format complete! System transferred (IO.SYS, MSDOS.SYS, COMMAND.COM). Partition C: is bootable.');
         notifyFdiskGuideAfterAction(4);

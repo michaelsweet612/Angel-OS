@@ -1,5 +1,6 @@
 import { fetchLivePageClientSide, isBrowseBackendMissing, markBrowseBackend, type StaticWebResult } from './osStaticWeb';
 import { mountForeignInstallerBar } from './osForeignRuntime';
+import { logAppEvent } from './osSystemLogs';
 import {
   APP_SVG_ICONS,
   BrowserAiEra,
@@ -2096,6 +2097,7 @@ export function uninstallSoftwarePackage(pkg: SoftwarePackage): void {
 
   pkg.installed = false;
   savePackageCatalog(packageCatalog);
+  logAppEvent('UNINSTALL', pkg.name, `Removed ${pkg.exeName} from ${pkg.installDir} (${pkg.sizeMB.toFixed(1)} MB freed)`, 'WARN');
   applySystemRegistryToOS();
   renderAbilityToInstallUI();
   renderMasterSettingsCurrentTab();
@@ -2287,6 +2289,7 @@ export function openInstallShieldWizard(pkg: SoftwarePackage, mode: 'install' | 
           applySystemRegistryToOS();
           renderAbilityToInstallUI();
           renderMasterSettingsCurrentTab();
+          logAppEvent('INSTALL', pkg.name, `${mode === 'reinstall' ? 'Reinstalled' : 'Installed'} ${pkg.exeName} -> ${pkg.installDir} (${pkg.sizeMB.toFixed(1)} MB)`, 'OK');
           bridgeRef?.sfx.playAimReceive();
 
           step = 5;

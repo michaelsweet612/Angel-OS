@@ -7,6 +7,12 @@ import {
   initSoundStudioMicControls,
   openMediaPermissionsModal,
 } from './osMediaDevices';
+import {
+  initSystemLogsComponent,
+  logLegacyOsEvent,
+  logVfsEvent,
+  refreshSystemLogsView,
+} from './osSystemLogs';
 
 export interface MegaBridge {
   openApp: (appName: string, bypassPkgCheck?: boolean) => Promise<void>;
@@ -2079,6 +2085,7 @@ function renderRecycleBinUI(): void {
       if (idx !== -1) {
         const [item] = recycleBinItems.splice(idx, 1);
         megaBridge?.addVfsFile(item.name, item.type, item.originalParent, item.content);
+        logVfsEvent('RESTORE', `${item.originalParent}\\${item.name}`, 'Restored from C:\\RECYCLED', 'OK');
         megaBridge?.refreshExplorerIfOpen();
         unlockAchievement('recycle_cleaner');
         renderRecycleBinUI();
@@ -2092,8 +2099,10 @@ export function initRecycleBinApp(windowElement: HTMLDivElement): void {
   renderRecycleBinUI();
   windowElement.querySelector('#recycle-empty-btn')?.addEventListener('click', () => {
     if (recycleBinItems.length === 0) return;
+    const count = recycleBinItems.length;
     playTone(180, 0.08, 'sawtooth', 0.05, 90);
     recycleBinItems.length = 0;
+    logVfsEvent('DELETE', 'C:\\RECYCLED\\*', `Permanently shredded ${count} deleted object(s)`, 'WARN');
     renderRecycleBinUI();
     unlockAchievement('recycle_cleaner');
     pushBalloonToast('Recycle Bin Emptied', 'All deleted files permanently shredded!', '🗑️');
@@ -2101,10 +2110,12 @@ export function initRecycleBinApp(windowElement: HTMLDivElement): void {
 
   windowElement.querySelector('#recycle-restore-all-btn')?.addEventListener('click', () => {
     if (recycleBinItems.length === 0) return;
+    const count = recycleBinItems.length;
     while (recycleBinItems.length > 0) {
       const item = recycleBinItems.pop()!;
       megaBridge?.addVfsFile(item.name, item.type, item.originalParent, item.content);
     }
+    logVfsEvent('RESTORE', 'C:\\RECYCLED\\*', `Restored all ${count} item(s) to original directories`, 'OK');
     megaBridge?.refreshExplorerIfOpen();
     renderRecycleBinUI();
     unlockAchievement('recycle_cleaner');
@@ -2345,6 +2356,8 @@ export function executeRunCommand(raw: string): boolean {
     eventvwr: 'sysLogsApp',
     logs: 'sysLogsApp',
     syslogs: 'sysLogsApp',
+    bootlog: 'sysLogsApp',
+    vfslog: 'sysLogsApp',
     notepad: 'notepad',
     angelnotes: 'notepad',
     gemnotes: 'notepad',
@@ -2449,91 +2462,9 @@ export function openHotkeysModal(): void {
   if (modal) modal.style.display = 'flex';
 }
 
-// ==================== 13. ANGEL-OS SYSTEM LOGS & EVENT VIEWER (EVENTVWR.EXE) ====================
+// ==================== 13. SYSTEM LOGS BRIDGE (DELEGATES TO osSystemLogs.ts) ====================
 export type OsLogCategory = 'KERNEL' | 'APP' | 'SETUP' | 'TERMINAL' | 'NETWORK' | 'AUDIO' | 'SECURITY';
 export type OsLogLevel = 'INFO' | 'WARN' | 'ERROR';
-
-export interface OsLogEntry {
-  id: number;
-  eventId: number;
-  timestamp: string;
-  category: OsLogCategory;
-  source: string;
-  level: OsLogLevel;
-  message: string;
-}
-
-const osEventLogs: OsLogEntry[] = [
-  {
-    id: 1,
-    eventId: 1000,
-    timestamp: new Date(Date.now() - 48000).toLocaleTimeString(),
-    category: 'KERNEL',
-    source: 'AWARD_BIOS',
-    level: 'INFO',
-    message: 'Award Modular BIOS v4.51PG POST OK — Primary Master Quantum Fireball 1995MB IDE detected.',
-  },
-  {
-    id: 2,
-    eventId: 1004,
-    timestamp: new Date(Date.now() - 42000).toLocaleTimeString(),
-    category: 'KERNEL',
-    source: 'IO.SYS',
-    level: 'INFO',
-    message: 'MS-DOS 7.00 / Angel-OS 95 Protected-Mode VMM32.VXD initialized (64 MB EDO RAM mapped).',
-  },
-  {
-    id: 3,
-    eventId: 2010,
-    timestamp: new Date(Date.now() - 36000).toLocaleTimeString(),
-    category: 'AUDIO',
-    source: 'SB16_DSP.VXD',
-    level: 'INFO',
-    message: 'Creative Sound Blaster 16 ASP initialized at Port 220h, IRQ 5, DMA 1 (16-Bit DAC ready).',
-  },
-  {
-    id: 4,
-    eventId: 3042,
-    timestamp: new Date(Date.now() - 28000).toLocaleTimeString(),
-    category: 'NETWORK',
-    source: 'CLOUDFLARE_PROXY',
-    level: 'INFO',
-    message: 'Angel-OS Live Web Tunnel (/api/web-proxy) bound on port 3000 — X-Frame-Options stripper active.',
-  },
-  {
-    id: 5,
-    eventId: 4095,
-    timestamp: new Date(Date.now() - 19000).toLocaleTimeString(),
-    category: 'SETUP',
-    source: 'APPWIZ.CPL',
-    level: 'INFO',
-    message: 'Mounted Angel-OS Software Repository with 157 packages (21 core + 136 expansion apps).',
-  },
-  {
-    id: 6,
-    eventId: 5001,
-    timestamp: new Date(Date.now() - 11000).toLocaleTimeString(),
-    category: 'APP',
-    source: 'ANGEL_PILOT.EXE',
-    level: 'WARN',
-    message: 'Angel Pilot loaded with 0.0% AI brain cells ("Sorry, I am way too lazy to help with that").',
-  },
-  {
-    id: 7,
-    eventId: 1095,
-    timestamp: new Date(Date.now() - 4000).toLocaleTimeString(),
-    category: 'KERNEL',
-    source: 'EXPLORER.EXE',
-    level: 'INFO',
-    message: 'Angel-OS 95 Desktop Shell ready. User profile: ANGEL (Administrator).',
-  },
-];
-
-let nextLogId = 8;
-let selectedLogEntryId = 7;
-let activeLogCatFilter: 'ALL' | OsLogCategory = 'ALL';
-let activeLogLevelFilter: 'ALL' | OsLogLevel = 'ALL';
-let activeLogSearch = '';
 
 export function logOsEvent(
   category: OsLogCategory,
@@ -2541,159 +2472,18 @@ export function logOsEvent(
   message: string,
   level: OsLogLevel = 'INFO',
 ): void {
-  const entry: OsLogEntry = {
-    id: nextLogId++,
-    eventId: 1000 + ((nextLogId * 137) % 8999),
-    timestamp: new Date().toLocaleTimeString(),
-    category,
-    source,
-    level,
-    message,
-  };
-  osEventLogs.unshift(entry);
-  if (osEventLogs.length > 250) osEventLogs.pop();
-  selectedLogEntryId = entry.id;
-  renderSysLogsUI();
+  logLegacyOsEvent(category, source, message, level);
 }
 
 // Expose globally for other modules
 (window as any).__logOsEvent = logOsEvent;
 
 export function renderSysLogsUI(): void {
-  const tbody = document.getElementById('syslogs-tbody');
-  const detailEl = document.getElementById('syslogs-detail-box');
-  const countEl = document.getElementById('syslogs-status-count');
-  if (!tbody) return;
-
-  const q = activeLogSearch.trim().toLowerCase();
-  const filtered = osEventLogs.filter((e) => {
-    if (activeLogCatFilter !== 'ALL' && e.category !== activeLogCatFilter) return false;
-    if (activeLogLevelFilter !== 'ALL' && e.level !== activeLogLevelFilter) return false;
-    if (q) {
-      return (
-        e.message.toLowerCase().includes(q) ||
-        e.source.toLowerCase().includes(q) ||
-        e.category.toLowerCase().includes(q) ||
-        String(e.eventId).includes(q)
-      );
-    }
-    return true;
-  });
-
-  if (countEl) {
-    const errCount = osEventLogs.filter((x) => x.level === 'ERROR').length;
-    const warnCount = osEventLogs.filter((x) => x.level === 'WARN').length;
-    countEl.textContent = `Showing ${filtered.length} / ${osEventLogs.length} Events · Errors: ${errCount} · Warnings: ${warnCount}`;
-  }
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:14px;color:#555;">No system log events match the current filter.</td></tr>';
-    if (detailEl) detailEl.textContent = 'Select an event row above to inspect Win32 Event Viewer hex dump and telemetry.';
-    return;
-  }
-
-  if (!filtered.some((x) => x.id === selectedLogEntryId)) {
-    selectedLogEntryId = filtered[0].id;
-  }
-
-  tbody.innerHTML = filtered
-    .map((e) => {
-      const badgeCol = e.level === 'ERROR' ? '#cc0000' : e.level === 'WARN' ? '#995500' : '#000080';
-      const badgeIcon = e.level === 'ERROR' ? '🛑' : e.level === 'WARN' ? '⚠️' : 'ℹ️';
-      const isSel = e.id === selectedLogEntryId;
-      return `<tr class="syslogs-row ${isSel ? 'selected' : ''}" data-logid="${e.id}" style="cursor:pointer;${isSel ? 'background:#000080;color:#fff;' : ''}">
-        <td style="color:${isSel ? '#fff' : badgeCol};font-weight:700;">${badgeIcon} ${e.level}</td>
-        <td class="tabular-nums">${escapeHtml(e.timestamp)}</td>
-        <td><b>${escapeHtml(e.category)}</b></td>
-        <td style="font-family:'IBM Plex Mono',monospace;">${escapeHtml(e.source)}</td>
-        <td>${escapeHtml(e.message)}</td>
-      </tr>`;
-    })
-    .join('');
-
-  tbody.querySelectorAll('.syslogs-row').forEach((row) => {
-    row.addEventListener('click', () => {
-      selectedLogEntryId = Number((row as HTMLElement).dataset.logid);
-      renderSysLogsUI();
-    });
-  });
-
-  const sel = osEventLogs.find((x) => x.id === selectedLogEntryId) || filtered[0];
-  if (sel && detailEl) {
-    const hexBytes = Array.from(sel.message.slice(0, 24))
-      .map((c) => c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'))
-      .join(' ');
-    detailEl.innerHTML = `<b>Event ID #${sel.eventId}</b> · Category: <b>${sel.category}</b> · Source: <b>${escapeHtml(sel.source)}</b> · Time: <b>${escapeHtml(sel.timestamp)}</b> · Computer: <b>ANGEL-PC95</b><br/>Description: ${escapeHtml(sel.message)}<br/><span style="color:#555;">0000: ${hexBytes}</span>`;
-  }
+  refreshSystemLogsView();
 }
 
 export function initSysLogsApp(windowElement: HTMLDivElement): void {
-  windowElement.querySelectorAll('.syslogs-cat-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      megaBridge?.sfx.playClick();
-      windowElement.querySelectorAll('.syslogs-cat-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeLogCatFilter = ((btn as HTMLElement).dataset.lcat as any) || 'ALL';
-      renderSysLogsUI();
-    });
-  });
-
-  const lvlSelect = windowElement.querySelector('#syslogs-level-select') as HTMLSelectElement | null;
-  lvlSelect?.addEventListener('change', () => {
-    activeLogLevelFilter = (lvlSelect.value as any) || 'ALL';
-    renderSysLogsUI();
-  });
-
-  const searchIn = windowElement.querySelector('#syslogs-search-input') as HTMLInputElement | null;
-  searchIn?.addEventListener('input', () => {
-    activeLogSearch = searchIn.value;
-    renderSysLogsUI();
-  });
-
-  windowElement.querySelector('#syslogs-sim-btn')?.addEventListener('click', () => {
-    megaBridge?.sfx.playClick();
-    const samples: Array<{ c: OsLogCategory; s: string; m: string; l: OsLogLevel }> = [
-      { c: 'KERNEL', s: 'VMM32.VXD', m: 'Paged 1,024 KB inactive memory blocks to C:\\WIN386.SWP.', l: 'INFO' },
-      { c: 'NETWORK', s: 'WINSOCK.DLL', m: 'TCP/IP keep-alive ACK received from Cloudflare Web Proxy.', l: 'INFO' },
-      { c: 'AUDIO', s: 'SB16_DSP.VXD', m: 'DMA channel 1 buffer underrun recovered automatically.', l: 'WARN' },
-      { c: 'SECURITY', s: 'SAM_AUTH', m: 'Verified Administrator token for user ANGEL on local console.', l: 'INFO' },
-    ];
-    const pick = samples[Math.floor(Math.random() * samples.length)];
-    logOsEvent(pick.c, pick.s, pick.m, pick.l);
-  });
-
-  windowElement.querySelector('#syslogs-export-vfs-btn')?.addEventListener('click', () => {
-    megaBridge?.sfx.playClick();
-    const text = osEventLogs
-      .map((e) => `[${e.timestamp}] [${e.level}] [${e.category}/${e.source}] (EventID ${e.eventId}) ${e.message}`)
-      .join('\r\n');
-    megaBridge?.addVfsFile('ANGEL_SYSTEM95.LOG', 'text', 'C:\\Documents', text);
-    megaBridge?.refreshExplorerIfOpen();
-    pushBalloonToast('System Logs Saved', 'Exported ANGEL_SYSTEM95.LOG to C:\\Documents!', '📜');
-  });
-
-  windowElement.querySelector('#syslogs-download-btn')?.addEventListener('click', () => {
-    megaBridge?.sfx.playClick();
-    const text = osEventLogs
-      .map((e) => `[${e.timestamp}] [${e.level}] [${e.category}/${e.source}] (EventID ${e.eventId}) ${e.message}`)
-      .join('\r\n');
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ANGEL_OS_95_SYSTEM.LOG';
-    a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-  });
-
-  windowElement.querySelector('#syslogs-clear-btn')?.addEventListener('click', () => {
-    megaBridge?.sfx.playClick();
-    osEventLogs.length = 0;
-    logOsEvent('KERNEL', 'EVENTVWR.EXE', 'System event log cleared by user ANGEL.', 'INFO');
-    renderSysLogsUI();
-  });
-
-  renderSysLogsUI();
+  initSystemLogsComponent(windowElement);
 }
 
 // ==================== 14. UNIVERSAL WIN32 APP HOST FOR ALL 136+ INSTALLABLE CATALOG APPS ====================

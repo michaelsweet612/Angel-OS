@@ -1045,6 +1045,14 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #0f172a, #475569)">⚡</div>
           <span>Task Manager</span>
         </div>
+        <div class="icon" data-app="sysLogsApp">
+          <img
+            data-icon-key="sysLogsApp"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3C/svg%3E"
+            alt="System Logs"
+          />
+          <span>System Logs</span>
+        </div>
         <div class="icon" data-app="clipViewer">
           <div class="mega-icon-tile" style="background: linear-gradient(135deg, #0369a1, #38bdf8)">📋</div>
           <span>Clipboard 95</span>
@@ -2097,6 +2105,77 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         </div>
       </div>
 
+      <!-- 20B. SYSTEM LOGS RETRO TEXT VIEWER (SYSLOGS.EXE) -->
+      <div class="window resizable" id="sysLogsApp" style="width: 700px; height: 460px">
+        <div class="window-titlebar">
+          <span class="window-title" id="syslogs-window-title">System Logs — SYSLOG.LOG (C:\WINDOWS\LOGS\SYSLOG.LOG)</span>
+          <div class="window-controls">
+            <div class="window-minimize window-control-button" title="Minimize">−</div>
+            <div class="window-maximize window-control-button" title="Maximize">□</div>
+            <div class="window-close window-control-button" title="Close">✕</div>
+          </div>
+        </div>
+        <div class="window-content syslogs-wrapper">
+          <div class="syslogs-toolbar">
+            <input
+              type="text"
+              id="syslogs-search-input"
+              class="win95-text-input syslogs-search-input"
+              placeholder="Search logs (app, path, BIOS, event ID)..."
+              autocomplete="off"
+            />
+            <select id="syslogs-level-select" class="win95-select syslogs-level-select" title="Filter log severity">
+              <option value="ALL">All Levels</option>
+              <option value="INFO">INFO</option>
+              <option value="OK">OK</option>
+              <option value="WARN">WARN</option>
+              <option value="ERR">ERR</option>
+            </select>
+            <div class="syslogs-theme-group" role="group" aria-label="Log viewer theme">
+              <button type="button" class="win95-btn syslogs-theme-btn active" data-log-theme="notepad" aria-pressed="true" title="Classic Notepad White">White</button>
+              <button type="button" class="win95-btn syslogs-theme-btn" data-log-theme="crt-green" aria-pressed="false" title="CRT Green Phosphor">CRT</button>
+              <button type="button" class="win95-btn syslogs-theme-btn" data-log-theme="amber" aria-pressed="false" title="Amber Monochrome">Amber</button>
+            </div>
+            <button type="button" class="win95-btn syslogs-toggle-btn active" id="syslogs-follow-btn" aria-pressed="true" title="Pause or resume auto-scroll">Follow: On</button>
+            <button type="button" class="win95-btn syslogs-toggle-btn" id="syslogs-wrap-btn" aria-pressed="false" title="Toggle line wrapping">Wrap: Off</button>
+            <button type="button" class="win95-btn" id="syslogs-save-vfs-btn" title="Save active .LOG file to C:\Documents">Save C:\</button>
+            <button type="button" class="win95-btn" id="syslogs-download-btn" title="Download .LOG file">Export</button>
+            <button type="button" class="win95-btn syslogs-clear-btn" id="syslogs-clear-btn" title="Clear log buffer">Clear</button>
+          </div>
+          <div class="syslogs-tabs" role="tablist" aria-label="System log files">
+            <button type="button" class="syslogs-file-tab active" role="tab" aria-selected="true" data-log-file="ALL">
+              <span>SYSLOG.LOG</span> <span class="syslogs-tab-count tabular-nums">(0)</span>
+            </button>
+            <button type="button" class="syslogs-file-tab" role="tab" aria-selected="false" data-log-file="BOOT">
+              <span>BOOTLOG.TXT</span> <span class="syslogs-tab-count tabular-nums">(0)</span>
+            </button>
+            <button type="button" class="syslogs-file-tab" role="tab" aria-selected="false" data-log-file="APPS">
+              <span>APPLOG.TXT</span> <span class="syslogs-tab-count tabular-nums">(0)</span>
+            </button>
+            <button type="button" class="syslogs-file-tab" role="tab" aria-selected="false" data-log-file="VFS">
+              <span>VFSIO.LOG</span> <span class="syslogs-tab-count tabular-nums">(0)</span>
+            </button>
+            <button type="button" class="syslogs-file-tab" role="tab" aria-selected="false" data-log-file="HW">
+              <span>HWINIT.LOG</span> <span class="syslogs-tab-count tabular-nums">(0)</span>
+            </button>
+          </div>
+          <div class="syslogs-viewport-shell" id="syslogs-viewport-shell" data-theme="notepad">
+            <div class="syslogs-scroll-area" id="syslogs-scroll-area" role="log" aria-live="polite" tabindex="0">
+              <pre class="syslogs-file-header" id="syslogs-file-header"></pre>
+              <div class="syslogs-lines" id="syslogs-lines"></div>
+            </div>
+            <div class="syslogs-paused-bar" id="syslogs-paused-bar" style="display: none">
+              <span id="syslogs-paused-count" class="tabular-nums">+0 new lines buffered</span>
+              <button type="button" class="win95-btn syslogs-jump-btn" id="syslogs-jump-bottom-btn">Jump to Latest</button>
+            </div>
+          </div>
+          <div class="window-statusbar syslogs-statusbar">
+            <span id="syslogs-status-left" class="tabular-nums">C:\WINDOWS\LOGS\SYSLOG.LOG · 0 / 0 lines</span>
+            <span id="syslogs-status-right" class="tabular-nums">Notepad White · Follow Tail</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 21. RECYCLE BIN 95 (RECYCLE.EXE) -->
       <div class="window resizable" id="recycleBin" style="width: 520px; height: 350px">
         <div class="window-titlebar">
@@ -2478,6 +2557,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
         <div class="ctx-item" data-action="open-display">⚙️ Master Settings &amp; Control Panel...</div>
         <div class="ctx-item" data-action="open-regedit">🗂️ Open REGEDIT.EXE</div>
         <div class="ctx-item" data-action="open-taskmgr">⚡ Task Manager (Ctrl+Shift+Esc)</div>
+        <div class="ctx-item" data-action="open-syslogs">📜 System Logs (SYSLOG.LOG)</div>
         <div class="ctx-item" data-action="open-run">🏃 Run Command... (Alt+R)</div>
         <div class="ctx-divider"></div>
         <div class="ctx-item" data-action="spawn-sticky">📌 New Desktop Sticky Note</div>
@@ -2550,6 +2630,10 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <button type="button" class="start-tile-btn start-menu-item" data-app="taskManager">
               <img data-icon-key="taskManager" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Task Manager" />
               <span>Task Mgr</span>
+            </button>
+            <button type="button" class="start-tile-btn start-menu-item" data-app="sysLogsApp">
+              <img data-icon-key="sysLogsApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="System Logs" />
+              <span>Sys Logs</span>
             </button>
             <button type="button" class="start-tile-btn start-menu-item" data-app="calcApp">
               <img data-icon-key="calcApp" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Calculator" />
@@ -2654,6 +2738,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="myComputer">💻 File Explorer (My Gemtop)</div>
             <div class="start-menu-item" data-app="dosPrompt">📟 MS-DOS Prompt (COMMAND.COM)</div>
             <div class="start-menu-item" data-app="taskManager">⚡ Task Manager (TASKMGR.EXE)</div>
+            <div class="start-menu-item" data-app="sysLogsApp">📜 System Logs (SYSLOG.LOG / BOOTLOG.TXT)</div>
             <div class="start-menu-item" data-app="regedit" data-pkg-id="sys_regedit">🗂️ Registry Editor (REGEDIT.EXE)</div>
             <div class="start-menu-item" data-app="perfAdjust" data-pkg-id="sys_perf_adjust">🎛️ Performance &amp; Adjustment Levels</div>
             <div class="start-menu-item" data-app="sysMonitor" data-pkg-id="sys_monitor">📊 System Resource Monitor</div>

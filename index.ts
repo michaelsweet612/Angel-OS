@@ -103,6 +103,14 @@ import {
   triggerBsodPrank,
   unlockAchievement,
 } from './osMegaFeatures';
+import {
+  initSystemLogsComponent,
+  logAppEvent,
+  logBootEvent,
+  logHardwareEvent,
+  logVfsEvent,
+  registerSystemLogsBridge,
+} from './osSystemLogs';
 
 // --- Web Audio API Retro Windows 95 Sound Blaster 16 DSP Engine ---
 class RetroSoundEngine {
@@ -593,6 +601,7 @@ const FACTORY_VFS_SNAPSHOT: VfsItem[] = virtualFileSystem.map((item) => ({ ...it
 function resetVfsToFactory() {
   virtualFileSystem.length = 0;
   FACTORY_VFS_SNAPSHOT.forEach((item) => virtualFileSystem.push({ ...item }));
+  logVfsEvent('RESET', 'C:\\', `Restored ${virtualFileSystem.length} factory VFS items`, 'WARN');
 }
 
 function hydrateSvgIcons(): void {
@@ -856,6 +865,7 @@ function getAppDockMeta(appName: string): { icon: string; title: string } {
     cameraApp: 'Camera App',
     calendarApp: 'Calendar 95',
     taskManager: 'Task Manager',
+    sysLogsApp: 'System Logs',
     recycleBin: 'Recycle Bin',
     clipViewer: 'Clipboard 95',
     trophiesApp: 'Trophy Vault',
@@ -1139,6 +1149,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     windowElement.style.display = 'flex';
     clampWindowToViewport(windowElement, true);
     bringToFront(windowElement);
+    if (appName !== 'sysLogsApp') {
+      logAppEvent('FOCUS', getAppDockMeta(appName).title, `window=#${appName}`);
+    }
     if (appName === 'myComputer') renderExplorerFolder(currentExplorerPath);
     if (appName === 'chrome') syncBrowserChromeToEngine();
     if (appName === 'minesweeper') resumeMinesweeperTimer?.();
@@ -1158,6 +1171,7 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   bringToFront(windowElement);
   syncTaskbarDock();
   updateVirtualDesktopCounts();
+  logAppEvent('LAUNCH', getAppDockMeta(appName).title, `window=#${appName} desktop=${currentVirtualDesktop}`, 'OK');
 
   // Initialize specific app logic once or refresh as needed
   if (appName === 'myComputer') {
@@ -1194,6 +1208,11 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
         saveSystemRegistry(systemRegistry);
         applySystemRegistryToOS();
         renderMasterSettingsCurrentTab();
+        logHardwareEvent(
+          'PERF_CTRL',
+          `Hardware profile updated: ${systemRegistry.perfProfile.toUpperCase()} · CPU ${systemRegistry.perfCpuScalePct}% · ${systemRegistry.perfVoltageMv}mV · Fan ${systemRegistry.perfFanMode}`,
+          'OK',
+        );
       },
       onOpenBios: () => openCmosBiosSetup(),
       onOpenSysMonitor: () => {
@@ -1272,6 +1291,9 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
   } else if (appName === 'foreignRunnerApp' && !initializedApps.has('foreignRunnerApp')) {
     initializedApps.add('foreignRunnerApp');
     initForeignRunnerApp(windowElement);
+  } else if (appName === 'sysLogsApp') {
+    initializedApps.add('sysLogsApp');
+    initSystemLogsComponent(windowElement);
   }
 }
 
@@ -1286,6 +1308,7 @@ function closeApp(appName: string): void {
   openApps.delete(appName);
   minimizedApps.delete(appName);
   appDesktopMap.delete(appName);
+  logAppEvent('CLOSE', getAppDockMeta(appName).title, `window=#${appName}`);
 
   if (appName === 'cameraApp') {
     stopCameraAppStreams();
@@ -1366,6 +1389,7 @@ function minimizeApp(appName: string): void {
   windowEl.style.display = 'none';
   windowEl.classList.remove('active');
   minimizedApps.add(appName);
+  logAppEvent('MINIMIZE', getAppDockMeta(appName).title, `window=#${appName}`);
 
   if (activeWindow === windowEl) {
     activeWindow = null;
@@ -1461,6 +1485,7 @@ function renderExplorerFolder(pathStr: string) {
 }
 
 function openTextFileInNotepad(filename: string, content: string) {
+  logVfsEvent('READ', filename, `${content.length} chars opened in GemNotes`);
   openApp('notepad').then(() => {
     const textarea = document.querySelector('#notepad .notepad-textarea') as HTMLTextAreaElement | null;
     const titleEl = document.getElementById('notepad-window-title');
@@ -1473,6 +1498,7 @@ function openTextFileInNotepad(filename: string, content: string) {
 }
 
 function openImageFileInViewer(filename: string, dataUrl: string) {
+  logVfsEvent('READ', filename, 'Opened image in Image Viewer');
   const imageViewerImg = document.getElementById('image-viewer-img') as HTMLImageElement | null;
   const imageViewerTitle = document.getElementById('image-viewer-title') as HTMLSpanElement | null;
   if (imageViewerImg && imageViewerTitle) {
@@ -1526,6 +1552,7 @@ function initMyComputer(windowElement: HTMLDivElement): void {
       parent: currentExplorerPath,
       content: `Created in ${currentExplorerPath} on ${new Date().toLocaleTimeString()}\n\nWrite your retro notes here!`,
     });
+    logVfsEvent('CREATE', `${currentExplorerPath.replace(/\\$/, '')}\\${name}`, 'Created text document from Explorer', 'OK');
     renderExplorerFolder(currentExplorerPath);
     openTextFileInNotepad(name, `Created in ${currentExplorerPath}\n\nWrite your retro notes here!`);
   });
@@ -1645,6 +1672,7 @@ function initNotepadStory(windowElement: HTMLDivElement): void {
       parent: 'C:\\Documents',
       content: textarea.value,
     });
+    logVfsEvent('WRITE', `C:\\Documents\\${fileName}`, `${textarea.value.length} bytes saved from GemNotes`, 'OK');
     if (titleEl) titleEl.textContent = `GemNotes — ${fileName}`;
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
     showOsDialog(`Saved "${fileName}" to C:\\Documents! You can open it anytime from My Gemtop.`, 'GemNotes Saved');
@@ -1991,6 +2019,7 @@ function initSimplePaintApp(windowElement: HTMLDivElement): void {
       parent: 'C:\\Pictures',
       content: canvas.toDataURL('image/png'),
     });
+    logVfsEvent('WRITE', `C:\\Pictures\\${fileName}`, 'PNG image saved from GemPaint 95', 'OK');
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
     showOsDialog(`Saved "${fileName}" to C:\\Pictures! Open My Gemtop to view it anytime.`, 'GemPaint Saved');
   });
@@ -2093,6 +2122,7 @@ function initGeminiChat(windowElement: HTMLDivElement): void {
       .join('\n');
     const fname = `AIM_CHAT_${Math.floor(100 + Math.random() * 900)}.TXT`;
     virtualFileSystem.push({ name: fname, type: 'text', parent: 'C:\\Documents', content: transcript });
+    logVfsEvent('WRITE', `C:\\Documents\\${fname}`, `${transcript.length} bytes exported from Gemini AIM`, 'OK');
     openTextFileInNotepad(fname, transcript);
   });
 
@@ -3453,6 +3483,12 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
       'CALENDAR.EXE': 'calendarApp',
       TASKMGR: 'taskManager',
       'TASKMGR.EXE': 'taskManager',
+      LOGS: 'sysLogsApp',
+      SYSLOGS: 'sysLogsApp',
+      'SYSLOGS.EXE': 'sysLogsApp',
+      EVENTVWR: 'sysLogsApp',
+      'EVENTVWR.EXE': 'sysLogsApp',
+      BOOTLOG: 'sysLogsApp',
       RECYCLE: 'recycleBin',
       CLIPBRD: 'clipViewer',
       TROPHIES: 'trophiesApp',
@@ -3567,6 +3603,10 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
         CARDS: 'hockeyCardsApp',
         CALENDAR: 'calendarApp',
         TASKMGR: 'taskManager',
+        LOGS: 'sysLogsApp',
+        SYSLOGS: 'sysLogsApp',
+        EVENTVWR: 'sysLogsApp',
+        BOOTLOG: 'sysLogsApp',
         RECYCLE: 'recycleBin',
         CLIPBOARD: 'clipViewer',
         TROPHIES: 'trophiesApp',
@@ -4157,12 +4197,14 @@ document.getElementById('tray-crt-btn')?.addEventListener('click', () => {
   systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
   applySystemRegistryToOS();
   renderMasterSettingsCurrentTab();
+  logHardwareEvent('CRT_DISP', `CRT scanline shader ${systemRegistry.crtEnabled ? 'ENABLED' : 'DISABLED'} (pitch ${systemRegistry.crtScanlinePitch}px)`, 'INFO');
 });
 
 document.getElementById('tray-sound-btn')?.addEventListener('click', () => {
   systemRegistry.audioEnabled = !systemRegistry.audioEnabled;
   applySystemRegistryToOS();
   renderMasterSettingsCurrentTab();
+  logHardwareEvent('SB16_DSP.VXD', `Sound Blaster 16 master audio ${systemRegistry.audioEnabled ? 'UNMUTED' : 'MUTED'} (vol ${systemRegistry.masterVolume}%)`, systemRegistry.audioEnabled ? 'OK' : 'WARN');
   if (sfx.enabled) sfx.playClick();
 });
 
@@ -4240,6 +4282,7 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
     else if (action === 'install-from-pc') openForeignFilePicker();
     else if (action === 'open-regedit') openApp('regedit');
     else if (action === 'open-taskmgr') openApp('taskManager');
+    else if (action === 'open-syslogs') openApp('sysLogsApp');
     else if (action === 'open-run') openRunDialog();
     else if (action === 'spawn-sticky') spawnCustomStickyNote();
     else if (action === 'open-trophies') openApp('trophiesApp');
@@ -4490,6 +4533,7 @@ function finishBootToDesktop(bypassSignIn = false) {
   unlockAchievement('first_boot');
   syncLocalAccountStartPill();
   runStartupForeignPrograms();
+  logBootEvent('EXPLORER.EXE', `Desktop shell ready (${bootMgrSafeModeFlag ? 'Safe Mode' : 'Normal Mode'}) · Active account: ${systemRegistry.activeLocalAccount}`, 'OK', '0x1095');
   if (bootScreen) {
     bootScreen.classList.add('fade-out');
     const hideId = window.setTimeout(() => {
@@ -4513,11 +4557,13 @@ function startBootSplashStage(isSafeMode = false) {
   clearBootTimers();
   bootMgrSafeModeFlag = isSafeMode;
   bootState = 'splash';
+  logBootEvent('VMM32.VXD', `Protected-mode kernel splash started (${isSafeMode ? 'Safe Mode minimal drivers' : 'Full driver stack'})`, isSafeMode ? 'WARN' : 'OK', '0x1040');
   if (bootBiosStage) bootBiosStage.style.display = 'none';
   if (bootManagerStage) bootManagerStage.style.display = 'none';
   if (bootSplashStage) bootSplashStage.style.display = 'flex';
   if (systemRegistry.biosBootAudio) {
     sfx.playStartupChime();
+    logHardwareEvent('SB16_DSP.VXD', 'Synthesized startup chime via Web Audio DSP (16-bit DAC)', 'OK', '0x2018');
   }
   const biosZeroWait = isBiosZeroWaitPost();
   const splashDelay = biosZeroWait ? 450 : systemRegistry.biosQuickPost ? 1800 : isSafeMode ? 1200 : 2800;
@@ -4591,6 +4637,7 @@ function startBootWithAudio() {
   }
   if (!isPrimaryBootable()) {
     sfx.playChordError();
+    logBootEvent('AWARD_BIOS', 'DISK BOOT FAILURE — Missing active bootable partition on C:\\', 'ERR', '0x10E0');
     if (biosStatusLine) {
       biosStatusLine.style.color = '#ff5555';
       biosStatusLine.textContent =
@@ -4602,16 +4649,20 @@ function startBootWithAudio() {
   bootState = 'post_running';
   clearBootTimers();
 
+  const maxRamKb = getEffectiveRamMB() * 1024;
+  logBootEvent('AWARD_BIOS', `Power-On Self Test (POST) started — CPU: ${systemRegistry.cpuModel}, RAM: ${maxRamKb}K`, 'OK', '0x1002');
+  logHardwareEvent('MEM_CTRL', `Verified ${getEffectiveRamMB()} MB RAM (${systemRegistry.ramMode.toUpperCase()} mode) + ${systemRegistry.virtualSwapMB} MB WIN386.SWP`, 'OK', '0x2008');
+
   if (systemRegistry.audioEnabled) {
     sfx.enabled = true;
     sfx.playPostBeep();
+    logHardwareEvent('SB16_DSP.VXD', `PC Speaker POST beep OK — Sound Blaster 16 DSP initialized (${systemRegistry.dacBitDepth}-bit DAC)`, 'OK', '0x2012');
   }
 
   if (biosStatusLine) {
     biosStatusLine.textContent = 'POST OK — INITIALIZING SOUND BLASTER 16 & BOOT MANAGER...';
   }
 
-  const maxRamKb = getEffectiveRamMB() * 1024;
   if (systemRegistry.biosQuickPost) {
     if (biosRamCounter) biosRamCounter.textContent = `${maxRamKb}K OK (QUICK POST · ${systemRegistry.ramMode.toUpperCase()})`;
   } else {
@@ -4626,7 +4677,10 @@ function startBootWithAudio() {
     };
     if (biosRamCounter) biosRamCounter.textContent = `${ram}K`;
     bootTimeouts.push(window.setTimeout(ramStep, 90));
-    bootTimeouts.push(window.setTimeout(() => sfx.playFloppySeek(), 180));
+    bootTimeouts.push(window.setTimeout(() => {
+      sfx.playFloppySeek();
+      logHardwareEvent('FDC_A0', '3.5" 1.44MB Floppy Drive A:\\ mechanical seek check OK', 'INFO', '0x2020');
+    }, 180));
   }
 
   // Transition to Windows Boot Manager (if enabled) or directly to Splash
@@ -4634,6 +4688,7 @@ function startBootWithAudio() {
   const postDelay = biosZeroWait ? 80 : systemRegistry.biosQuickPost ? 220 : 650;
   const nextTimer = window.setTimeout(() => {
     if (systemRegistry.enableBootManagerOnBoot && !biosZeroWait) {
+      logBootEvent('BOOTMGR', 'Handing off control to Windows Boot Manager', 'INFO', '0x1020');
       enterBootManagerStage();
     } else {
       startBootSplashStage(false);
@@ -4648,6 +4703,7 @@ function rebootGemini95() {
   closeLocalSignInScreen();
   bootMgrSafeModeFlag = false;
   bootState = 'bios';
+  logBootEvent('POWER_CTRL', 'Warm system reboot initiated — returning to Award Modular BIOS POST', 'WARN', '0x10F0');
   applySystemRegistryToOS(true);
   if (biosStatusLine) {
     biosStatusLine.style.color = isPrimaryBootable() ? '' : '#ff5555';
@@ -5258,6 +5314,7 @@ const SEARCHABLE_ENTRIES = [
   { label: '🎚️ Sound Recorder 95 & .WAV Beat Studio', kind: 'Multimedia', action: () => openApp('soundRecorder') },
   { label: '📅 Calendar 95, Analog Clock & Countdown Alarms', kind: 'Accessory', action: () => openApp('calendarApp') },
   { label: '⚡ Windows 95 Task Manager (TASKMGR.EXE)', kind: 'System Utility', action: () => openApp('taskManager') },
+  { label: '📜 System Logs (SYSLOG.LOG · BOOTLOG.TXT · APPLOG.TXT · VFSIO.LOG · HWINIT.LOG)', kind: 'System Utility', action: () => openApp('sysLogsApp') },
   { label: '🗑️ Recycle Bin 95 (Restore & Shredder)', kind: 'System Utility', action: () => openApp('recycleBin') },
   { label: '📋 Clipboard & Snipping Studio 95', kind: 'Accessory', action: () => openApp('clipViewer') },
   { label: '🏆 Angel-OS Trophy Vault (20 Secrets)', kind: 'Achievements', action: () => openApp('trophiesApp') },
@@ -5718,12 +5775,17 @@ registerOsBridge({
   injectShimIntoHtml: (rawHtml: string) => injectShimIntoHtml(rawHtml, buildHostStorageAndNavigationShimScript()),
   addVfsFile: (name, type, parent, content, appTarget, pkgId, sizeMB) => {
     virtualFileSystem.push({ name, type, parent, content, appTarget, pkgId, sizeMB });
+    const fullPath = `${parent.replace(/\\$/, '')}\\${name}`;
+    logVfsEvent('CREATE', fullPath, `type=${type}${sizeMB ? ` size=${sizeMB.toFixed(1)}MB` : ''}`, 'OK');
   },
   removeVfsFile: (name, parent) => {
     const idx = virtualFileSystem.findIndex(
       (f) => f.parent === parent && f.name.toUpperCase() === name.toUpperCase(),
     );
-    if (idx !== -1) virtualFileSystem.splice(idx, 1);
+    if (idx !== -1) {
+      virtualFileSystem.splice(idx, 1);
+      logVfsEvent('DELETE', `${parent.replace(/\\$/, '')}\\${name}`, 'Removed from VFS', 'WARN');
+    }
   },
   openExplorerAt: (folderPath: string) => {
     currentExplorerPath = folderPath;
@@ -5739,6 +5801,25 @@ registerOsBridge({
 });
 
 hydrateSvgIcons();
+
+registerSystemLogsBridge({
+  addVfsFile: (name, type, parent, content) => {
+    const existingIdx = virtualFileSystem.findIndex(
+      (f) => f.parent === parent && f.name.toUpperCase() === name.toUpperCase(),
+    );
+    if (existingIdx !== -1) {
+      virtualFileSystem[existingIdx] = { name, type, parent, content };
+    } else {
+      virtualFileSystem.push({ name, type, parent, content });
+    }
+    logVfsEvent('WRITE', `${parent.replace(/\\$/, '')}\\${name}`, `${(content || '').length} bytes saved from SystemLogs`, 'OK');
+  },
+  refreshExplorerIfOpen: () => {
+    if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+  },
+  pushToast: pushBalloonToast,
+  playClick: () => sfx.playClick(),
+});
 
 registerMegaBridge({
   openApp,
@@ -5767,10 +5848,14 @@ registerMegaBridge({
   downloadBootableUsbDiskImage,
   addVfsFile: (name, type, parent, content) => {
     virtualFileSystem.push({ name, type, parent, content });
+    logVfsEvent('CREATE', `${parent.replace(/\\$/, '')}\\${name}`, `type=${type}`, 'OK');
   },
   removeVfsFile: (name, parent) => {
     const idx = virtualFileSystem.findIndex((f) => f.parent === parent && f.name.toUpperCase() === name.toUpperCase());
-    if (idx !== -1) virtualFileSystem.splice(idx, 1);
+    if (idx !== -1) {
+      virtualFileSystem.splice(idx, 1);
+      logVfsEvent('DELETE', `${parent.replace(/\\$/, '')}\\${name}`, 'Removed from VFS', 'WARN');
+    }
   },
   getVfsFiles: () => virtualFileSystem,
   refreshExplorerIfOpen: () => {
@@ -5794,6 +5879,7 @@ initMegaShellFeatures();
 registerMediaBridge({
   addVfsFile: (name, type, parent, content) => {
     virtualFileSystem.push({ name, type, parent, content });
+    logVfsEvent('CREATE', `${parent.replace(/\\$/, '')}\\${name}`, `type=${type} (Media capture)`, 'OK');
   },
   refreshExplorerIfOpen: () => {
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
@@ -5807,6 +5893,7 @@ initMediaPermissionsController();
 registerJavaCreatorBridge({
   addVfsFile: (name, type, parent, content) => {
     virtualFileSystem.push({ name, type, parent, content });
+    logVfsEvent('CREATE', `${parent.replace(/\\$/, '')}\\${name}`, `type=${type} (Java Creator)`, 'OK');
   },
   refreshExplorerIfOpen: () => {
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
@@ -5818,6 +5905,7 @@ registerJavaCreatorBridge({
 registerHockeyCardsBridge({
   addVfsFile: (name, type, parent, content) => {
     virtualFileSystem.push({ name, type, parent, content });
+    logVfsEvent('CREATE', `${parent.replace(/\\$/, '')}\\${name}`, `type=${type} (Hockey Cards 95)`, 'OK');
   },
   refreshExplorerIfOpen: () => {
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
@@ -5839,6 +5927,18 @@ layoutDesktopIcons(false);
 initStartTileReordering();
 void initForeignRuntime();
 resetIdleTimer();
+logHardwareEvent(
+  'HAL_INIT',
+  `CPU=${systemRegistry.cpuModel} · RAM=${getEffectiveRamMB()}MB (${systemRegistry.ramMode}) · FS=${systemRegistry.fileSystemFormat} · CRT=${systemRegistry.crtEnabled ? 'ON' : 'OFF'} · Audio=${systemRegistry.audioEnabled ? 'ON' : 'MUTED'}`,
+  'OK',
+  '0x2001',
+);
+logHardwareEvent(
+  'IDE_MOUNT',
+  `Primary C:\\ (${partitionTable.primaryC.sizeMB}MB ${partitionTable.primaryC.fileSystem}${partitionTable.primaryC.active ? ', ACTIVE' : ''})${partitionTable.logicalD.exists ? ` · Logical D:\\ (${partitionTable.logicalD.sizeMB}MB)` : ''}`,
+  'OK',
+  '0x2005',
+);
 pushBalloonToast(
   'AngelOS-web v1.9.0 Ready!',
   'Angel Runtime Host & Java Workbench active — drag any .jar, .java, .exe, .com, .zip, .apk, or .html onto the desktop!',

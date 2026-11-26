@@ -9280,3 +9280,397 @@ body.bios-rgb-trim .window.active-window {
   padding: 22px 32px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
+
+/* ==================== SYSTEM LOGS RETRO TEXT VIEWER (SYSLOGS.EXE) ==================== */
+.syslogs-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--win-bg, #c0c0c0);
+  padding: 4px;
+  gap: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.syslogs-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  background: var(--win-bg, #c0c0c0);
+  border: 1px solid #808080;
+  border-top-color: #ffffff;
+  border-left-color: #ffffff;
+}
+
+.syslogs-search-input {
+  flex: 1 1 155px;
+  min-width: 120px;
+  height: 24px;
+  font-size: 0.75rem;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  padding: 2px 6px;
+}
+
+.syslogs-level-select {
+  height: 24px;
+  font-size: 0.72rem;
+  padding: 1px 4px;
+  background: #ffffff;
+  color: #111827;
+  border: 2px inset #808080;
+}
+
+.syslogs-theme-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.syslogs-toolbar .win95-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  line-height: 20px;
+}
+
+.syslogs-theme-btn.active,
+.syslogs-toggle-btn.active {
+  background: #000080;
+  color: #ffffff;
+  border-style: inset;
+}
+
+.syslogs-clear-btn {
+  color: #8b0000;
+}
+
+.syslogs-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 2px 2px 0 2px;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.syslogs-file-tab {
+  appearance: none;
+  background: #b6b6b6;
+  color: #1f2937;
+  border: 2px outset #ffffff;
+  border-bottom: none;
+  padding: 4px 9px;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.syslogs-file-tab:hover {
+  background: #d0d0d0;
+}
+
+.syslogs-file-tab.active {
+  background: #ffffff;
+  color: #000080;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  position: relative;
+  z-index: 2;
+}
+
+.syslogs-tab-count {
+  font-weight: 400;
+  opacity: 0.78;
+}
+
+.syslogs-viewport-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 2px inset #808080;
+  overflow: hidden;
+  --log-bg: #ffffff;
+  --log-fg: #111827;
+  --log-muted: #64748b;
+  --log-gutter-bg: #f8fafc;
+  --log-gutter-border: #e2e8f0;
+  --log-header-fg: #334155;
+  --log-divider-bg: #f1f5f9;
+  --log-divider-fg: #475569;
+  --log-row-hover: rgba(15, 23, 42, 0.045);
+  --log-new-flash: rgba(29, 78, 216, 0.14);
+  --log-hl-bg: #fef08a;
+  --log-hl-fg: #111827;
+  --log-lvl-info: #1d4ed8;
+  --log-lvl-ok: #15803d;
+  --log-lvl-warn: #b45309;
+  --log-lvl-err: #b91c1c;
+  --log-src-fg: #0f766e;
+  --log-evid-fg: #64748b;
+  background: var(--log-bg);
+  color: var(--log-fg);
+}
+
+.syslogs-viewport-shell[data-theme='crt-green'] {
+  --log-bg: #07120a;
+  --log-fg: #4ade80;
+  --log-muted: #2e7d4a;
+  --log-gutter-bg: #040c06;
+  --log-gutter-border: #133820;
+  --log-header-fg: #86efac;
+  --log-divider-bg: #0c2414;
+  --log-divider-fg: #86efac;
+  --log-row-hover: rgba(74, 222, 128, 0.08);
+  --log-new-flash: rgba(74, 222, 128, 0.22);
+  --log-hl-bg: #166534;
+  --log-hl-fg: #f0fdf4;
+  --log-lvl-info: #38bdf8;
+  --log-lvl-ok: #4ade80;
+  --log-lvl-warn: #facc15;
+  --log-lvl-err: #f87171;
+  --log-src-fg: #86efac;
+  --log-evid-fg: #2f855a;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.14) 0px,
+    rgba(0, 0, 0, 0.14) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.syslogs-viewport-shell[data-theme='amber'] {
+  --log-bg: #140e05;
+  --log-fg: #fbbf24;
+  --log-muted: #92631a;
+  --log-gutter-bg: #0d0903;
+  --log-gutter-border: #3a260a;
+  --log-header-fg: #fde68a;
+  --log-divider-bg: #241808;
+  --log-divider-fg: #fde68a;
+  --log-row-hover: rgba(251, 191, 36, 0.08);
+  --log-new-flash: rgba(251, 191, 36, 0.22);
+  --log-hl-bg: #92400e;
+  --log-hl-fg: #fffbeb;
+  --log-lvl-info: #fcd34d;
+  --log-lvl-ok: #fde68a;
+  --log-lvl-warn: #fb923c;
+  --log-lvl-err: #fb7185;
+  --log-src-fg: #f59e0b;
+  --log-evid-fg: #a16207;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.syslogs-scroll-area {
+  flex: 1 1 auto;
+  overflow: auto;
+  font-family: 'IBM Plex Mono', 'Courier New', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+  user-select: text;
+  -webkit-user-select: text;
+  padding-bottom: 18px;
+}
+
+.syslogs-file-header {
+  margin: 0;
+  padding: 8px 12px 6px 12px;
+  color: var(--log-header-fg);
+  border-bottom: 1px solid var(--log-gutter-border);
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre;
+  overflow-x: visible;
+}
+
+.syslogs-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.syslogs-line {
+  display: flex;
+  align-items: baseline;
+  min-width: max-content;
+  padding-right: 12px;
+}
+
+.syslogs-viewport-shell.syslogs-wrap-on .syslogs-line {
+  min-width: 0;
+  width: 100%;
+}
+
+.syslogs-line:hover {
+  background: var(--log-row-hover);
+}
+
+.syslogs-line-divider {
+  background: var(--log-divider-bg);
+  color: var(--log-divider-fg);
+  font-weight: 600;
+  border-top: 1px solid var(--log-gutter-border);
+  border-bottom: 1px solid var(--log-gutter-border);
+}
+
+.syslogs-gutter {
+  flex: 0 0 44px;
+  width: 44px;
+  text-align: right;
+  padding: 0 8px 0 4px;
+  margin-right: 10px;
+  color: var(--log-muted);
+  background: var(--log-gutter-bg);
+  border-right: 1px solid var(--log-gutter-border);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.syslogs-line-text {
+  white-space: pre;
+  color: var(--log-fg);
+}
+
+.syslogs-viewport-shell.syslogs-wrap-on .syslogs-line-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.syslogs-ts {
+  color: var(--log-muted);
+}
+
+.syslogs-lvl {
+  font-weight: 700;
+}
+
+.syslogs-lvl-info {
+  color: var(--log-lvl-info);
+}
+
+.syslogs-lvl-ok {
+  color: var(--log-lvl-ok);
+}
+
+.syslogs-lvl-warn {
+  color: var(--log-lvl-warn);
+}
+
+.syslogs-lvl-err {
+  color: var(--log-lvl-err);
+}
+
+.syslogs-src {
+  color: var(--log-src-fg);
+  font-weight: 600;
+}
+
+.syslogs-evid {
+  color: var(--log-evid-fg);
+}
+
+.syslogs-hl {
+  background: var(--log-hl-bg);
+  color: var(--log-hl-fg);
+  padding: 0 1px;
+  border-radius: 1px;
+}
+
+@keyframes syslogsFlash {
+  0% {
+    background-color: var(--log-new-flash);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.syslogs-line-new {
+  animation: syslogsFlash 650ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syslogs-line-new {
+    animation: none;
+  }
+}
+
+.syslogs-paused-bar {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--win-bg, #c0c0c0);
+  color: #111827;
+  border: 2px outset #ffffff;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  font-family: 'IBM Plex Mono', monospace;
+  z-index: 4;
+}
+
+.syslogs-jump-btn {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 0.7rem;
+}
+
+.syslogs-empty-state {
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--log-muted);
+}
+
+.syslogs-empty-title {
+  font-weight: 700;
+  color: var(--log-fg);
+  font-size: 13px;
+}
+
+.syslogs-empty-sub {
+  font-size: 12px;
+}
+
+.syslogs-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.71rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.syslogs-statusbar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
