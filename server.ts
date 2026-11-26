@@ -514,6 +514,48 @@ async function startServer() {
     }
   });
 
+  const releasesDir = path.resolve(__dirname, 'releases');
+  const SAFE_ZIP_RE = /^[A-Za-z0-9._-]+\.zip$/;
+
+  app.get('/downloads/latest', (_req, res) => {
+    try {
+      if (!fs.existsSync(releasesDir)) {
+        res.status(404).json({error: 'No release archive built yet.'});
+        return;
+      }
+      const zips = fs
+        .readdirSync(releasesDir)
+        .filter((f) => SAFE_ZIP_RE.test(f))
+        .sort()
+        .reverse();
+      if (zips.length === 0) {
+        res.status(404).json({error: 'No release archive built yet.'});
+        return;
+      }
+      res.redirect(302, `/downloads/${encodeURIComponent(zips[0])}`);
+    } catch {
+      res.status(500).json({error: 'Failed to locate latest release archive.'});
+    }
+  });
+
+  app.get('/downloads/:filename', (req, res) => {
+    const rawName = String(req.params.filename || '');
+    if (!SAFE_ZIP_RE.test(rawName)) {
+      res.status(400).json({error: 'Invalid download filename.'});
+      return;
+    }
+    const resolved = path.resolve(releasesDir, rawName);
+    if (!resolved.startsWith(releasesDir + path.sep) || !fs.existsSync(resolved)) {
+      res.status(404).json({error: 'Release archive not found.'});
+      return;
+    }
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${rawName}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(resolved);
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     // Serve a self-unregistering worker for any browser still holding an old dev-sw.js / sw.js cache
     const clearSwScript = `

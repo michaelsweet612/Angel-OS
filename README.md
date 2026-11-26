@@ -4,9 +4,9 @@
 
 **An installable, AI-powered Windows 11 & Windows 10/95-hybrid operating system that runs right in your browser.**
 
-🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download Portable Offline Bundle (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.9.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
+🌐 **[Launch AngelOS-web Live on GitHub Pages →](https://michaelsweet612.github.io/Angel-OS/)** · 📦 **[Download v2.1.0 Portable Offline Bundle (.ZIP) →](https://github.com/michaelsweet612/Angel-OS/releases/download/v2.1.0/Angel-OS-v2.1.0-portable-web.zip)** · 🏷️ **[Releases](https://github.com/michaelsweet612/Angel-OS/releases)**
 
-Built with TypeScript, Express, Vite PWA, CheerpJ WebAssembly JVM + Eclipse ECJ, js-dos (DOSBox WASM), Web Audio API synthesis, WebRTC MediaDevices (Camera & Microphone), 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
+Built with TypeScript, Express, Vite PWA, Firebase Authentication & Firestore, CheerpJ WebAssembly JVM + Eclipse ECJ, js-dos (DOSBox WASM), Web Audio API synthesis, WebRTC MediaDevices (Camera & Microphone), 16-bit x86 Assembly, Python 3, Bash/PowerShell physical installers, and the Google Gemini API.
 
 > **Personal Use Only:** You are welcome to download and run Angel-OS locally for your own personal use. Republishing, redistributing, or re-hosting copies is not permitted without written permission (see [`LICENSE`](./LICENSE)).
 
@@ -17,9 +17,9 @@ Built with TypeScript, Express, Vite PWA, CheerpJ WebAssembly JVM + Eclipse ECJ,
 ## Download & Play Locally
 
 1. **Play Immediately in Your Browser:** Open **[https://michaelsweet612.github.io/Angel-OS/](https://michaelsweet612.github.io/Angel-OS/)** (**AngelOS-web**).
-2. **Download Prebuilt Offline Bundle (`.zip`):** Download **[`Angel-OS-v1.9.0-portable-web.zip`](https://github.com/michaelsweet612/Angel-OS/raw/gh-pages/downloads/Angel-OS-v1.9.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain and bundled Java programs (`Calc95.jar`, `Snake95.jar`, `AngelPad.jar`, `ecj.jar`).
-3. **Install & Run External Programs from Your PC (New in v1.9.0):** Drag and drop `.jar`, `.java`, `.class`, DOS `.exe`/`.com`/`.bat`/`.zip`, `.apk`, or `.html` files directly onto the desktop (or click **📂 Install from My PC…** in **Ability to Install** or **Angel Runtime Host**). Installed programs save in browser storage (IndexedDB), appear as desktop icons, and support **⚡ Startup** auto-launch at boot.
-4. **Download Full Source Code:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), then run `npm install && npm run dev`.
+2. **Download Prebuilt Offline Bundle (`.zip` — v2.1.0):** Download **[`Angel-OS-v2.1.0-portable-web.zip`](https://github.com/michaelsweet612/Angel-OS/releases/download/v2.1.0/Angel-OS-v2.1.0-portable-web.zip)** (or browse **[GitHub Releases](https://github.com/michaelsweet612/Angel-OS/releases)**), unzip it, and run `npx serve .` or `python3 -m http.server 3000` inside the extracted folder to run AngelOS-web locally for personal use. Includes the **`physical-booter/`** bare-metal toolchain, bundled Java programs (`Calc95.jar`, `Snake95.jar`, `AngelPad.jar`, `ecj.jar`), and Java source samples (`java-src/`).
+3. **What's New in v2.1.0:** Unified Windows 95 **Control Center** flyout (**Wi-Fi**, **Display/CRT**, **Volume** + slider, **Battery** + Battery Saver), redesigned two-button system tray with stacked **Notifications + Interactive Mini Calendar** cards, private per-user cloud/local saves with Windows-style first-run setup, and **500+ interactive installable apps** in **Ability to Install**.
+4. **Build Your Own Release Bundle / Run From Source:** Click **`<> Code` → `Download ZIP`** on GitHub (or `git clone`), run `npm install && npm run dev`, or build a fresh offline `.ZIP` bundle via `npm run release:build`.
 
 ---
 

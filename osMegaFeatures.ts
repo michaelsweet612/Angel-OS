@@ -2815,6 +2815,20 @@ export function initMegaShellFeatures(): void {
     const m = document.getElementById('winver-modal');
     if (m) m.style.display = 'none';
   });
+  document.getElementById('winver-download-zip-btn')?.addEventListener('click', () => {
+    megaBridge?.sfx.playClick();
+    const a = document.createElement('a');
+    a.href = '/downloads/Angel-OS-v2.1.0-portable-web.zip';
+    a.download = 'Angel-OS-v2.1.0-portable-web.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    pushBalloonToast(
+      'Downloading Angel OS v2.1.0',
+      'Saved Angel-OS-v2.1.0-portable-web.zip (Offline App + Physical Booter + Java Apps).',
+      '📦',
+    );
+  });
   document.getElementById('hotkeys-close-btn')?.addEventListener('click', () => {
     const m = document.getElementById('hotkeys-modal');
     if (m) m.style.display = 'none';

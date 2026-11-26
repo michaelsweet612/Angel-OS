@@ -4,6 +4,22 @@ All notable releases of Angel OS are documented here in accordance with the repo
 
 ---
 
+## v2.1.0 — 2026-11-26
+
+### Added
+- **Consolidated Portable Offline Release Bundle (`scripts/build-release-zip.mjs`, `npm run release:zip`, `npm run release:build`):** Added a cross-platform Node `jszip` packager that compiles and archives the full offline production web app (`dist/`), `physical-booter/` bare-metal toolkit, bundled Java apps (`java/*.jar`) & sample sources (`java-src/`), `LICENSE`, `CHANGELOG.md`, `README.md`, and `OFFLINE_QUICKSTART.txt` into `releases/Angel-OS-v2.1.0-portable-web.zip`.
+- **Live Release Download Route & In-App Download Button (`server.ts`, `index.html`, `osMegaFeatures.ts`):** Added hardened `/downloads/:filename` and `/downloads/latest` Express routes (strict filename sanitization, path containment, `Content-Disposition: attachment`) plus a one-click **Download v2.1.0 (.ZIP)** button in the **About Angel OS (`WINVER`)** modal.
+- **Automated GitHub Release Workflow & PR Kit (`.github/workflows/release.yml`, `RELEASE_PR_v2.1.0.md`, `README.md`):** Added a GitHub Actions pipeline triggered on `v*.*.*` tag pushes (or manual dispatch) that type-checks, builds, packages the portable `.ZIP`, extracts matching changelog notes, and publishes the GitHub Release with the `.ZIP` asset attached, along with updated `v2.1.0` download links in `README.md` and a ready-to-paste Pull Request draft.
+- **Consolidated Feature Roll-Up (`v2.0.0` → `v2.1.0`):** Incorporates the Windows 95 unified Control Center flyout (`Wi-Fi`, `Display/CRT`, `Volume` + slider, `Battery` + Battery Saver), unified two-button system tray with stacked Notifications + Mini Interactive Calendar cards, dev-mode Service Worker auto-purge, 500 interactive store apps, private Firebase/Local per-user saves with first-run setup wizard, and hardened Live Web browser proxy.
+
+### Removed
+- **Outdated `v1.9.0` portable download URLs in `README.md`:** Replaced legacy `Angel-OS-v1.9.0-portable-web.zip` links with the `v2.1.0` release artifact download links.
+
+### Why Removed
+- **Outdated `v1.9.0` download URLs:** Pointing visitors to `v1.9.0` distributed a pre-v2 build missing private per-user saves, the 500-app store, the redesigned taskbar tray, stacked Notifications + Calendar cards, and the Windows 95 unified Control Center.
+
+---
+
 ## v2.0.3 — 2026-11-26
 
 ### Added
