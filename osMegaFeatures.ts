@@ -111,8 +111,8 @@ export function pushBalloonToast(title: string, body: string, icon = '🔔'): vo
 
   const bellBadge = document.getElementById('tray-notif-count');
   if (bellBadge) {
-    bellBadge.textContent = String(notifHistory.length);
-    bellBadge.style.display = notifHistory.length > 0 ? 'inline-block' : 'none';
+    bellBadge.textContent = notifHistory.length > 99 ? '99+' : String(notifHistory.length);
+    bellBadge.style.display = notifHistory.length > 0 ? 'inline-flex' : 'none';
   }
   renderNotifDrawer();
 
@@ -145,9 +145,13 @@ export function pushBalloonToast(title: string, body: string, icon = '🔔'): vo
 
 function renderNotifDrawer(): void {
   const listEl = document.getElementById('notif-drawer-list');
+  const headerCountEl = document.getElementById('notif-header-count');
+  if (headerCountEl) {
+    headerCountEl.textContent = notifHistory.length > 0 ? `(${notifHistory.length})` : '';
+  }
   if (!listEl) return;
   if (notifHistory.length === 0) {
-    listEl.innerHTML = '<div class="notif-empty">No system notifications yet. Open apps, win games, or bother Angel Pilot!</div>';
+    listEl.innerHTML = '<div class="notif-empty">No new notifications. Events, app alerts, and trophies appear here.</div>';
     return;
   }
   listEl.innerHTML = notifHistory
@@ -2749,18 +2753,19 @@ export function initMegaShellFeatures(): void {
   renderClipboardViewerUI();
   renderSysLogsUI();
 
-  // Notification Bell Drawer Toggle
-  const notifDrawer = document.getElementById('notif-drawer');
-  document.getElementById('tray-notif-btn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    megaBridge?.sfx.playClick();
-    if (!notifDrawer) return;
-    notifDrawer.style.display = notifDrawer.style.display === 'none' ? 'flex' : 'none';
-  });
+  // Stacked Notification Center + Calendar Flyout Close & Clear Controls
   document.getElementById('notif-drawer-close')?.addEventListener('click', () => {
-    if (notifDrawer) notifDrawer.style.display = 'none';
+    megaBridge?.sfx.playClick();
+    const stackFlyout = document.getElementById('tray-calendar-notif-flyout');
+    if (stackFlyout) stackFlyout.style.display = 'none';
+    const dtBtn = document.getElementById('tray-datetime-notif-btn');
+    if (dtBtn) {
+      dtBtn.classList.remove('active');
+      dtBtn.setAttribute('aria-expanded', 'false');
+    }
   });
   document.getElementById('notif-drawer-clear')?.addEventListener('click', () => {
+    megaBridge?.sfx.playClick();
     notifHistory.length = 0;
     const bellBadge = document.getElementById('tray-notif-count');
     if (bellBadge) bellBadge.style.display = 'none';

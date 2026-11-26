@@ -402,16 +402,23 @@ export function applySystemRegistryToOS(skipSave = false): void {
     bridgeRef.sfx.floppyMechanical = systemRegistry.floppyMechanicalSfx;
     bridgeRef.updateClock();
   }
-  const traySound = document.getElementById('tray-sound-btn');
+  const traySound = document.getElementById('tray-sound-indicator');
   if (traySound) {
     traySound.classList.toggle('is-muted', !systemRegistry.audioEnabled);
-    traySound.title = systemRegistry.audioEnabled ? 'Sound On — Click to Mute Retro SFX' : 'Sound Muted — Click to Enable Retro SFX';
   }
-  const trayCrt = document.getElementById('tray-crt-btn');
+  const trayCrt = document.getElementById('tray-crt-indicator');
   if (trayCrt) {
     trayCrt.classList.toggle('is-crt-off', !systemRegistry.crtEnabled);
-    trayCrt.title = systemRegistry.crtEnabled ? 'CRT Scanlines On — Click to Toggle' : 'CRT Scanlines Off — Click to Toggle';
   }
+  const trayCcBtn = document.getElementById('tray-qs-btn');
+  if (trayCcBtn) {
+    const crtTxt = systemRegistry.crtEnabled ? 'CRT On' : 'CRT Off';
+    const soundTxt = systemRegistry.audioEnabled ? `Volume ${systemRegistry.masterVolume}%` : 'Muted';
+    const battTxt = trayCcBtn.dataset.batteryLabel || 'AC 100%';
+    trayCcBtn.title = `Control Center — Wi-Fi · ${crtTxt} · ${soundTxt} · ${battTxt}`;
+  }
+  document.getElementById('qs-tile-audio')?.classList.toggle('active', systemRegistry.audioEnabled);
+  document.getElementById('qs-tile-crt')?.classList.toggle('active', systemRegistry.crtEnabled);
 
   // 6. BIOS POST & Explorer Hardware Labels (Including Activated BIOS 5,120 Overrides)
   const biosCpu = document.getElementById('bios-cpu-label');

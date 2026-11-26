@@ -4,6 +4,28 @@ All notable releases of Angel OS are documented here in accordance with the repo
 
 ---
 
+## v2.0.1 — 2026-11-26
+
+### Added
+- **Unified Control Center Taskbar Button (`#tray-qs-btn`):** Grouped the Wi-Fi, Display/CRT, Volume, and Battery status icons into one single interactive system tray button that opens the Quick Settings Control Center flyout. Live state indicators inside the unified button reflect audio mute status, CRT scanline state, and real-time device battery level/charging state via the Battery Status API (with a `100% AC` desktop fallback).
+- **Unified Date/Time + Notification Bell Button (`#tray-datetime-notif-btn`):** Placed the notification bell and live unread badge directly beside the taskbar clock and date inside a single combined button at the right edge of the system tray.
+- **Stacked Notification Center & Mini Calendar Flyout (`#tray-calendar-notif-flyout`):** Clicking the Date/Time + Bell button opens two distinct stacked cards above the taskbar (or below when docked at the top):
+  - **Notifications Card (Top):** Displays recent OS events and trophies with a live count indicator, scrollable history, Clear All button, and empty state.
+  - **Mini Interactive Calendar Card (Bottom):** Displays today's full weekday/date banner, an **Open Calendar** shortcut launching the full Calendar app, previous/next month pagination, a one-click **Today** jump button, a 7-column tabular-numeral day grid with a highlighted today indicator, and interactive date selection.
+- **Shared Hardware Toggle Helpers & Mutual-Exclusion Dismissal (`index.ts`):** Added `toggleCrtScanlines()` and `toggleRetroSfxAudio()` helpers, synchronized `aria-expanded` and active pressed states on both tray buttons, and wired click-outside and `Escape` key dismissal across all taskbar flyouts.
+
+### Removed
+- **Fragmented individual system tray icon buttons (`#tray-notif-btn`, `#tray-crt-btn`, `#tray-sound-btn`):** Removed the separate standalone bell, CRT, and sound icon buttons from `#system-tray`.
+- **Legacy clock-to-Quick-Settings redirect (`#tray-clock` click handler):** Removed the handler that forwarded clicks on the taskbar date/time to the Quick Settings Control Center.
+- **Standalone unstacked `#notif-drawer` fixed drawer:** Replaced the isolated fixed-position notification drawer with the stacked Notification Center + Mini Calendar flyout container.
+
+### Why Removed
+- **Fragmented tray icon buttons:** Rendering Wi-Fi, CRT, and Volume as separate tiny buttons scattered hardware controls and created ambiguous click targets. Grouping Wi-Fi, Display/CRT, Volume, and Battery into one Control Center button gives all quick hardware controls a single logical entry point.
+- **Clock-to-Quick-Settings redirect:** Clicking a taskbar clock and date is expected to reveal a calendar and notifications rather than hardware quick settings. Routing the combined Date/Time + Bell button to a stacked Notifications-over-Calendar flyout aligns taskbar interaction with standard desktop ergonomics.
+- **Standalone fixed notification drawer:** Positioning notifications independently of the calendar caused awkward layout isolation and lacked date lookup. Mounting both cards inside a unified stacked container guarantees consistent spacing, single-action dismissal, and reliable positioning for both bottom and top taskbar docking.
+
+---
+
 ## v2.0.0 — 2026-11-26
 
 ### Added

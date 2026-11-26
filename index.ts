@@ -4345,22 +4345,22 @@ document.getElementById('show-desktop-btn')?.addEventListener('click', () => {
   openApps.forEach((_, appName) => minimizeApp(appName));
 });
 
-// Tray buttons & Live Clock
-document.getElementById('tray-crt-btn')?.addEventListener('click', () => {
+// Shared Audio & CRT toggle helpers (used by Control Center tiles, desktop menu, and keyboard shortcuts)
+function toggleCrtScanlines() {
   sfx.playClick();
   systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
   applySystemRegistryToOS();
   renderMasterSettingsCurrentTab();
   logHardwareEvent('CRT_DISP', `CRT scanline shader ${systemRegistry.crtEnabled ? 'ENABLED' : 'DISABLED'} (pitch ${systemRegistry.crtScanlinePitch}px)`, 'INFO');
-});
+}
 
-document.getElementById('tray-sound-btn')?.addEventListener('click', () => {
+function toggleRetroSfxAudio() {
   systemRegistry.audioEnabled = !systemRegistry.audioEnabled;
   applySystemRegistryToOS();
   renderMasterSettingsCurrentTab();
   logHardwareEvent('SB16_DSP.VXD', `Sound Blaster 16 master audio ${systemRegistry.audioEnabled ? 'UNMUTED' : 'MUTED'} (vol ${systemRegistry.masterVolume}%)`, systemRegistry.audioEnabled ? 'OK' : 'WARN');
   if (sfx.enabled) sfx.playClick();
-});
+}
 
 function updateClock() {
   const clockEl = document.getElementById('tray-clock');
@@ -4449,11 +4449,9 @@ contextMenu?.querySelectorAll('.ctx-item').forEach((item) => {
       currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
       applyTheme(THEMES[currentThemeIndex]);
     } else if (action === 'toggle-crt') {
-      systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
-      applySystemRegistryToOS();
-      renderMasterSettingsCurrentTab();
+      toggleCrtScanlines();
     } else if (action === 'toggle-sfx') {
-      document.getElementById('tray-sound-btn')?.click();
+      toggleRetroSfxAudio();
     }
   });
 });
@@ -5008,11 +5006,28 @@ const searchFlyout = document.getElementById('win11-search-flyout') as HTMLDivEl
 const taskviewOverlay = document.getElementById('win11-taskview-overlay') as HTMLDivElement | null;
 const copilotSidebar = document.getElementById('win11-copilot-sidebar') as HTMLDivElement | null;
 const quickSettings = document.getElementById('win11-quick-settings') as HTMLDivElement | null;
+const trayCalendarNotifFlyout = document.getElementById('tray-calendar-notif-flyout') as HTMLDivElement | null;
+
+function syncTrayFlyoutButtonStates() {
+  const qsOpen = Boolean(quickSettings && quickSettings.style.display !== 'none');
+  const calOpen = Boolean(trayCalendarNotifFlyout && trayCalendarNotifFlyout.style.display !== 'none');
+  const qsBtn = document.getElementById('tray-qs-btn');
+  if (qsBtn) {
+    qsBtn.classList.toggle('active', qsOpen);
+    qsBtn.setAttribute('aria-expanded', qsOpen ? 'true' : 'false');
+  }
+  const dtBtn = document.getElementById('tray-datetime-notif-btn');
+  if (dtBtn) {
+    dtBtn.classList.toggle('active', calOpen);
+    dtBtn.setAttribute('aria-expanded', calOpen ? 'true' : 'false');
+  }
+}
 
 function closeWin11Popups(except?: HTMLElement | null) {
-  [snapFlyout, widgetsBoard, searchFlyout, taskviewOverlay, quickSettings].forEach((el) => {
+  [snapFlyout, widgetsBoard, searchFlyout, taskviewOverlay, quickSettings, trayCalendarNotifFlyout].forEach((el) => {
     if (el && el !== except) el.style.display = 'none';
   });
+  syncTrayFlyoutButtonStates();
 }
 
 // --- 1. SNAP LAYOUTS 95 (Hover Maximize Button □ or Snap Zones) ---
@@ -5803,6 +5818,7 @@ function toggleNightLight95() {
   renderMasterSettingsCurrentTab();
 }
 
+// Unified Control Center tray button (Wi-Fi, Display/CRT, Volume, Battery)
 document.getElementById('tray-qs-btn')?.addEventListener('click', (e) => {
   e.stopPropagation();
   sfx.playClick();
@@ -5810,15 +5826,223 @@ document.getElementById('tray-qs-btn')?.addEventListener('click', (e) => {
   const isVis = quickSettings.style.display !== 'none';
   closeWin11Popups(quickSettings);
   quickSettings.style.display = isVis ? 'none' : 'block';
+  syncTrayFlyoutButtonStates();
 });
 
-document.getElementById('tray-clock')?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  document.getElementById('tray-qs-btn')?.click();
+// Mini Calendar & Stacked Notification Center controller
+const MINI_CAL_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+const MINI_CAL_WEEKDAYS = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+];
+let miniCalYear = new Date().getFullYear();
+let miniCalMonth = new Date().getMonth();
+let miniCalSelectedKey = '';
+
+function formatDateKey(y: number, m: number, d: number): string {
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function renderMiniCalendar(resetToToday = false) {
+  const now = new Date();
+  const todayY = now.getFullYear();
+  const todayM = now.getMonth();
+  const todayD = now.getDate();
+  const todayKey = formatDateKey(todayY, todayM, todayD);
+
+  if (resetToToday) {
+    miniCalYear = todayY;
+    miniCalMonth = todayM;
+    miniCalSelectedKey = todayKey;
+  } else if (!miniCalSelectedKey) {
+    miniCalSelectedKey = todayKey;
+  }
+
+  const weekdayEl = document.getElementById('mini-cal-today-weekday');
+  const todayDateEl = document.getElementById('mini-cal-today-date');
+  if (weekdayEl) weekdayEl.textContent = MINI_CAL_WEEKDAYS[now.getDay()];
+  if (todayDateEl) todayDateEl.textContent = `${MINI_CAL_MONTHS[todayM]} ${todayD}, ${todayY}`;
+
+  const monthLabelEl = document.getElementById('mini-cal-month-label');
+  if (monthLabelEl) monthLabelEl.textContent = `${MINI_CAL_MONTHS[miniCalMonth]} ${miniCalYear}`;
+
+  const todayChip = document.getElementById('mini-cal-today-btn');
+  if (todayChip) {
+    const isCurrentMonth = miniCalYear === todayY && miniCalMonth === todayM;
+    todayChip.style.display = isCurrentMonth ? 'none' : 'inline-flex';
+  }
+
+  const gridEl = document.getElementById('mini-cal-grid');
+  if (!gridEl) return;
+
+  const firstDayOfWeek = new Date(miniCalYear, miniCalMonth, 1).getDay();
+  const daysInMonth = new Date(miniCalYear, miniCalMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(miniCalYear, miniCalMonth, 0).getDate();
+
+  const cells: string[] = [];
+  for (let i = 0; i < 42; i++) {
+    let cellYear = miniCalYear;
+    let cellMonth = miniCalMonth;
+    let dayNum = 1;
+    let isOtherMonth = false;
+
+    if (i < firstDayOfWeek) {
+      isOtherMonth = true;
+      dayNum = daysInPrevMonth - firstDayOfWeek + i + 1;
+      cellMonth = miniCalMonth - 1;
+      if (cellMonth < 0) {
+        cellMonth = 11;
+        cellYear -= 1;
+      }
+    } else if (i >= firstDayOfWeek + daysInMonth) {
+      isOtherMonth = true;
+      dayNum = i - (firstDayOfWeek + daysInMonth) + 1;
+      cellMonth = miniCalMonth + 1;
+      if (cellMonth > 11) {
+        cellMonth = 0;
+        cellYear += 1;
+      }
+    } else {
+      dayNum = i - firstDayOfWeek + 1;
+    }
+
+    const key = formatDateKey(cellYear, cellMonth, dayNum);
+    const isToday = key === todayKey;
+    const isSelected = key === miniCalSelectedKey;
+    const cls = [
+      'mini-cal-day',
+      isOtherMonth ? 'is-outside' : '',
+      isToday ? 'is-today' : '',
+      isSelected && !isToday ? 'is-selected' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const ariaLabel = `${MINI_CAL_MONTHS[cellMonth]} ${dayNum}, ${cellYear}${isToday ? ' (Today)' : ''}`;
+    cells.push(
+      `<button type="button" class="${cls}" data-cal-year="${cellYear}" data-cal-month="${cellMonth}" data-cal-day="${dayNum}" aria-label="${ariaLabel}"${isToday ? ' aria-current="date"' : ''}>${dayNum}</button>`,
+    );
+  }
+  gridEl.innerHTML = cells.join('');
+}
+
+document.getElementById('mini-cal-grid')?.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.mini-cal-day');
+  if (!btn) return;
+  sfx.playClick();
+  const y = Number(btn.dataset.calYear);
+  const m = Number(btn.dataset.calMonth);
+  const d = Number(btn.dataset.calDay);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return;
+  miniCalYear = y;
+  miniCalMonth = m;
+  miniCalSelectedKey = formatDateKey(y, m, d);
+  renderMiniCalendar(false);
 });
+
+document.getElementById('mini-cal-prev-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  miniCalMonth -= 1;
+  if (miniCalMonth < 0) {
+    miniCalMonth = 11;
+    miniCalYear -= 1;
+  }
+  renderMiniCalendar(false);
+});
+
+document.getElementById('mini-cal-next-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  miniCalMonth += 1;
+  if (miniCalMonth > 11) {
+    miniCalMonth = 0;
+    miniCalYear += 1;
+  }
+  renderMiniCalendar(false);
+});
+
+document.getElementById('mini-cal-today-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  renderMiniCalendar(true);
+});
+
+document.getElementById('mini-cal-today-banner')?.addEventListener('click', () => {
+  sfx.playClick();
+  renderMiniCalendar(true);
+});
+
+document.getElementById('mini-cal-open-app-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  if (trayCalendarNotifFlyout) trayCalendarNotifFlyout.style.display = 'none';
+  syncTrayFlyoutButtonStates();
+  openApp('calendarApp');
+});
+
+// Unified Date/Time + Notification Bell tray button
+document.getElementById('tray-datetime-notif-btn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  sfx.playClick();
+  if (!trayCalendarNotifFlyout) return;
+  const isVis = trayCalendarNotifFlyout.style.display !== 'none';
+  closeWin11Popups(trayCalendarNotifFlyout);
+  if (isVis) {
+    trayCalendarNotifFlyout.style.display = 'none';
+  } else {
+    renderMiniCalendar(true);
+    trayCalendarNotifFlyout.style.display = 'flex';
+  }
+  syncTrayFlyoutButtonStates();
+});
+
+renderMiniCalendar(true);
+
+// Live Battery indicator inside unified Control Center button (graceful 100% AC fallback)
+function initTrayBatteryIndicator() {
+  const fillEl = document.getElementById('tray-battery-fill');
+  const boltEl = document.getElementById('tray-battery-bolt');
+  const ccBtn = document.getElementById('tray-qs-btn');
+
+  const applyBatteryVisual = (levelRatio: number, charging: boolean) => {
+    const pct = Math.max(0, Math.min(100, Math.round(levelRatio * 100)));
+    if (fillEl) {
+      const width = Math.max(1.2, (pct / 100) * 9.8);
+      fillEl.setAttribute('width', width.toFixed(1));
+      const color = charging ? '#16a34a' : pct <= 15 ? '#dc2626' : pct <= 30 ? '#d97706' : '#16a34a';
+      fillEl.setAttribute('fill', color);
+    }
+    if (boltEl) {
+      boltEl.style.display = charging ? 'inline' : 'none';
+    }
+    if (ccBtn) {
+      const battLabel = charging ? `Charging ${pct}%` : `Battery ${pct}%`;
+      ccBtn.dataset.batteryLabel = battLabel;
+      const crtTxt = systemRegistry.crtEnabled ? 'CRT On' : 'CRT Off';
+      const soundTxt = systemRegistry.audioEnabled ? `Volume ${systemRegistry.masterVolume}%` : 'Muted';
+      ccBtn.title = `Control Center — Wi-Fi · ${crtTxt} · ${soundTxt} · ${battLabel}`;
+    }
+  };
+
+  applyBatteryVisual(1, true);
+  const navAny = navigator as Navigator & { getBattery?: () => Promise<{ level: number; charging: boolean; addEventListener: (ev: string, fn: () => void) => void }> };
+  if (typeof navAny.getBattery === 'function') {
+    navAny
+      .getBattery()
+      .then((battery) => {
+        const sync = () => applyBatteryVisual(battery.level, battery.charging);
+        sync();
+        battery.addEventListener('levelchange', sync);
+        battery.addEventListener('chargingchange', sync);
+      })
+      .catch(() => {
+        // Retain graceful 100% AC indicator
+      });
+  }
+}
+initTrayBatteryIndicator();
 
 document.getElementById('qs-close-btn')?.addEventListener('click', () => {
   if (quickSettings) quickSettings.style.display = 'none';
+  syncTrayFlyoutButtonStates();
 });
 
 document.getElementById('qs-tile-dialup')?.addEventListener('click', (e) => {
@@ -5831,14 +6055,11 @@ document.getElementById('qs-tile-labels')?.addEventListener('click', toggleTaskb
 document.getElementById('qs-tile-nightlight')?.addEventListener('click', toggleNightLight95);
 
 document.getElementById('qs-tile-crt')?.addEventListener('click', () => {
-  sfx.playClick();
-  systemRegistry.crtEnabled = !systemRegistry.crtEnabled;
-  applySystemRegistryToOS();
-  renderMasterSettingsCurrentTab();
+  toggleCrtScanlines();
 });
 
 document.getElementById('qs-tile-audio')?.addEventListener('click', (e) => {
-  document.getElementById('tray-sound-btn')?.click();
+  toggleRetroSfxAudio();
   (e.currentTarget as HTMLElement).classList.toggle('active', sfx.enabled);
 });
 
@@ -5913,9 +6134,30 @@ document.addEventListener('click', (e) => {
     quickSettings &&
     quickSettings.style.display !== 'none' &&
     !quickSettings.contains(target) &&
-    !document.getElementById('system-tray')?.contains(target)
+    !document.getElementById('tray-qs-btn')?.contains(target)
   ) {
     quickSettings.style.display = 'none';
+    syncTrayFlyoutButtonStates();
+  }
+  if (
+    trayCalendarNotifFlyout &&
+    trayCalendarNotifFlyout.style.display !== 'none' &&
+    !trayCalendarNotifFlyout.contains(target) &&
+    !document.getElementById('tray-datetime-notif-btn')?.contains(target)
+  ) {
+    trayCalendarNotifFlyout.style.display = 'none';
+    syncTrayFlyoutButtonStates();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const qsOpen = Boolean(quickSettings && quickSettings.style.display !== 'none');
+  const calOpen = Boolean(trayCalendarNotifFlyout && trayCalendarNotifFlyout.style.display !== 'none');
+  if (qsOpen || calOpen) {
+    if (quickSettings) quickSettings.style.display = 'none';
+    if (trayCalendarNotifFlyout) trayCalendarNotifFlyout.style.display = 'none';
+    syncTrayFlyoutButtonStates();
   }
 });
 

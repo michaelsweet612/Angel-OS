@@ -2034,6 +2034,10 @@ body.theme-highcontrast #taskbar {
   color: #f8fafc;
 }
 
+body.theme-cyberpunk .tray-group-btn,
+body.theme-matrix .tray-group-btn,
+body.theme-vaporwave .tray-group-btn,
+body.theme-highcontrast .tray-group-btn,
 body.theme-cyberpunk .tray-clock,
 body.theme-matrix .tray-clock,
 body.theme-vaporwave .tray-clock,
@@ -2336,7 +2340,7 @@ body.theme-highcontrast .tray-clock-date {
 .system-tray {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   border: none;
   padding: 0 4px;
   height: 36px;
@@ -2355,6 +2359,79 @@ body.theme-highcontrast .tray-clock-date {
   border-radius: 999px;
   padding: 2px 7px;
   margin-right: 3px;
+}
+
+.tray-group-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  height: 32px;
+  padding: 0 8px;
+  color: #0f172a;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.tray-group-btn:hover {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+.tray-group-btn.active {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.tray-group-btn:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 1px;
+}
+
+.tray-cc-btn {
+  gap: 7px;
+  padding: 0 9px;
+}
+
+.tray-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.tray-battery-icon {
+  width: 18px;
+}
+
+.tray-datetime-btn {
+  gap: 7px;
+  padding: 0 8px 0 9px;
+}
+
+.tray-bell-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.tray-bell-wrap svg {
+  width: 15px;
+  height: 15px;
+  display: block;
 }
 
 .tray-icon-btn {
@@ -2386,17 +2463,9 @@ body.theme-highcontrast .tray-clock-date {
   font-family: inherit;
   font-size: 0.7rem;
   font-weight: 600;
-  margin-left: 2px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #0f172a;
+  color: inherit;
   text-align: right;
-  transition: background-color 0.12s ease;
-}
-
-.tray-clock:hover {
-  background: rgba(255, 255, 255, 0.72);
+  pointer-events: none;
 }
 
 .tray-clock-time {
@@ -2844,27 +2913,36 @@ body.night-light-active .night-light-overlay {
   color: #005a9e;
 }
 
-.tray-icon-btn svg {
+.tray-icon-btn svg,
+.tray-status-icon svg {
   width: 14px;
   height: 14px;
   display: block;
   flex-shrink: 0;
 }
 
+.tray-battery-icon svg {
+  width: 17px;
+  height: 15px;
+}
+
 .tray-sound-mute {
   display: none;
 }
 
-.tray-icon-btn.is-muted .tray-sound-waves {
+.tray-icon-btn.is-muted .tray-sound-waves,
+.tray-status-icon.is-muted .tray-sound-waves {
   display: none;
 }
 
-.tray-icon-btn.is-muted .tray-sound-mute {
+.tray-icon-btn.is-muted .tray-sound-mute,
+.tray-status-icon.is-muted .tray-sound-mute {
   display: inline;
 }
 
-.tray-icon-btn.is-crt-off {
-  opacity: 0.55;
+.tray-icon-btn.is-crt-off,
+.tray-status-icon.is-crt-off {
+  opacity: 0.45;
 }
 
 .taskbar-desk-badge {
@@ -6473,17 +6551,23 @@ body.taskbar-is-top .window.maximized {
 
 .tray-notif-count {
   position: absolute;
-  top: 1px;
-  right: 1px;
+  top: -4px;
+  right: -6px;
+  min-width: 14px;
+  height: 14px;
   background: #dc2626;
   color: #ffffff;
   font-size: 0.56rem;
-  line-height: 1.15;
+  line-height: 1;
   font-weight: 700;
   padding: 0 3px;
   border-radius: 999px;
   border: 1px solid #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
+  box-sizing: border-box;
 }
 
 .os-balloon-stack {
@@ -6539,33 +6623,98 @@ body.taskbar-is-top .os-balloon-stack {
   line-height: 1.35;
 }
 
-.notif-drawer {
+@keyframes trayFlyoutReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tray-cal-notif-stack {
   position: fixed;
-  bottom: calc(var(--os-taskbar-h) + 6px);
+  bottom: calc(var(--os-taskbar-h) + 8px);
   right: 10px;
-  width: 320px;
-  height: 360px;
-  max-width: 94vw;
-  background: #c0c0c0;
+  width: 336px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - var(--os-taskbar-h) - 18px);
+  z-index: 4400;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: trayFlyoutReveal 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.taskbar-is-top .tray-cal-notif-stack {
+  bottom: auto;
+  top: calc(var(--os-taskbar-h) + 8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray-cal-notif-stack {
+    animation: none;
+  }
+}
+
+.tray-flyout-card {
+  background: var(--win-bg, #c0c0c0);
+  color: var(--text-color, #111827);
   border-top: 2px solid #ffffff;
   border-left: 2px solid #ffffff;
   border-right: 2px solid #000000;
   border-bottom: 2px solid #000000;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
-  z-index: 4400;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.42);
+  display: flex;
   flex-direction: column;
   padding: 2px;
+  overflow: hidden;
 }
 
-body.taskbar-is-top .notif-drawer {
-  bottom: auto;
-  top: calc(var(--os-taskbar-h) + 6px);
+.notif-drawer-card {
+  flex: 1 1 auto;
+  min-height: 130px;
+  max-height: 240px;
+}
+
+.notif-card-toolbar {
+  padding: 5px 7px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #808080;
+}
+
+.notif-card-subtitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-header-count {
+  font-weight: 600;
+  opacity: 0.78;
+}
+
+.notif-clear-btn {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .notif-drawer-list {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 76px;
   overflow-y: auto;
   background: #ffffff;
+  color: #111827;
   border: 2px inset #808080;
   margin: 4px;
   padding: 6px;
@@ -6579,20 +6728,275 @@ body.taskbar-is-top .notif-drawer {
   background: #f8fafc;
   padding: 5px 7px;
   font-size: 0.72rem;
+  color: #111827;
 }
 
 .notif-drawer-item-top {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   color: #000080;
   margin-bottom: 2px;
 }
 
 .notif-empty {
-  font-size: 0.74rem;
+  font-size: 0.73rem;
   color: #64748b;
   text-align: center;
-  padding: 24px 8px;
+  padding: 20px 10px;
+  line-height: 1.4;
+}
+
+/* Bottom Stacked Card: Mini Interactive Calendar */
+.mini-cal-card {
+  flex: 0 0 auto;
+  padding: 8px 10px 10px;
+  gap: 7px;
+}
+
+.mini-cal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #808080;
+}
+
+.mini-cal-today-banner {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: inherit;
+  border-radius: 3px;
+}
+
+.mini-cal-today-banner:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.mini-cal-today-banner:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 1px;
+}
+
+.mini-cal-today-weekday {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #005a9e;
+  line-height: 1.15;
+}
+
+.mini-cal-today-date {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1.2;
+}
+
+.mini-cal-open-app-btn {
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mini-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mini-cal-month-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.mini-cal-nav-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mini-cal-today-chip {
+  padding: 1px 7px;
+  height: 22px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mini-cal-arrow-btn {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mini-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #475569;
+  padding: 0 2px;
+}
+
+.mini-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  background: #ffffff;
+  border: 2px inset #808080;
+  padding: 5px;
+}
+
+.mini-cal-day {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #111827;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  height: 26px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 110ms ease, border-color 110ms ease;
+}
+
+.mini-cal-day:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.mini-cal-day:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: -1px;
+}
+
+.mini-cal-day.is-outside {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.mini-cal-day.is-selected {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+.mini-cal-day.is-today {
+  background: #005fb8;
+  border-color: #00458a;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.mini-cal-day.is-today:hover {
+  background: #004d99;
+}
+
+body.theme-cyberpunk .tray-flyout-card,
+body.theme-matrix .tray-flyout-card,
+body.theme-vaporwave .tray-flyout-card,
+body.theme-highcontrast .tray-flyout-card {
+  background: #141c2c;
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+body.theme-cyberpunk .notif-drawer-list,
+body.theme-matrix .notif-drawer-list,
+body.theme-vaporwave .notif-drawer-list,
+body.theme-highcontrast .notif-drawer-list,
+body.theme-cyberpunk .mini-cal-grid,
+body.theme-matrix .mini-cal-grid,
+body.theme-vaporwave .mini-cal-grid,
+body.theme-highcontrast .mini-cal-grid {
+  background: #0b1120;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #f8fafc;
+}
+
+body.theme-cyberpunk .notif-drawer-item,
+body.theme-matrix .notif-drawer-item,
+body.theme-vaporwave .notif-drawer-item,
+body.theme-highcontrast .notif-drawer-item {
+  background: #1e293b;
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+}
+
+body.theme-cyberpunk .notif-drawer-item-top,
+body.theme-matrix .notif-drawer-item-top,
+body.theme-vaporwave .notif-drawer-item-top,
+body.theme-highcontrast .notif-drawer-item-top,
+body.theme-cyberpunk .mini-cal-today-weekday,
+body.theme-matrix .mini-cal-today-weekday,
+body.theme-vaporwave .mini-cal-today-weekday,
+body.theme-highcontrast .mini-cal-today-weekday {
+  color: #60a5fa;
+}
+
+body.theme-cyberpunk .mini-cal-weekdays,
+body.theme-matrix .mini-cal-weekdays,
+body.theme-vaporwave .mini-cal-weekdays,
+body.theme-highcontrast .mini-cal-weekdays {
+  color: #94a3b8;
+}
+
+body.theme-cyberpunk .mini-cal-day,
+body.theme-matrix .mini-cal-day,
+body.theme-vaporwave .mini-cal-day,
+body.theme-highcontrast .mini-cal-day {
+  color: #f1f5f9;
+}
+
+body.theme-cyberpunk .mini-cal-day:hover,
+body.theme-matrix .mini-cal-day:hover,
+body.theme-vaporwave .mini-cal-day:hover,
+body.theme-highcontrast .mini-cal-day:hover {
+  background: rgba(148, 163, 184, 0.22);
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+body.theme-cyberpunk .mini-cal-day.is-outside,
+body.theme-matrix .mini-cal-day.is-outside,
+body.theme-vaporwave .mini-cal-day.is-outside,
+body.theme-highcontrast .mini-cal-day.is-outside {
+  color: #64748b;
+}
+
+body.theme-cyberpunk .mini-cal-day.is-selected,
+body.theme-matrix .mini-cal-day.is-selected,
+body.theme-vaporwave .mini-cal-day.is-selected,
+body.theme-highcontrast .mini-cal-day.is-selected {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #60a5fa;
+  color: #ffffff;
 }
 
 /* Spawned Custom Sticky Notes */
@@ -7008,21 +7412,20 @@ body.bios-rgb-trim .window.active-window {
   border-bottom: 2px solid #ffffff;
   box-shadow: inset 1px 1px 0 #404040;
   border-radius: 0;
-  padding: 0 8px;
-  gap: 5px;
+  padding: 0 5px;
+  gap: 4px;
   backdrop-filter: none;
 }
 
-#taskbar .tray-icon-btn {
-  width: 28px;
-  height: 30px;
+#taskbar .tray-group-btn {
+  height: 32px;
   border-radius: 0;
   color: #000000;
   background: transparent;
   border: 1px solid transparent;
 }
 
-#taskbar .tray-icon-btn:hover {
+#taskbar .tray-group-btn:hover {
   background: #cccccc;
   border-top: 1px solid #ffffff;
   border-left: 1px solid #ffffff;
@@ -7030,20 +7433,35 @@ body.bios-rgb-trim .window.active-window {
   border-bottom: 1px solid #808080;
 }
 
+#taskbar .tray-group-btn.active,
+#taskbar .tray-group-btn:active {
+  background: #b0b0b0;
+  border-top: 1px solid #404040;
+  border-left: 1px solid #404040;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+}
+
+#taskbar .tray-cc-btn {
+  padding: 0 8px;
+  gap: 6px;
+}
+
+#taskbar .tray-datetime-btn {
+  padding: 0 8px;
+  gap: 7px;
+}
+
 #taskbar .tray-clock {
-  color: #000000;
+  color: inherit;
   border-radius: 0;
-  padding: 2px 6px;
-  margin-left: 3px;
+  padding: 0;
+  margin-left: 0;
   line-height: 1.1;
 }
 
-#taskbar .tray-clock:hover {
-  background: #c8c8c8;
-}
-
 #taskbar .tray-clock-time {
-  color: #000000;
+  color: inherit;
   font-size: 0.74rem;
   font-weight: 700;
 }
@@ -7052,6 +7470,41 @@ body.bios-rgb-trim .window.active-window {
   color: #1f2937;
   font-size: 0.62rem;
   font-weight: 600;
+}
+
+body.theme-cyberpunk #taskbar .system-tray,
+body.theme-matrix #taskbar .system-tray,
+body.theme-vaporwave #taskbar .system-tray,
+body.theme-highcontrast #taskbar .system-tray {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: none;
+}
+
+body.theme-cyberpunk #taskbar .tray-group-btn,
+body.theme-matrix #taskbar .tray-group-btn,
+body.theme-vaporwave #taskbar .tray-group-btn,
+body.theme-highcontrast #taskbar .tray-group-btn {
+  color: #f8fafc;
+}
+
+body.theme-cyberpunk #taskbar .tray-group-btn:hover,
+body.theme-matrix #taskbar .tray-group-btn:hover,
+body.theme-vaporwave #taskbar .tray-group-btn:hover,
+body.theme-highcontrast #taskbar .tray-group-btn:hover,
+body.theme-cyberpunk #taskbar .tray-group-btn.active,
+body.theme-matrix #taskbar .tray-group-btn.active,
+body.theme-vaporwave #taskbar .tray-group-btn.active,
+body.theme-highcontrast #taskbar .tray-group-btn.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+body.theme-cyberpunk #taskbar .tray-clock-date,
+body.theme-matrix #taskbar .tray-clock-date,
+body.theme-vaporwave #taskbar .tray-clock-date,
+body.theme-highcontrast #taskbar .tray-clock-date {
+  color: #cbd5e1;
 }
 
 #taskbar .taskbar-peek-btn {

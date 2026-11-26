@@ -3193,63 +3193,121 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             </svg>
           </button>
 
-          <!-- Clean Windows 11 + 10 System Tray -->
+          <!-- Unified Control Center + Combined Date/Time & Notification Bell Tray -->
           <div id="system-tray" class="system-tray">
             <span id="tray-bios-pulse" class="tray-bios-pulse tabular-nums" style="display: none" title="Activated CMOS BIOS Registers">BIOS:0</span>
             <span id="tray-offline-badge" class="tray-offline-badge" style="display: none" title="Running Offline via Service Worker Cache">OFFLINE</span>
-            <button class="tray-icon-btn" id="tray-notif-btn" title="Action Center &amp; Notification History">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M8 2.2a3.6 3.6 0 0 0-3.6 3.6v2.7L3.2 10.5h9.6L11.6 8.5V5.8A3.6 3.6 0 0 0 8 2.2Z" fill="#eab308" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round" />
-                <path d="M6.4 11.5a1.6 1.6 0 0 0 3.2 0" fill="none" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" />
-              </svg>
-              <span id="tray-notif-count" class="tray-notif-count" style="display:none">0</span>
+
+            <button
+              type="button"
+              class="tray-group-btn tray-cc-btn"
+              id="tray-qs-btn"
+              aria-expanded="false"
+              aria-controls="win11-quick-settings"
+              title="Control Center — Wi-Fi, Display, Volume &amp; Battery"
+            >
+              <span class="tray-status-icon" id="tray-wifi-indicator" aria-hidden="true">
+                <svg viewBox="0 0 16 16">
+                  <path d="M2 6.2a8.5 8.5 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M4.3 8.8a5.2 5.2 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <circle cx="8" cy="12" r="1.4" fill="currentColor" />
+                </svg>
+              </span>
+              <span class="tray-status-icon" id="tray-crt-indicator" aria-hidden="true">
+                <svg viewBox="0 0 16 16">
+                  <rect x="1.5" y="2" width="13" height="9.5" rx="1.2" fill="#0f172a" stroke="currentColor" stroke-width="1.2" />
+                  <line x1="3" y1="5" x2="13" y2="5" stroke="#22d3ee" stroke-width="1" />
+                  <line x1="3" y1="7.5" x2="13" y2="7.5" stroke="#38bdf8" stroke-width="1" />
+                  <line x1="5" y1="13.5" x2="11" y2="13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="tray-status-icon" id="tray-sound-indicator" aria-hidden="true">
+                <svg viewBox="0 0 16 16">
+                  <polygon points="2,6 5.5,6 9.5,2.5 9.5,13.5 5.5,10 2,10" fill="currentColor" />
+                  <path class="tray-sound-waves" d="M11.5 5.3a3.6 3.6 0 0 1 0 5.4M13.2 3.5a6.2 6.2 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                  <line class="tray-sound-mute" x1="11" y1="5" x2="14.8" y2="11" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round" />
+                  <line class="tray-sound-mute" x1="14.8" y1="5" x2="11" y2="11" stroke="#dc2626" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="tray-status-icon tray-battery-icon" id="tray-battery-indicator" aria-hidden="true">
+                <svg viewBox="0 0 18 16">
+                  <rect x="1.2" y="4" width="13" height="8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3" />
+                  <rect x="14.7" y="6.3" width="1.8" height="3.4" rx="0.6" fill="currentColor" />
+                  <rect id="tray-battery-fill" x="2.8" y="5.6" width="9.8" height="4.8" rx="0.5" fill="#16a34a" />
+                  <path id="tray-battery-bolt" d="M8.4 4.8L6.1 8.2h1.8l-.6 3 2.5-3.6H8l.4-2.8Z" fill="#fef08a" stroke="#0f172a" stroke-width="0.45" stroke-linejoin="round" style="display: none" />
+                </svg>
+              </span>
             </button>
-            <button class="tray-icon-btn" id="tray-qs-btn" title="Network &amp; Quick Settings">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M2 6.2a8.5 8.5 0 0 1 12 0" fill="none" stroke="#0078d4" stroke-width="1.5" stroke-linecap="round" />
-                <path d="M4.3 8.8a5.2 5.2 0 0 1 7.4 0" fill="none" stroke="#0078d4" stroke-width="1.5" stroke-linecap="round" />
-                <circle cx="8" cy="12" r="1.4" fill="#1e293b" />
-              </svg>
+
+            <button
+              type="button"
+              class="tray-group-btn tray-datetime-btn"
+              id="tray-datetime-notif-btn"
+              aria-expanded="false"
+              aria-controls="tray-calendar-notif-flyout"
+              title="Calendar &amp; Notifications"
+            >
+              <span id="tray-clock" class="tray-clock">
+                <span class="tray-clock-time">12:00 PM</span>
+                <span class="tray-clock-date">11/26/2026</span>
+              </span>
+              <span class="tray-bell-wrap" id="tray-notif-bell" aria-hidden="true">
+                <svg viewBox="0 0 16 16">
+                  <path d="M8 2.2a3.6 3.6 0 0 0-3.6 3.6v2.7L3.2 10.5h9.6L11.6 8.5V5.8A3.6 3.6 0 0 0 8 2.2Z" fill="#eab308" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round" />
+                  <path d="M6.4 11.7a1.6 1.6 0 0 0 3.2 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+                <span id="tray-notif-count" class="tray-notif-count tabular-nums" style="display: none">0</span>
+              </span>
             </button>
-            <button class="tray-icon-btn" id="tray-crt-btn" title="CRT Scanlines On — Click to Toggle">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <rect x="1.5" y="2" width="13" height="9.5" rx="1.2" fill="#0f172a" stroke="#334155" stroke-width="1.2" />
-                <line x1="3" y1="5" x2="13" y2="5" stroke="#22d3ee" stroke-width="1" />
-                <line x1="3" y1="7.5" x2="13" y2="7.5" stroke="#38bdf8" stroke-width="1" />
-                <line x1="5" y1="13.5" x2="11" y2="13.5" stroke="#334155" stroke-width="1.5" stroke-linecap="round" />
-              </svg>
-            </button>
-            <button class="tray-icon-btn" id="tray-sound-btn" title="Sound On — Click to Mute Retro SFX">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <polygon points="2,6 5.5,6 9.5,2.5 9.5,13.5 5.5,10 2,10" fill="#1e293b" />
-                <path class="tray-sound-waves" d="M11.5 5.3a3.6 3.6 0 0 1 0 5.4M13.2 3.5a6.2 6.2 0 0 1 0 9" fill="none" stroke="#1e293b" stroke-width="1.3" stroke-linecap="round" />
-                <line class="tray-sound-mute" x1="11" y1="5" x2="14.8" y2="11" stroke="#b91c1c" stroke-width="1.6" stroke-linecap="round" />
-                <line class="tray-sound-mute" x1="14.8" y1="5" x2="11" y2="11" stroke="#b91c1c" stroke-width="1.6" stroke-linecap="round" />
-              </svg>
-            </button>
-            <div id="tray-clock" class="tray-clock" title="Date, Time &amp; Quick Settings">
-              <span class="tray-clock-time">12:00 PM</span>
-              <span class="tray-clock-date">11/24/2026</span>
-            </div>
           </div>
           <button class="taskbar-peek-btn" id="show-desktop-btn" title="Show Desktop (Minimize All Windows)" aria-label="Show Desktop"></button>
         </div>
       </div>
 
-      <!-- NOTIFICATION BALLOON STACK & HISTORY DRAWER -->
+      <!-- NOTIFICATION BALLOON STACK & STACKED NOTIFICATION CENTER + MINI CALENDAR FLYOUT -->
       <div id="os-balloon-stack" class="os-balloon-stack"></div>
-      <div id="notif-drawer" class="notif-drawer" style="display:none">
-        <div class="window-titlebar">
-          <span class="window-title">🔔 Action Center &amp; Notification Log</span>
-          <div class="window-controls">
-            <button class="window-control-button" id="notif-drawer-close">✕</button>
+      <div
+        id="tray-calendar-notif-flyout"
+        class="tray-cal-notif-stack"
+        style="display: none"
+        role="dialog"
+        aria-label="Notifications and Calendar"
+      >
+        <section id="notif-drawer" class="tray-flyout-card notif-drawer-card" aria-label="Notifications">
+          <div class="window-titlebar">
+            <span class="window-title">🔔 Notifications</span>
+            <div class="window-controls">
+              <button type="button" class="window-control-button" id="notif-drawer-close" title="Close">✕</button>
+            </div>
           </div>
-        </div>
-        <div style="padding:6px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #808080">
-          <span style="font-size:0.72rem;font-weight:700">Recent OS Events &amp; Trophies</span>
-          <button class="win95-btn" id="notif-drawer-clear">Clear All</button>
-        </div>
-        <div id="notif-drawer-list" class="notif-drawer-list"></div>
+          <div class="notif-card-toolbar">
+            <span class="notif-card-subtitle">Recent OS Events &amp; Trophies <span id="notif-header-count" class="notif-header-count tabular-nums"></span></span>
+            <button type="button" class="win95-btn notif-clear-btn" id="notif-drawer-clear">Clear All</button>
+          </div>
+          <div id="notif-drawer-list" class="notif-drawer-list"></div>
+        </section>
+
+        <section id="tray-mini-calendar" class="tray-flyout-card mini-cal-card" aria-label="Mini Calendar">
+          <div class="mini-cal-top">
+            <button type="button" class="mini-cal-today-banner" id="mini-cal-today-banner" title="Jump to Today">
+              <span class="mini-cal-today-weekday" id="mini-cal-today-weekday">Thursday</span>
+              <span class="mini-cal-today-date" id="mini-cal-today-date">November 26, 2026</span>
+            </button>
+            <button type="button" class="win95-btn mini-cal-open-app-btn" id="mini-cal-open-app-btn" title="Open Full Calendar App">Open Calendar</button>
+          </div>
+          <div class="mini-cal-nav">
+            <span class="mini-cal-month-label" id="mini-cal-month-label">November 2026</span>
+            <div class="mini-cal-nav-btns">
+              <button type="button" class="win95-btn mini-cal-today-chip" id="mini-cal-today-btn" style="display: none" title="Jump to current month">Today</button>
+              <button type="button" class="win95-btn mini-cal-arrow-btn" id="mini-cal-prev-btn" aria-label="Previous month" title="Previous month">‹</button>
+              <button type="button" class="win95-btn mini-cal-arrow-btn" id="mini-cal-next-btn" aria-label="Next month" title="Next month">›</button>
+            </div>
+          </div>
+          <div class="mini-cal-weekdays" aria-hidden="true">
+            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+          </div>
+          <div class="mini-cal-grid tabular-nums" id="mini-cal-grid" role="grid" aria-label="Month days"></div>
+        </section>
       </div>
 
       <!-- RUN COMMAND DIALOG (Alt+R) -->
@@ -3283,13 +3341,13 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
       <div id="winver-modal" class="installshield-backdrop" style="display:none">
         <div class="sfx-exe-window" style="width:420px">
           <div class="window-titlebar">
-            <span class="window-title">ℹ️ About Angel OS v2.0.0 (WINVER.EXE)</span>
+            <span class="window-title">ℹ️ About Angel OS v2.0.1 (WINVER.EXE)</span>
             <div class="window-controls"><button class="window-control-button" id="winver-close-btn">✕</button></div>
           </div>
           <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#000">
             <div style="background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff;padding:10px 12px;font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:10px;border-radius:4px">
               <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Angel OS" style="width:28px;height:28px" />
-              <span>Angel OS v2.0.0 · Private Cloud &amp; 500-App Edition</span>
+              <span>Angel OS v2.0.1 · Private Cloud &amp; 500-App Edition</span>
             </div>
             <div><b>Shell:</b> Angel OS Desktop Shell · Private Per-User Accounts (Firebase Cloud &amp; Local)</div>
             <div><b>Software Store:</b> 514+ Interactive Installable Applications (14 Live Mini-App Engines)</div>
