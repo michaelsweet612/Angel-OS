@@ -16,6 +16,12 @@ import {
   renderMasterSettingsCurrentTab,
   systemRegistry,
 } from './osExtendedApps';
+import {
+  getActiveSessionIdentity,
+  openAccountSignInChooser,
+  signOutActiveAccount,
+  syncAccountStatusUI,
+} from './osUserAccounts';
 
 export interface PhysicalBooterCallbacks {
   onEnterBootManager: () => void;
@@ -31,10 +37,33 @@ let signInClockTimerId: number | null = null;
 let selectedSignInUsername: string | null = null;
 
 export function getActiveLocalUser(): LocalUserAccount {
-  const list = systemRegistry.localAccounts?.length
-    ? systemRegistry.localAccounts
-    : DEFAULT_SYSTEM_REGISTRY.localAccounts;
-  return list.find((a) => a.username === systemRegistry.activeLocalAccount) || list[0];
+  const session = getActiveSessionIdentity();
+  if (session) {
+    return {
+      username: session.displayName,
+      displayName: session.displayName,
+      avatar: session.avatar || '👼',
+      role: session.mode === 'guest' ? 'Standard' : 'Administrator',
+      password: '',
+      pin: '',
+      homeDir: `C:\\Users\\${session.displayName.replace(/[\\/:*?"<>|]/g, '_')}`,
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+  }
+  const list = systemRegistry.localAccounts?.length ? systemRegistry.localAccounts : [];
+  if (list.length > 0) {
+    return list.find((a) => a.username === systemRegistry.activeLocalAccount) || list[0];
+  }
+  return {
+    username: 'Guest',
+    displayName: 'Guest',
+    avatar: '👤',
+    role: 'Standard',
+    password: '',
+    pin: '',
+    homeDir: 'C:\\Users\\Guest',
+    createdAt: new Date().toISOString().slice(0, 10),
+  };
 }
 
 export function upsertLocalAccount(
@@ -42,9 +71,9 @@ export function upsertLocalAccount(
   secret = '',
   role: 'Administrator' | 'Standard' = 'Administrator',
 ): LocalUserAccount {
-  const cleanName = username.trim().replace(/[\\/:*?"<>|]/g, '') || 'Michael';
-  if (!Array.isArray(systemRegistry.localAccounts) || systemRegistry.localAccounts.length === 0) {
-    systemRegistry.localAccounts = DEFAULT_SYSTEM_REGISTRY.localAccounts.map((a) => ({ ...a }));
+  const cleanName = username.trim().replace(/[\\/:*?"<>|]/g, '') || 'User';
+  if (!Array.isArray(systemRegistry.localAccounts)) {
+    systemRegistry.localAccounts = [];
   }
   let existing = systemRegistry.localAccounts.find(
     (a) => a.username.toLowerCase() === cleanName.toLowerCase(),
@@ -78,31 +107,29 @@ export function upsertLocalAccount(
 export function ensureLocalAccountFolders(username: string): void {
   const bridge = getOsBridge();
   if (!bridge) return;
+  const clean = username.replace(/[\\/:*?"<>|]/g, '_').trim() || 'User';
   const files = bridge.getVfsFiles();
   if (!files.some((f) => f.type === 'folder' && f.parent === 'C:\\' && f.name === 'Users')) {
     bridge.addVfsFile('Users', 'folder', 'C:\\');
   }
-  if (!files.some((f) => f.type === 'folder' && f.parent === 'C:\\Users' && f.name.toLowerCase() === username.toLowerCase())) {
-    bridge.addVfsFile(username, 'folder', 'C:\\Users');
+  if (!files.some((f) => f.type === 'folder' && f.parent === 'C:\\Users' && f.name.toLowerCase() === clean.toLowerCase())) {
+    bridge.addVfsFile(clean, 'folder', 'C:\\Users');
   }
   bridge.refreshExplorerIfOpen();
 }
 
 export function syncLocalAccountStartPill(): void {
-  const acct = getActiveLocalUser();
-  const lbl = document.getElementById('start-user-label');
-  if (lbl) {
-    lbl.textContent = `${acct.avatar} ${acct.displayName} · Local Account`;
-  }
+  syncAccountStatusUI();
 }
 
 export function renderBootManagerOptions(): void {
   const desc = document.getElementById('bootmgr-normal-desc');
-  const acct = getActiveLocalUser();
+  const session = getActiveSessionIdentity();
   const target = systemRegistry.selectedInstallTargetPartition || 'C:';
   const size = target === 'D:' && partitionTable.logicalD.exists ? partitionTable.logicalD.sizeMB : partitionTable.primaryC.sizeMB;
   if (desc) {
-    desc.textContent = `Volume ${target}\\ (${size} MB · ${systemRegistry.fileSystemFormat}) · Sign-in: ${acct.displayName} (Local Account Always)`;
+    const acctLabel = session ? `${session.displayName} (${session.mode === 'firebase' ? 'Google Cloud' : session.mode === 'local' ? 'Local Profile' : 'Guest'})` : 'Setup / Account Sign-In';
+    desc.textContent = `Volume ${target}\\ (${size} MB · ${systemRegistry.fileSystemFormat}) · Account: ${acctLabel}`;
   }
 }
 
@@ -171,14 +198,7 @@ function renderSignInSelectedAccount(): void {
 }
 
 export function openLocalSignInScreen(): void {
-  const screen = document.getElementById('os-signin-screen');
-  if (!screen) return;
-  selectedSignInUsername = systemRegistry.activeLocalAccount || 'Michael';
-  renderSignInSelectedAccount();
-  updateSignInLockClock();
-  screen.style.display = 'flex';
-  if (signInClockTimerId !== null) clearInterval(signInClockTimerId);
-  signInClockTimerId = window.setInterval(updateSignInLockClock, 1000);
+  openAccountSignInChooser();
 }
 
 export function closeLocalSignInScreen(): void {
@@ -254,7 +274,7 @@ export function renderOsSetupPartitionOptionsUI(): void {
   if (fsSel) fsSel.value = systemRegistry.fileSystemFormat;
   if (bootSel) bootSel.value = systemRegistry.selectedBootloaderMode || 'win_hybrid_mbr';
   if (userInp && document.activeElement !== userInp) {
-    userInp.value = systemRegistry.activeLocalAccount || 'Michael';
+    userInp.value = getActiveLocalUser().displayName || '';
   }
 
   if (!tbody) return;
@@ -374,16 +394,16 @@ export function initPhysicalBooterAndSignIn(callbacks: PhysicalBooterCallbacks):
     booterCbs?.onReboot();
   });
 
-  // Start Menu Account Pill & Lock / Physical Booter Listeners
+  // Start Menu Account Pill & Sign-Out / Physical Booter Listeners
   document.getElementById('start-user-pill-btn')?.addEventListener('click', () => {
     document.getElementById('start-menu')?.classList.remove('active');
-    openLocalSignInScreen();
+    void signOutActiveAccount(false);
   });
   document.getElementById('start-lock-signin')?.addEventListener('click', () => {
     document.getElementById('start-menu')?.classList.remove('active');
     const pm = document.getElementById('start-power-menu');
     if (pm) pm.style.display = 'none';
-    openLocalSignInScreen();
+    void signOutActiveAccount(false);
   });
   document.getElementById('start-physical-booter')?.addEventListener('click', () => {
     document.getElementById('start-menu')?.classList.remove('active');

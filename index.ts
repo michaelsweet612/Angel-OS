@@ -5,7 +5,9 @@
 import '@tailwindcss/browser';
 import {
   applySystemRegistryToOS,
+  browserBookmarks,
   getBrowserEngineMeta,
+  getInstalledPackageIds,
   initAbilityToInstallApp,
   initCmosBiosController,
   initMasterControlPanel,
@@ -24,7 +26,9 @@ import {
   registerOsBridge,
   renderAbilityToInstallUI,
   renderMasterSettingsCurrentTab,
+  replaceWorkspaceCoreState,
   resetIdleTimer,
+  resetWorkspaceCoreStateToDefaults,
   startScreensaverNow,
   switchBrowserToAiMode,
   syncBrowserChromeToEngine,
@@ -84,6 +88,10 @@ import {
   triggerNativePwaInstall,
 } from './osDualInstall';
 import {
+  getCustomStickiesSnapshot,
+  getUnlockedTrophiesSnapshot,
+  hydrateCustomStickies,
+  hydrateUnlockedTrophies,
   initArcadeApp,
   initCalcApp,
   initCalendarApp,
@@ -111,6 +119,22 @@ import {
   logVfsEvent,
   registerSystemLogsBridge,
 } from './osSystemLogs';
+import {
+  getStoreAppById,
+  getStoreAppIconDataUri,
+  isStoreAppId,
+  mountStoreMiniApp,
+} from './osAppStore500';
+import {
+  forceActiveUserSaveNow,
+  getActiveSessionIdentity,
+  initUserAccountSystem,
+  openOobeSetupWizard,
+  resolveUserSessionAfterBoot,
+  scheduleActiveUserSave,
+  signOutActiveAccount,
+  type AngelOsWorkspaceSnapshot,
+} from './osUserAccounts';
 
 // --- Web Audio API Retro Windows 95 Sound Blaster 16 DSP Engine ---
 class RetroSoundEngine {
@@ -834,14 +858,127 @@ function saveTaskbarOrder(): void {
   } catch {
     // ignore
   }
+  scheduleActiveUserSave();
 }
 
 let draggedTaskbarApp: string | null = null;
+const storeMiniAppCleanups = new Map<string, () => void>();
+let dynamicWindowSpawnCount = 0;
+
+function ensureDynamicStoreWindow(appName: string): HTMLDivElement | null {
+  const existing = document.getElementById(appName) as HTMLDivElement | null;
+  if (existing) return existing;
+  const appDef = getStoreAppById(appName);
+  if (!appDef || !desktop) return null;
+
+  const winEl = document.createElement('div');
+  winEl.className = 'window resizable dynamic-store-window';
+  winEl.id = appDef.pkgId;
+  winEl.style.width = '560px';
+  winEl.style.height = '440px';
+  winEl.style.display = 'none';
+  winEl.innerHTML = `
+    <div class="window-titlebar">
+      <span class="window-title">${appDef.icon} ${appDef.name}</span>
+      <div class="window-controls">
+        <div class="window-minimize window-control-button" title="Minimize">−</div>
+        <div class="window-maximize window-control-button" title="Maximize">□</div>
+        <div class="window-close window-control-button" title="Close">✕</div>
+      </div>
+    </div>
+    <div class="window-content" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
+  `;
+  desktop.appendChild(winEl);
+  wireWindowChrome(winEl, dynamicWindowSpawnCount++);
+
+  const contentEl = winEl.querySelector('.window-content') as HTMLDivElement;
+  const cleanup = mountStoreMiniApp(appDef, contentEl, {
+    saveTextToDocuments: (fileName: string, content: string) => {
+      const cleanName = fileName.replace(/[\\/:*?"<>|]/g, '_').trim() || 'note.txt';
+      const idx = virtualFileSystem.findIndex(
+        (f) => f.parent === 'C:\\Documents' && f.name.toUpperCase() === cleanName.toUpperCase(),
+      );
+      if (idx !== -1) {
+        virtualFileSystem[idx] = { name: cleanName, type: 'text', parent: 'C:\\Documents', content };
+      } else {
+        virtualFileSystem.push({ name: cleanName, type: 'text', parent: 'C:\\Documents', content });
+      }
+      logVfsEvent('WRITE', `C:\\Documents\\${cleanName}`, `Saved from ${appDef.name}`, 'OK');
+      if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+      scheduleActiveUserSave();
+    },
+    saveImageToPictures: (fileName: string, dataUrl: string) => {
+      const cleanName = fileName.replace(/[\\/:*?"<>|]/g, '_').trim() || 'image.png';
+      virtualFileSystem.push({ name: cleanName, type: 'image', parent: 'C:\\Pictures', content: dataUrl });
+      logVfsEvent('WRITE', `C:\\Pictures\\${cleanName}`, `Saved image from ${appDef.name}`, 'OK');
+      if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+    },
+    playClick: () => sfx.playClick(),
+    pushToast: (title: string, msg: string, icon?: string) => pushBalloonToast(title, msg, icon || appDef.icon),
+  });
+  if (typeof cleanup === 'function') {
+    storeMiniAppCleanups.set(appDef.pkgId, cleanup);
+  }
+  return winEl;
+}
+
+function syncStoreDesktopShortcuts(): void {
+  const deskContainer = document.getElementById('desktop-icons');
+  const startStoreList = document.getElementById('start-store-apps-list');
+
+  const installedStorePkgs = packageCatalog.filter((p) => p.installed && isStoreAppId(p.appWindowId));
+
+  if (deskContainer) {
+    deskContainer.querySelectorAll('.dynamic-store-icon').forEach((el) => el.remove());
+    installedStorePkgs.forEach((pkg) => {
+      if (!pkg.desktopShortcut) return;
+      const def = getStoreAppById(pkg.appWindowId);
+      if (!def) return;
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'icon dynamic-store-icon';
+      iconDiv.dataset.app = def.pkgId;
+      iconDiv.dataset.pkgId = pkg.pkgId;
+      iconDiv.innerHTML = `
+        <img src="${getStoreAppIconDataUri(def)}" alt="${def.name}" />
+        <span>${def.name}</span>
+      `;
+      deskContainer.appendChild(iconDiv);
+    });
+    layoutDesktopIcons(false);
+  }
+
+  if (startStoreList) {
+    startStoreList.innerHTML = '';
+    installedStorePkgs.forEach((pkg) => {
+      if (!pkg.startMenuShortcut) return;
+      const def = getStoreAppById(pkg.appWindowId);
+      if (!def) return;
+      const item = document.createElement('div');
+      item.className = 'start-menu-item start-store-item';
+      item.dataset.app = def.pkgId;
+      item.textContent = `${def.icon} ${def.name}`;
+      item.addEventListener('click', () => {
+        closeStartMenuUi();
+        void openApp(def.pkgId);
+      });
+      startStoreList.appendChild(item);
+    });
+  }
+}
 
 function getAppDockMeta(appName: string): { icon: string; title: string } {
   if (appName === 'chrome') {
     const meta = getBrowserEngineMeta(systemRegistry.defaultBrowserEngine);
     return { icon: meta.iconUrl, title: meta.shortTitle };
+  }
+  if (isStoreAppId(appName)) {
+    const storeApp = getStoreAppById(appName);
+    if (storeApp) {
+      return {
+        icon: getStoreAppIconDataUri(storeApp),
+        title: storeApp.name,
+      };
+    }
   }
   const titles: Record<string, string> = {
     myComputer: 'My AngelTop',
@@ -1134,7 +1271,10 @@ export async function openApp(appName: string, bypassPkgCheck = false): Promise<
     }
   }
 
-  const windowElement = document.getElementById(appName) as HTMLDivElement | null;
+  let windowElement = document.getElementById(appName) as HTMLDivElement | null;
+  if (!windowElement && isStoreAppId(appName)) {
+    windowElement = ensureDynamicStoreWindow(appName);
+  }
   if (!windowElement) return;
 
   sfx.playWindowOpen();
@@ -1315,6 +1455,20 @@ function closeApp(appName: string): void {
   }
   if (appName === 'foreignRunnerApp') {
     stopForeignRuntimeOnClose();
+  }
+  if (isStoreAppId(appName)) {
+    const cleanup = storeMiniAppCleanups.get(appName);
+    if (cleanup) {
+      try {
+        cleanup();
+      } catch {
+        // ignore mini-app teardown error
+      }
+      storeMiniAppCleanups.delete(appName);
+    }
+    if (windowEl.classList.contains('dynamic-store-window')) {
+      windowEl.remove();
+    }
   }
 
   if (dosInstances[appName]) {
@@ -3557,7 +3711,7 @@ function initDosPrompt(windowElement: HTMLDivElement): void {
     }
     if (upper === 'WINVER') {
       openWinverModal();
-      appendLine('AngelOS-web Windows 11+10 Hybrid (Version 1.9.0 · Java JVM, DOS .EXE & Android .APK Runtime Host)');
+      appendLine('Angel OS v2.0.0 — Private Cloud Accounts, 500+ Interactive Store Apps & Hardened Live Browser');
       return;
     }
     if (upper === 'HOTKEYS') {
@@ -4355,8 +4509,8 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Setup Window Chrome (Drag, Minimize, Maximize, Close)
-windows.forEach((windowElement, idx) => {
+// Setup Window Chrome (Drag, Minimize, Maximize, Close) — Reusable for built-in & dynamic 500-app store windows
+function wireWindowChrome(windowElement: HTMLDivElement, idx: number): void {
   const titleBar = windowElement.querySelector('.window-titlebar') as HTMLDivElement | null;
   const closeButton = windowElement.querySelector('.window-close') as HTMLDivElement | null;
   const minimizeButton = windowElement.querySelector('.window-minimize') as HTMLDivElement | null;
@@ -4461,7 +4615,9 @@ windows.forEach((windowElement, idx) => {
   const leftOffset = 210 + (idx % 6) * 34;
   windowElement.style.top = `${topOffset}px`;
   windowElement.style.left = `${leftOffset}px`;
-});
+}
+
+windows.forEach((windowElement, idx) => wireWindowChrome(windowElement, idx));
 
 // --- Interactive BIOS POST, Windows Boot Manager, Splash & Always-Local Sign-In Controller ---
 const bootScreen = document.getElementById('boot-screen') as HTMLDivElement | null;
@@ -4514,7 +4670,8 @@ function updateBootMgrCountdownLabel(customMsg?: string) {
 
 function finishBootToDesktop(bypassSignIn = false) {
   clearBootTimers();
-  if (!bypassSignIn && systemRegistry.requireSignInOnBoot) {
+  const activeSession = getActiveSessionIdentity();
+  if (!activeSession) {
     bootState = 'signin';
     if (bootScreen) {
       bootScreen.classList.add('fade-out');
@@ -4525,15 +4682,17 @@ function finishBootToDesktop(bypassSignIn = false) {
       }, 360);
       bootTimeouts.push(hideId);
     }
-    openLocalSignInScreen();
+    void resolveUserSessionAfterBoot();
     return;
   }
 
   bootState = 'complete';
   unlockAchievement('first_boot');
   syncLocalAccountStartPill();
+  syncStoreDesktopShortcuts();
+  syncTaskbarDock();
   runStartupForeignPrograms();
-  logBootEvent('EXPLORER.EXE', `Desktop shell ready (${bootMgrSafeModeFlag ? 'Safe Mode' : 'Normal Mode'}) · Active account: ${systemRegistry.activeLocalAccount}`, 'OK', '0x1095');
+  logBootEvent('EXPLORER.EXE', `Desktop shell ready (${bootMgrSafeModeFlag ? 'Safe Mode' : 'Normal Mode'}) · Active account: ${activeSession.displayName}`, 'OK', '0x1095');
   if (bootScreen) {
     bootScreen.classList.add('fade-out');
     const hideId = window.setTimeout(() => {
@@ -4547,7 +4706,7 @@ function finishBootToDesktop(bypassSignIn = false) {
     bootMgrSafeModeFlag = false;
     pushBalloonToast(
       'Safe Mode & Diagnostics Active',
-      'Minimal drivers loaded. Partition Options, Registry Editor, and Local Accounts ready.',
+      'Minimal drivers loaded. Partition Options, Registry Editor, and Private Accounts ready.',
       '🛡️',
     );
   }
@@ -4778,7 +4937,10 @@ window.addEventListener('keydown', (e) => {
   const setupOpen = document.getElementById('os-reinstall-screen')?.style.display === 'flex';
   const fdiskOpen = document.getElementById('fdisk-screen')?.style.display === 'flex';
   const physOpen = document.getElementById('physical-booter-modal')?.style.display === 'flex';
-  const signInOpen = document.getElementById('os-signin-screen')?.style.display === 'flex';
+  const signInOpen =
+    document.getElementById('os-signin-screen')?.style.display === 'flex' ||
+    document.getElementById('oobe-setup-screen')?.style.display === 'flex' ||
+    document.getElementById('angel-signin-chooser')?.style.display === 'flex';
   if (physOpen && e.key === 'Escape') {
     e.preventDefault();
     const m = document.getElementById('physical-booter-modal');
@@ -5765,6 +5927,8 @@ registerOsBridge({
   rebootGemini95,
   updateClock,
   syncTaskbarDock,
+  syncStoreDesktopShortcuts,
+  onUserStateMutated: () => scheduleActiveUserSave(),
   clampOpenWindows: () => {
     openApps.forEach((d) => clampWindowToViewport(d.windowEl, true));
   },
@@ -5777,6 +5941,7 @@ registerOsBridge({
     virtualFileSystem.push({ name, type, parent, content, appTarget, pkgId, sizeMB });
     const fullPath = `${parent.replace(/\\$/, '')}\\${name}`;
     logVfsEvent('CREATE', fullPath, `type=${type}${sizeMB ? ` size=${sizeMB.toFixed(1)}MB` : ''}`, 'OK');
+    scheduleActiveUserSave();
   },
   removeVfsFile: (name, parent) => {
     const idx = virtualFileSystem.findIndex(
@@ -5785,6 +5950,7 @@ registerOsBridge({
     if (idx !== -1) {
       virtualFileSystem.splice(idx, 1);
       logVfsEvent('DELETE', `${parent.replace(/\\$/, '')}\\${name}`, 'Removed from VFS', 'WARN');
+      scheduleActiveUserSave();
     }
   },
   openExplorerAt: (folderPath: string) => {
@@ -5861,6 +6027,7 @@ registerMegaBridge({
   refreshExplorerIfOpen: () => {
     if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
   },
+  onUserStateMutated: () => scheduleActiveUserSave(),
   sfx,
 });
 initCmosBiosController();
@@ -5920,7 +6087,130 @@ registerForeignRuntimeBridge({
   sfx,
   unlockAchievement,
 });
+// ==================== PRIVATE PER-USER WORKSPACE SNAPSHOT & HYDRATION ====================
+function closeAllOpenWindowsForSwitch(): void {
+  Array.from(openApps.keys()).forEach((name) => closeApp(name));
+}
+
+function captureWorkspaceSnapshot(): AngelOsWorkspaceSnapshot {
+  const factoryKeys = new Set(FACTORY_VFS_SNAPSHOT.map((f) => `${f.parent}::${f.name.toUpperCase()}`));
+  const vfsUserFiles = virtualFileSystem
+    .filter(
+      (f) =>
+        f.type === 'text' &&
+        typeof f.content === 'string' &&
+        !factoryKeys.has(`${f.parent}::${f.name.toUpperCase()}`),
+    )
+    .map((f) => ({
+      name: f.name,
+      parent: f.parent,
+      type: 'text' as const,
+      content: f.content || '',
+    }));
+
+  return {
+    schemaVersion: 2,
+    registry: { ...systemRegistry },
+    installedPkgIds: getInstalledPackageIds(),
+    vfsUserFiles,
+    bookmarks: browserBookmarks.map((b) => ({ ...b })),
+    stickies: getCustomStickiesSnapshot(),
+    taskbarOrder: [...taskbarAppOrder],
+    unlockedTrophies: getUnlockedTrophiesSnapshot(),
+  };
+}
+
+function resetWorkspaceToCleanDefaults(): void {
+  closeAllOpenWindowsForSwitch();
+  resetVfsToFactory();
+  resetWorkspaceCoreStateToDefaults();
+  hydrateCustomStickies([]);
+  hydrateUnlockedTrophies([]);
+  taskbarAppOrder = [...DEFAULT_PINNED_TASKBAR_APPS];
+  try {
+    window.localStorage.setItem(TASKBAR_ORDER_STORAGE_KEY, JSON.stringify(taskbarAppOrder));
+  } catch {}
+  syncStoreDesktopShortcuts();
+  syncTaskbarDock();
+}
+
+function hydrateWorkspaceSnapshot(snapshot: AngelOsWorkspaceSnapshot | null): void {
+  closeAllOpenWindowsForSwitch();
+  resetVfsToFactory();
+
+  if (!snapshot) {
+    resetWorkspaceCoreStateToDefaults();
+    hydrateCustomStickies([]);
+    hydrateUnlockedTrophies([]);
+    taskbarAppOrder = [...DEFAULT_PINNED_TASKBAR_APPS];
+  } else {
+    replaceWorkspaceCoreState(
+      snapshot.registry || null,
+      Array.isArray(snapshot.installedPkgIds) ? snapshot.installedPkgIds : null,
+      Array.isArray(snapshot.bookmarks) ? snapshot.bookmarks : null,
+    );
+    if (Array.isArray(snapshot.vfsUserFiles)) {
+      snapshot.vfsUserFiles.forEach((uf) => {
+        if (uf && typeof uf.name === 'string' && typeof uf.content === 'string') {
+          virtualFileSystem.push({
+            name: uf.name,
+            parent: uf.parent || 'C:\\Documents',
+            type: 'text',
+            content: uf.content,
+          });
+        }
+      });
+    }
+    hydrateCustomStickies(Array.isArray(snapshot.stickies) ? snapshot.stickies : []);
+    hydrateUnlockedTrophies(Array.isArray(snapshot.unlockedTrophies) ? snapshot.unlockedTrophies : []);
+    if (Array.isArray(snapshot.taskbarOrder) && snapshot.taskbarOrder.length > 0) {
+      const merged = snapshot.taskbarOrder.filter((x) => typeof x === 'string');
+      DEFAULT_PINNED_TASKBAR_APPS.forEach((a) => {
+        if (!merged.includes(a)) merged.push(a);
+      });
+      taskbarAppOrder = merged;
+    } else {
+      taskbarAppOrder = [...DEFAULT_PINNED_TASKBAR_APPS];
+    }
+  }
+
+  try {
+    window.localStorage.setItem(TASKBAR_ORDER_STORAGE_KEY, JSON.stringify(taskbarAppOrder));
+  } catch {}
+  syncStoreDesktopShortcuts();
+  syncTaskbarDock();
+  if (openApps.has('myComputer')) renderExplorerFolder(currentExplorerPath);
+}
+
+initUserAccountSystem({
+  captureWorkspaceSnapshot,
+  hydrateWorkspaceSnapshot: (snap) => hydrateWorkspaceSnapshot(snap),
+  resetWorkspaceToCleanDefaults,
+  onSessionReady: () => {
+    finishBootToDesktop(true);
+  },
+  onSignOutComplete: () => {
+    closeStartMenuUi();
+  },
+  playClick: () => sfx.playClick(),
+  playStartupChime: () => sfx.playStartupChime(),
+  pushToast: pushBalloonToast,
+});
+
+document.getElementById('start-sync-now-btn')?.addEventListener('click', () => {
+  sfx.playClick();
+  void forceActiveUserSaveNow();
+});
+
+document.getElementById('start-setup-wizard-btn')?.addEventListener('click', () => {
+  closeStartMenuUi();
+  const pm = document.getElementById('start-power-menu');
+  if (pm) pm.style.display = 'none';
+  void signOutActiveAccount(true);
+});
+
 applySystemRegistryToOS(true);
+syncStoreDesktopShortcuts();
 syncTaskbarDock();
 syncLocalAccountStartPill();
 layoutDesktopIcons(false);
@@ -5940,9 +6230,9 @@ logHardwareEvent(
   '0x2005',
 );
 pushBalloonToast(
-  'AngelOS-web v1.9.0 Ready!',
-  'Angel Runtime Host & Java Workbench active — drag any .jar, .java, .exe, .com, .zip, .apk, or .html onto the desktop!',
-  '🧩',
+  'Angel OS v2.0.0 Ready',
+  'Private per-user accounts, 514+ interactive store apps, and hardened browser & taskbar shell active.',
+  '👼',
 );
 
 window.addEventListener('angelos:icons-changed', () => {

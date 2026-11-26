@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private Angel OS user account profile and OOBE completion metadata, strictly scoped to the authenticated owner.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the account owner.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User chosen display name shown on the Angel OS Start Menu and lock screen.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified account email address.",
+          "maxLength": 160
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Optional avatar URL or emoji token.",
+          "maxLength": 512
+        },
+        "themePreset": {
+          "type": "string",
+          "description": "Selected Angel OS visual theme preset.",
+          "maxLength": 32
+        },
+        "oobeCompleted": {
+          "type": "boolean",
+          "description": "Whether the user completed the Windows-style first-run setup wizard."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "email",
+        "photoURL",
+        "themePreset",
+        "oobeCompleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserOsSave": {
+      "title": "UserOsSave",
+      "description": "Strictly private per-user Angel OS workspace snapshot including registry preferences, installed package IDs, user files, bookmarks, stickies, trophies, and taskbar order.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "description": "Save state schema version."
+        },
+        "registry": {
+          "type": "object",
+          "description": "Native map of Angel OS display, shell, audio, browser, and hardware preferences."
+        },
+        "installedPkgIds": {
+          "type": "array",
+          "description": "List of installed Angel OS package IDs from the 500+ app store."
+        },
+        "vfsUserFiles": {
+          "type": "array",
+          "description": "Bounded list of user-created virtual files (documents/notes)."
+        },
+        "bookmarks": {
+          "type": "array",
+          "description": "User browser bookmarks."
+        },
+        "stickies": {
+          "type": "array",
+          "description": "User desktop sticky notes."
+        },
+        "taskbarOrder": {
+          "type": "array",
+          "description": "Ordered list of pinned taskbar app IDs."
+        },
+        "unlockedTrophies": {
+          "type": "array",
+          "description": "List of unlocked trophy IDs."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the save document was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the save document was last updated."
+        }
+      },
+      "required": [
+        "uid",
+        "schemaVersion",
+        "registry",
+        "installedPkgIds",
+        "vfsUserFiles",
+        "bookmarks",
+        "stickies",
+        "taskbarOrder",
+        "unlockedTrophies",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile metadata owned strictly by userId."
+    },
+    "/users/{userId}/saves/{saveId}": {
+      "schema": { "$ref": "#/entities/UserOsSave" },
+      "description": "Private Angel OS desktop state snapshot owned strictly by userId."
+    }
+  }
+}

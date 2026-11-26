@@ -275,14 +275,15 @@ async function startServer() {
       let currentUrl = (await validatePublicHttpUrl(rawUrl)).toString();
       let response: Response | null = null;
 
-      for (let hops = 0; hops < 4; hops++) {
+      for (let hops = 0; hops < 8; hops++) {
         response = await fetch(currentUrl, {
           redirect: 'manual',
-          signal: AbortSignal.timeout(7500),
+          signal: AbortSignal.timeout(12000),
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/*,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
           },
         });
 
@@ -338,12 +339,23 @@ async function startServer() {
       }
 
       let html = rawText;
-      if (!contentType.includes('html') && !contentType.includes('xml')) {
+      if (contentType.includes('application/json')) {
+        let formatted = rawText;
+        try {
+          formatted = JSON.stringify(JSON.parse(rawText), null, 2);
+        } catch {
+          // keep raw text if invalid JSON
+        }
+        const esc = formatted.replace(/[&<>]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c] || c));
+        html = `<!DOCTYPE html><html><head><title>${currentUrl}</title></head><body style="font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap;padding:18px;background:#0f172a;color:#e2e8f0;line-height:1.5;">${esc}</body></html>`;
+      } else if (!contentType.includes('html') && !contentType.includes('xml')) {
         const esc = rawText.replace(/[&<>]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c] || c));
-        html = `<!DOCTYPE html><html><head><title>${currentUrl}</title></head><body style="font-family:monospace;white-space:pre-wrap;padding:16px;background:#fff;color:#111;">${esc}</body></html>`;
+        html = `<!DOCTYPE html><html><head><title>${currentUrl}</title></head><body style="font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap;padding:18px;background:#ffffff;color:#111827;line-height:1.5;">${esc}</body></html>`;
       } else {
-        // Strip framing/CSP meta restrictions and inject <base href="...">
-        html = html.replace(/<meta\b[^>]*http-equiv\s*=\s*["']?(?:Content-Security-Policy|X-Frame-Options)[^>]*>/gi, '');
+        // Strip framing/CSP/refresh meta restrictions and inject <base href="...">
+        html = html
+          .replace(/<meta\b[^>]*http-equiv\s*=\s*["']?(?:Content-Security-Policy|Content-Security-Policy-Report-Only|X-Frame-Options)[^>]*>/gi, '')
+          .replace(/<base\b[^>]*>/gi, '');
         const safeBase = currentUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
         const baseTag = `<base href="${safeBase}" target="_self">`;
         if (/<head\b[^>]*>/i.test(html)) {
@@ -362,7 +374,7 @@ async function startServer() {
         ok: false,
         finalUrl: rawUrl,
         status: 0,
-        error: error?.message || String(error),
+        error: error?.name === 'TimeoutError' ? 'Request timed out after 12 seconds.' : (error?.message || String(error)),
       });
     }
   });

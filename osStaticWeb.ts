@@ -57,6 +57,10 @@ export function markBrowseBackend(state: 'present' | 'missing'): void {
   backendState = state;
 }
 
+export function resetBrowseBackendState(): void {
+  backendState = 'unknown';
+}
+
 // ---------------------------------------------------------------------------
 // Shared page chrome
 // ---------------------------------------------------------------------------

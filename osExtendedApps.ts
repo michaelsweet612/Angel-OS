@@ -7,6 +7,7 @@ import {
   BrowserBookmark,
   BrowserEngineId,
   BrowserRenderMode,
+  buildFullDefaultPackageCatalog,
   DEFAULT_BOOKMARKS,
   DEFAULT_PACKAGE_CATALOG,
   DEFAULT_SYSTEM_REGISTRY,
@@ -77,6 +78,8 @@ export interface OsBridgeCallbacks {
   rebootGemini95: () => void;
   updateClock: () => void;
   syncTaskbarDock?: () => void;
+  syncStoreDesktopShortcuts?: () => void;
+  onUserStateMutated?: () => void;
   clampOpenWindows?: () => void;
   unlockAchievement?: (id: string) => void;
   getGeminiInstance: (context: string) => Promise<any | null>;
@@ -130,7 +133,11 @@ export let browserBookmarks: BrowserBookmark[] = loadBrowserBookmarks();
 let bridgeRef: OsBridgeCallbacks | null = null;
 let currentSettingsTab = 'display';
 let currentInstallerMode: 'exe' | 'os' = 'exe';
-let currentInstallerCategory: 'all' | 'browser' | 'core' | 'multimedia' | 'system' = 'all';
+let currentInstallerCategory: string = 'all';
+let currentInstallerSearch = '';
+let currentInstallerInstalledOnly = false;
+let currentInstallerPage = 1;
+const INSTALLER_PAGE_SIZE = 50;
 let selectedInstallerPkgId = 'browser_chrome';
 let activeRegeditSubkey = 'HKEY_CURRENT_USER\\Control Panel\\Colors';
 let selectedRegDescriptor: RegistryEntryDescriptor | null = null;
@@ -141,6 +148,57 @@ export function registerOsBridge(cb: OsBridgeCallbacks) {
 
 export function getOsBridge(): OsBridgeCallbacks | null {
   return bridgeRef;
+}
+
+export function getInstalledPackageIds(): string[] {
+  return packageCatalog.filter((p) => p.installed).map((p) => p.pkgId);
+}
+
+export function replaceWorkspaceCoreState(
+  regOverrides: Partial<SystemRegistry> | null,
+  installedPkgIds: string[] | null,
+  bookmarks: BrowserBookmark[] | null,
+): void {
+  const nextReg: SystemRegistry = {
+    ...DEFAULT_SYSTEM_REGISTRY,
+    localAccounts: [],
+    activeLocalAccount: '',
+    ...(regOverrides || {}),
+  };
+  // Never restore legacy pre-seeded Michael / Guest95 accounts
+  nextReg.localAccounts = [];
+  nextReg.activeLocalAccount = '';
+  Object.assign(systemRegistry, nextReg);
+  saveSystemRegistry(systemRegistry);
+
+  const freshCatalog = buildFullDefaultPackageCatalog();
+  if (Array.isArray(installedPkgIds) && installedPkgIds.length > 0) {
+    const idSet = new Set(installedPkgIds);
+    freshCatalog.forEach((p) => {
+      p.installed = idSet.has(p.pkgId);
+      if (p.installed) {
+        p.desktopShortcut = true;
+        p.startMenuShortcut = true;
+      }
+    });
+  }
+  packageCatalog.splice(0, packageCatalog.length, ...freshCatalog);
+  savePackageCatalog(packageCatalog);
+
+  const nextBms =
+    Array.isArray(bookmarks) && bookmarks.length > 0
+      ? bookmarks.map((b) => ({ title: b.title, url: b.url, mode: b.mode === 'ai' ? ('ai' as const) : ('live' as const) }))
+      : DEFAULT_BOOKMARKS.map((b) => ({ ...b }));
+  browserBookmarks.splice(0, browserBookmarks.length, ...nextBms);
+  saveBrowserBookmarks(browserBookmarks);
+
+  applySystemRegistryToOS(true);
+  renderAbilityToInstallUI();
+  renderMasterSettingsCurrentTab();
+}
+
+export function resetWorkspaceCoreStateToDefaults(): void {
+  replaceWorkspaceCoreState(null, null, null);
 }
 
 export function getInstalledBrowsers(): SoftwarePackage[] {
@@ -200,6 +258,7 @@ export function getBrowserEngineMeta(engine: BrowserEngineId) {
 export function applySystemRegistryToOS(skipSave = false): void {
   if (!skipSave) {
     saveSystemRegistry(systemRegistry);
+    bridgeRef?.onUserStateMutated?.();
   }
 
   const root = document.documentElement;
@@ -449,6 +508,7 @@ export function syncInstalledShortcutsToDesktop(): void {
     diskMeter.textContent = `C:\\ Used: ${used.toFixed(1)} / ${cCap} MB (${systemRegistry.fileSystemFormat})`;
   }
 
+  bridgeRef?.syncStoreDesktopShortcuts?.();
   bridgeRef?.syncTaskbarDock?.();
   bridgeRef?.clampOpenWindows?.();
 }
@@ -1478,15 +1538,19 @@ export function initMultiEngineBrowser(windowElement: HTMLDivElement): void {
 
         let resp: Response | null = null;
         let data: any = null;
+        let respCt = '';
         try {
           resp = await fetch(`/api/browse?url=${encodeURIComponent(url)}`);
-          const ct = (resp.headers.get('content-type') || '').toLowerCase();
-          data = ct.includes('application/json') ? await resp.json().catch(() => null) : null;
+          respCt = (resp.headers.get('content-type') || '').toLowerCase();
+          data = respCt.includes('application/json') ? await resp.json().catch(() => null) : null;
         } catch {
           resp = null;
         }
         if (!resp || !data || typeof data.ok !== 'boolean') {
-          markBrowseBackend('missing');
+          // Only mark backend missing when the host definitively serves 404 or an HTML SPA fallback
+          if (resp && (resp.status === 404 || (resp.ok && respCt.includes('text/html')))) {
+            markBrowseBackend('missing');
+          }
           await runStaticEngine();
           return;
         }
@@ -1863,8 +1927,9 @@ export function switchInstallerMode(mode: 'exe' | 'os'): void {
   renderAbilityToInstallUI();
 }
 
-export function openAbilityToInstallCategory(cat: 'all' | 'browser' | 'core' | 'multimedia' | 'system' = 'all') {
+export function openAbilityToInstallCategory(cat: string = 'all') {
   currentInstallerCategory = cat;
+  currentInstallerPage = 1;
   currentInstallerMode = 'exe';
   bridgeRef?.openApp('abilityToInstall', true).then(() => {
     switchInstallerMode('exe');
@@ -1963,22 +2028,56 @@ export function renderAbilityToInstallUI(): void {
 
   const listEl = document.getElementById('ability-pkg-list');
   const inspectorEl = document.getElementById('ability-pkg-inspector');
+  const pagerInfoEl = document.getElementById('ability-pager-info');
+  const prevBtn = document.getElementById('ability-pager-prev') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('ability-pager-next') as HTMLButtonElement | null;
   if (!listEl || !inspectorEl) return;
 
-  const filtered = packageCatalog.filter((p) => currentInstallerCategory === 'all' || p.category === currentInstallerCategory);
-  if (!filtered.some((p) => p.pkgId === selectedInstallerPkgId) && filtered.length > 0) {
-    selectedInstallerPkgId = filtered[0].pkgId;
+  const q = currentInstallerSearch.trim().toLowerCase();
+  const filtered = packageCatalog.filter((p) => {
+    if (currentInstallerCategory !== 'all' && p.category !== currentInstallerCategory) return false;
+    if (currentInstallerInstalledOnly && !p.installed) return false;
+    if (q) {
+      const hay = `${p.name} ${p.publisher} ${p.category} ${p.description} ${p.exeName}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / INSTALLER_PAGE_SIZE));
+  if (currentInstallerPage > totalPages) currentInstallerPage = totalPages;
+  if (currentInstallerPage < 1) currentInstallerPage = 1;
+
+  const startIdx = (currentInstallerPage - 1) * INSTALLER_PAGE_SIZE;
+  const pageItems = filtered.slice(startIdx, startIdx + INSTALLER_PAGE_SIZE);
+
+  if (!pageItems.some((p) => p.pkgId === selectedInstallerPkgId) && pageItems.length > 0) {
+    selectedInstallerPkgId = pageItems[0].pkgId;
   }
+
+  if (pagerInfoEl) {
+    const installedCount = packageCatalog.filter((p) => p.installed).length;
+    const endNum = Math.min(filtered.length, startIdx + pageItems.length);
+    pagerInfoEl.textContent =
+      filtered.length === 0
+        ? `0 matches (${packageCatalog.length} total · ${installedCount} installed)`
+        : `Showing ${startIdx + 1}–${endNum} of ${filtered.length} · Page ${currentInstallerPage}/${totalPages} (${installedCount}/${packageCatalog.length} installed)`;
+  }
+  if (prevBtn) prevBtn.disabled = currentInstallerPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentInstallerPage >= totalPages;
 
   const vfsExes = (bridgeRef?.getVfsFiles() || []).filter((f) => f.type === 'installer_exe');
 
   listEl.innerHTML = '';
-  filtered.forEach((pkg) => {
+  if (pageItems.length === 0) {
+    listEl.innerHTML = '<div style="padding:14px;font-size:0.75rem;color:#555;">No packages match your search/filter. Try clearing the search box or switching to "All".</div>';
+  }
+  pageItems.forEach((pkg) => {
     const row = document.createElement('div');
     row.className = `ability-pkg-row${pkg.pkgId === selectedInstallerPkgId ? ' selected' : ''}`;
     row.dataset.pkgId = pkg.pkgId;
     const hasExeOnDisk = vfsExes.some((f) => f.name.toUpperCase() === pkg.setupExeFileName.toUpperCase());
-    const statusText = pkg.installed ? '● INSTALLED' : hasExeOnDisk ? '📦 .EXE ON C:\\' : '○ NOT INSTALLED';
+    const statusText = pkg.installed ? '● INSTALLED' : hasExeOnDisk ? '📦 .EXE ON C:\\' : '○ AVAILABLE';
     const statusColor = pkg.installed
       ? pkg.pkgId === selectedInstallerPkgId
         ? '#86efac'
@@ -1989,8 +2088,8 @@ export function renderAbilityToInstallUI(): void {
 
     row.innerHTML = `
       <div>
-        <b>${pkg.iconHtml} ${pkg.name}</b>
-        <div style="font-size:0.67rem;opacity:0.85;">${pkg.setupExeFileName} · ${pkg.sizeMB.toFixed(1)} MB</div>
+        <b>${pkg.iconHtml} ${escapeHtml(pkg.name)}</b>
+        <div style="font-size:0.67rem;opacity:0.85;">${escapeHtml(pkg.category.toUpperCase())} · ${escapeHtml(pkg.setupExeFileName)} · ${pkg.sizeMB.toFixed(1)} MB</div>
       </div>
       <span class="ability-pkg-status-tag" style="color:${statusColor}">${statusText}</span>
     `;
@@ -2002,9 +2101,9 @@ export function renderAbilityToInstallUI(): void {
     listEl.appendChild(row);
   });
 
-  const sel = packageCatalog.find((p) => p.pkgId === selectedInstallerPkgId) || filtered[0];
+  const sel = packageCatalog.find((p) => p.pkgId === selectedInstallerPkgId) || pageItems[0];
   if (!sel) {
-    inspectorEl.innerHTML = '<p>No packages in this category.</p>';
+    inspectorEl.innerHTML = '<p>Select an application from the catalog to inspect or install it.</p>';
     return;
   }
 
@@ -2015,22 +2114,30 @@ export function renderAbilityToInstallUI(): void {
   inspectorEl.innerHTML = `
     <div>
       <div style="font-size:0.93rem;font-weight:700;color:#000080;margin-bottom:4px;">
-        ${sel.iconHtml} ${sel.name}
+        ${sel.iconHtml} ${escapeHtml(sel.name)}
       </div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#333;margin-bottom:6px;line-height:1.4;">
-        Setup Binary: <b>${sel.setupExeFileName}</b> (${sel.sizeMB.toFixed(1)} MB · MZ PE32)<br/>
-        Install Path: <b>${sel.installDir}\\${sel.exeName}</b><br/>
-        .EXE Status : <b>${exeOnDisk ? `Saved in ${exeOnDisk.parent}\\${exeOnDisk.name}` : `Not yet saved to ${targetExeDir}`}</b>
+        Category    : <b>${escapeHtml(sel.category.toUpperCase())}</b> · v${escapeHtml(sel.version)} · ${escapeHtml(sel.publisher)}<br/>
+        Setup Binary: <b>${escapeHtml(sel.setupExeFileName)}</b> (${sel.sizeMB.toFixed(1)} MB · MZ PE32)<br/>
+        Install Path: <b>${escapeHtml(sel.installDir)}\\${escapeHtml(sel.exeName)}</b><br/>
+        .EXE Status : <b>${exeOnDisk ? `Saved in ${escapeHtml(exeOnDisk.parent)}\\${escapeHtml(exeOnDisk.name)}` : `Not yet saved to ${escapeHtml(targetExeDir)}`}</b>
         ${isDefaultEngine ? '<br/><span style="color:#006600;font-weight:bold;">★ Active Default OS Browser Engine</span>' : ''}
       </div>
-      <p style="margin:4px 0 8px 0;line-height:1.38;font-size:0.74rem;">${sel.description}</p>
+      <p style="margin:4px 0 8px 0;line-height:1.38;font-size:0.74rem;">${escapeHtml(sel.description)}</p>
     </div>
     <div class="ability-inspector-actions">
+      ${
+        !sel.installed
+          ? `<button class="win95-btn" id="pkg-act-quick-install" style="background:#dcfce7;font-weight:700;color:#14532d;">
+              ⚡ Quick Install &amp; Pin
+            </button>`
+          : ''
+      }
       <button class="win95-btn" id="pkg-act-run-exe" style="background:#ffffcc;font-weight:700;">
-        📦 ${exeOnDisk ? 'Run' : 'Drop &amp; Run'} ${sel.setupExeFileName}
+        📦 ${exeOnDisk ? 'Run' : 'Drop &amp; Run'} ${escapeHtml(sel.setupExeFileName)}
       </button>
       <button class="win95-btn" id="pkg-act-save-exe">
-        📥 Save .EXE to ${targetExeDir}
+        📥 Save .EXE to ${escapeHtml(targetExeDir)}
       </button>
       ${
         sel.installed
@@ -2047,6 +2154,32 @@ export function renderAbilityToInstallUI(): void {
       }
     </div>
   `;
+
+  inspectorEl.querySelector('#pkg-act-quick-install')?.addEventListener('click', () => {
+    bridgeRef?.sfx.playAimReceive();
+    sel.installed = true;
+    sel.desktopShortcut = true;
+    sel.startMenuShortcut = true;
+    if (sel.browserEngine) {
+      systemRegistry.defaultBrowserEngine = sel.browserEngine;
+    }
+    savePackageCatalog(packageCatalog);
+    const existingVfs = bridgeRef?.getVfsFiles().some((f) => f.name === sel.exeName);
+    if (!existingVfs) {
+      bridgeRef?.addVfsFile(sel.exeName, 'app', 'C:\\System95', undefined, sel.appWindowId);
+    }
+    applySystemRegistryToOS();
+    bridgeRef?.syncStoreDesktopShortcuts?.();
+    bridgeRef?.syncTaskbarDock?.();
+    bridgeRef?.onUserStateMutated?.();
+    renderAbilityToInstallUI();
+    renderMasterSettingsCurrentTab();
+    logAppEvent('INSTALL', sel.name, `Quick-installed ${sel.exeName} -> ${sel.installDir} (${sel.sizeMB.toFixed(1)} MB)`, 'OK');
+    const statusLine = document.getElementById('ability-status-line');
+    if (statusLine) {
+      statusLine.textContent = `Installed ${sel.name}! Click "▶ Launch" or open it from the Desktop / Start Menu.`;
+    }
+  });
 
   inspectorEl.querySelector('#pkg-act-run-exe')?.addEventListener('click', () => {
     const saved = exeOnDisk ? { fileName: exeOnDisk.name, folder: exeOnDisk.parent } : dropSetupExeToVfs(sel.pkgId);
@@ -2096,9 +2229,15 @@ export function uninstallSoftwarePackage(pkg: SoftwarePackage): void {
   }
 
   pkg.installed = false;
+  pkg.desktopShortcut = false;
+  pkg.startMenuShortcut = false;
   savePackageCatalog(packageCatalog);
+  bridgeRef?.removeVfsFile(pkg.exeName, 'C:\\System95');
   logAppEvent('UNINSTALL', pkg.name, `Removed ${pkg.exeName} from ${pkg.installDir} (${pkg.sizeMB.toFixed(1)} MB freed)`, 'WARN');
   applySystemRegistryToOS();
+  bridgeRef?.syncStoreDesktopShortcuts?.();
+  bridgeRef?.syncTaskbarDock?.();
+  bridgeRef?.onUserStateMutated?.();
   renderAbilityToInstallUI();
   renderMasterSettingsCurrentTab();
 
@@ -2287,6 +2426,9 @@ export function openInstallShieldWizard(pkg: SoftwarePackage, mode: 'install' | 
           }
 
           applySystemRegistryToOS();
+          bridgeRef?.syncStoreDesktopShortcuts?.();
+          bridgeRef?.syncTaskbarDock?.();
+          bridgeRef?.onUserStateMutated?.();
           renderAbilityToInstallUI();
           renderMasterSettingsCurrentTab();
           logAppEvent('INSTALL', pkg.name, `${mode === 'reinstall' ? 'Reinstalled' : 'Installed'} ${pkg.exeName} -> ${pkg.installDir} (${pkg.sizeMB.toFixed(1)} MB)`, 'OK');
@@ -2361,9 +2503,38 @@ export function initAbilityToInstallApp(windowElement: HTMLDivElement): void {
       bridgeRef?.sfx.playClick();
       windowElement.querySelectorAll('.ability-cat-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      currentInstallerCategory = ((btn as HTMLElement).dataset.cat as any) || 'all';
+      currentInstallerCategory = (btn as HTMLElement).dataset.cat || 'all';
+      currentInstallerPage = 1;
       renderAbilityToInstallUI();
     });
+  });
+
+  const searchInp = windowElement.querySelector('#ability-search-input') as HTMLInputElement | null;
+  searchInp?.addEventListener('input', () => {
+    currentInstallerSearch = searchInp.value;
+    currentInstallerPage = 1;
+    renderAbilityToInstallUI();
+  });
+
+  const installedOnlyChk = windowElement.querySelector('#ability-installed-only') as HTMLInputElement | null;
+  installedOnlyChk?.addEventListener('change', () => {
+    currentInstallerInstalledOnly = installedOnlyChk.checked;
+    currentInstallerPage = 1;
+    renderAbilityToInstallUI();
+  });
+
+  windowElement.querySelector('#ability-pager-prev')?.addEventListener('click', () => {
+    if (currentInstallerPage > 1) {
+      bridgeRef?.sfx.playClick();
+      currentInstallerPage--;
+      renderAbilityToInstallUI();
+    }
+  });
+
+  windowElement.querySelector('#ability-pager-next')?.addEventListener('click', () => {
+    bridgeRef?.sfx.playClick();
+    currentInstallerPage++;
+    renderAbilityToInstallUI();
   });
 
   windowElement.querySelector('#ability-dl-portable-html-btn')?.addEventListener('click', () => {

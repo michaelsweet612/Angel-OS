@@ -197,17 +197,49 @@
       </div>
     </div>
 
-    <!-- WINDOWS ALWAYS-LOCAL-ACCOUNT LOCK & SIGN-IN SCREEN -->
+    <!-- WINDOWS-STYLE FIRST-RUN OOBE SETUP WIZARD (ANGEL OS v2.0.0) -->
+    <div id="oobe-setup-screen" class="oobe-screen" style="display: none">
+      <div class="oobe-shell">
+        <div class="oobe-top-bar">
+          <div class="oobe-brand">
+            <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Angel OS" class="oobe-brand-icon" />
+            <span>Angel OS <b>v2.0.0</b></span>
+          </div>
+          <span id="oobe-step-indicator" class="oobe-step-indicator tabular-nums">Step 1 of 3</span>
+        </div>
+        <div id="oobe-step-content" class="oobe-card">
+          <!-- Rendered dynamically by osUserAccounts.ts -->
+        </div>
+      </div>
+    </div>
+
+    <!-- RETURNING USER ACCOUNT SIGN-IN CHOOSER -->
+    <div id="angel-signin-chooser" class="oobe-screen" style="display: none">
+      <div class="oobe-shell">
+        <div class="oobe-top-bar">
+          <div class="oobe-brand">
+            <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Angel OS" class="oobe-brand-icon" />
+            <span>Angel OS <b>v2.0.0</b></span>
+          </div>
+          <span class="oobe-step-indicator">Private Profile Sign-In</span>
+        </div>
+        <div id="angel-chooser-body" class="oobe-card">
+          <!-- Rendered dynamically by osUserAccounts.ts -->
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGACY LOCK SCREEN CONTAINER (KEPT HIDDEN FOR BACKWARD COMPATIBILITY) -->
     <div id="os-signin-screen" class="os-signin-screen" style="display: none">
       <div class="signin-top-strip">
-        <span class="signin-local-badge">🔒 LOCAL ACCOUNT ALWAYS · OFFLINE OS PROFILE (NO CLOUD SIGN-IN REQUIRED)</span>
+        <span class="signin-local-badge">🔒 ANGEL OS PRIVATE ACCOUNT SIGN-IN</span>
         <span id="signin-lock-clock" class="signin-lock-clock tabular-nums">10:30 AM · 11/24/2026</span>
       </div>
 
       <div class="signin-center-box">
-        <div class="signin-avatar-circle" id="signin-avatar">🧑‍💻</div>
-        <div class="signin-username" id="signin-displayname">Michael</div>
-        <div class="signin-user-meta" id="signin-user-meta">Local Account · Administrator · C:\Users\Michael</div>
+        <div class="signin-avatar-circle" id="signin-avatar">👼</div>
+        <div class="signin-username" id="signin-displayname">User</div>
+        <div class="signin-user-meta" id="signin-user-meta">Private Profile · C:\Users\User</div>
 
         <div class="signin-form-box" id="signin-form-box">
           <div class="signin-input-row">
@@ -1687,18 +1719,47 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
               </div>
             </div>
 
-            <div class="ability-filter-bar">
-              <button class="win95-btn ability-cat-btn active" data-cat="all">All .EXEs</button>
-              <button class="win95-btn ability-cat-btn" data-cat="browser">🌐 Browsers (3)</button>
-              <button class="win95-btn ability-cat-btn" data-cat="core">📝 Core Apps</button>
-              <button class="win95-btn ability-cat-btn" data-cat="multimedia">🎮 Games/Media</button>
-              <button class="win95-btn ability-cat-btn" data-cat="system">🛠️ System</button>
+            <div class="ability-search-row">
+              <input
+                type="search"
+                id="ability-search-input"
+                class="win95-input ability-search-input"
+                placeholder="Search 514+ interactive apps, games, calculators, creative studios, dev tools..."
+                autocomplete="off"
+              />
+              <label class="ability-installed-toggle">
+                <input type="checkbox" id="ability-installed-only" />
+                <span>Installed only</span>
+              </label>
               <span class="ability-disk-meter tabular-nums" id="ability-disk-meter">C:\ Used: 92.3 MB / 1,495 MB</span>
             </div>
 
+            <div class="ability-filter-bar">
+              <button class="win95-btn ability-cat-btn active" data-cat="all">All (514)</button>
+              <button class="win95-btn ability-cat-btn" data-cat="games">🎮 Games</button>
+              <button class="win95-btn ability-cat-btn" data-cat="calculators">🧮 Calculators</button>
+              <button class="win95-btn ability-cat-btn" data-cat="creative">🎨 Creative</button>
+              <button class="win95-btn ability-cat-btn" data-cat="devtools">💻 Dev Tools</button>
+              <button class="win95-btn ability-cat-btn" data-cat="productivity">📋 Productivity</button>
+              <button class="win95-btn ability-cat-btn" data-cat="science">🔬 Science</button>
+              <button class="win95-btn ability-cat-btn" data-cat="text">✍️ Text</button>
+              <button class="win95-btn ability-cat-btn" data-cat="utilities">🧰 Utilities</button>
+              <button class="win95-btn ability-cat-btn" data-cat="browser">🌐 Browsers</button>
+              <button class="win95-btn ability-cat-btn" data-cat="core">📝 Core</button>
+              <button class="win95-btn ability-cat-btn" data-cat="multimedia">🎹 Media</button>
+              <button class="win95-btn ability-cat-btn" data-cat="system">🛠️ System</button>
+            </div>
+
             <div class="ability-split-pane">
-              <div class="ability-pkg-list" id="ability-pkg-list">
-                <!-- Populated dynamically from Package Catalog -->
+              <div class="ability-list-col">
+                <div class="ability-pkg-list" id="ability-pkg-list">
+                  <!-- Populated dynamically from Package Catalog -->
+                </div>
+                <div class="ability-pager" id="ability-pager">
+                  <button type="button" class="win95-btn" id="ability-pager-prev">◀ Prev</button>
+                  <span id="ability-pager-info" class="tabular-nums">Showing 1–50 of 514</span>
+                  <button type="button" class="win95-btn" id="ability-pager-next">Next ▶</button>
+                </div>
               </div>
               <div class="ability-pkg-inspector" id="ability-pkg-inspector">
                 <!-- Populated dynamically for selected package -->
@@ -2761,6 +2822,7 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" data-app="doom" data-pkg-id="app_doom">👹 Doom II</div>
             <div class="start-menu-item" data-app="trophiesApp">🏆 OS Trophy Vault (20 Achievements)</div>
             <div class="start-menu-item" data-app="recycleBin">🗑️ Recycle Bin 95</div>
+            <div id="start-store-apps-list"></div>
             <div class="start-menu-divider"></div>
             <div class="start-menu-item" id="start-media-perms">🎤📷 Camera &amp; Mic Access Permissions...</div>
             <div class="start-menu-item" id="start-new-sticky">📌 Spawn New Sticky Note</div>
@@ -2771,27 +2833,32 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
             <div class="start-menu-item" id="start-pwa-install">📲 Install as Physical OS (PWA)...</div>
             <div class="start-menu-item" id="start-sound-chime">🎵 Play Startup Chime</div>
             <div class="start-menu-item" id="start-hotkeys-btn">⌨️ Keyboard Shortcuts &amp; Secrets</div>
-            <div class="start-menu-item" id="start-winver-btn">ℹ️ About Windows (WINVER)</div>
+            <div class="start-menu-item" id="start-winver-btn">ℹ️ About Angel OS (WINVER)</div>
             <div class="start-menu-item" id="start-bsod-prank">💀 Trigger BSOD Prank</div>
           </div>
         </div>
 
-        <!-- Bottom Windows 11 Profile & Power Footer -->
+        <!-- Bottom Profile, Sync & Power Footer -->
         <div class="start-footer-bar">
-          <div class="start-user-pill clickable-acct" id="start-user-pill-btn" title="Always Local Account — Click to Switch User or Lock Screen">
-            <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" class="start-user-win-icon" />
-            <span id="start-user-label">Michael · Local Account</span>
+          <div class="start-user-pill clickable-acct" id="start-user-pill-btn" title="Private Account — Click to Sign Out or Switch User">
+            <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Angel OS" class="start-user-win-icon" />
+            <span id="start-user-label">Sign in / Setup</span>
+            <span id="start-sync-badge" class="start-sync-badge"></span>
           </div>
-          <div class="start-power-wrap">
-            <button type="button" class="start-power-btn" id="start-power-btn" title="Power, BIOS &amp; Restart Options">
-              ⏻
-            </button>
-            <div class="start-power-menu" id="start-power-menu" style="display: none">
-              <div class="start-power-item" id="start-lock-signin">🔒 Lock / Switch Local Account</div>
-              <div class="start-power-item" id="start-open-bios-menu">⚙️ Enter CMOS BIOS (5,120+ Features)</div>
-              <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Boot Manager</div>
-              <div class="start-power-item" id="start-sleep-saver">🌙 Sleep (Screensaver)</div>
-              <div class="start-power-item" id="start-power-reinstall">💿 Partition Setup (SETUP.EXE)</div>
+          <div class="start-footer-actions">
+            <button type="button" class="start-sync-btn" id="start-sync-now-btn" title="Save / Sync Workspace Now">💾</button>
+            <div class="start-power-wrap">
+              <button type="button" class="start-power-btn" id="start-power-btn" title="Account, Power &amp; BIOS Options">
+                ⏻
+              </button>
+              <div class="start-power-menu" id="start-power-menu" style="display: none">
+                <div class="start-power-item" id="start-lock-signin">🚪 Sign Out / Switch Account</div>
+                <div class="start-power-item" id="start-setup-wizard-btn">✨ Account Setup Wizard (OOBE)</div>
+                <div class="start-power-item" id="start-open-bios-menu">⚙️ Enter CMOS BIOS (5,120+ Features)</div>
+                <div class="start-power-item" id="start-reboot-os">🔄 Restart &amp; Boot Manager</div>
+                <div class="start-power-item" id="start-sleep-saver">🌙 Sleep (Screensaver)</div>
+                <div class="start-power-item" id="start-power-reinstall">💿 Partition Setup (SETUP.EXE)</div>
+              </div>
             </div>
           </div>
         </div>
@@ -3216,18 +3283,20 @@ Inspect MBR     : fdisk -l ANGELOS_USB_DISK.img  (or flash via Rufus / BalenaEtc
       <div id="winver-modal" class="installshield-backdrop" style="display:none">
         <div class="sfx-exe-window" style="width:420px">
           <div class="window-titlebar">
-            <span class="window-title">ℹ️ About Windows — AngelOS-web (WINVER.EXE)</span>
+            <span class="window-title">ℹ️ About Angel OS v2.0.0 (WINVER.EXE)</span>
             <div class="window-controls"><button class="window-control-button" id="winver-close-btn">✕</button></div>
           </div>
           <div class="sfx-exe-body" style="display:flex;flex-direction:column;gap:8px;font-size:0.78rem;color:#000">
-            <div style="background:linear-gradient(135deg,#004a99,#0078d4);color:#fff;padding:10px 12px;font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:10px;border-radius:4px">
-              <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Windows" style="width:28px;height:28px" />
-              <span>Windows 11 + 10 Hybrid · AngelOS-web</span>
+            <div style="background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff;padding:10px 12px;font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:10px;border-radius:4px">
+              <img data-icon-key="windowsLogo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'/%3E" alt="Angel OS" style="width:28px;height:28px" />
+              <span>Angel OS v2.0.0 · Private Cloud &amp; 500-App Edition</span>
             </div>
-            <div><b>Shell:</b> Windows 11 Interface · Left-Side Windows 10 Taskbar &amp; Search</div>
-            <div><b>Browser:</b> Google Chrome v131 (Downloaded &amp; Installed on C:\)</div>
+            <div><b>Shell:</b> Angel OS Desktop Shell · Private Per-User Accounts (Firebase Cloud &amp; Local)</div>
+            <div><b>Software Store:</b> 514+ Interactive Installable Applications (14 Live Mini-App Engines)</div>
+            <div><b>Browser:</b> Google Chrome v131 (Hardened Live Web Proxy &amp; AI Time-Machine)</div>
             <div><b>BIOS Firmware:</b> <span id="winver-bios-count" class="tabular-nums">0 / 5,120 Advanced Registers Activated</span></div>
             <div><b>Session Uptime:</b> <span id="winver-uptime" class="tabular-nums">0 seconds</span></div>
+            <div><b>Copyright:</b> Copyright 2026 Angel OS</div>
             <div class="sfx-exe-footer">
               <button class="win95-btn" id="winver-ok-btn"><b>OK</b></button>
             </div>

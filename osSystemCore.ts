@@ -4,6 +4,8 @@
  * Ability to Install (InstallShield 95), and the Multi-Engine Reinstallable Browser.
  */
 
+import { buildStore500SoftwarePackages } from './osAppStore500';
+
 export type BrowserEngineId = 'chrome' | 'netscape' | 'ie3';
 export type BrowserRenderMode = 'ai' | 'live';
 export type BrowserAiEra = '1996' | '2001' | 'modern';
@@ -235,29 +237,8 @@ export const DEFAULT_SYSTEM_REGISTRY: SystemRegistry = {
   biosNumLockOn: true,
   enableBootManagerOnBoot: true,
   requireSignInOnBoot: true,
-  activeLocalAccount: 'Michael',
-  localAccounts: [
-    {
-      username: 'Michael',
-      displayName: 'Michael',
-      avatar: '🧑‍💻',
-      role: 'Administrator',
-      password: '',
-      pin: '',
-      homeDir: 'C:\\Users\\Michael',
-      createdAt: '1995-08-24',
-    },
-    {
-      username: 'Guest95',
-      displayName: 'Guest (Local)',
-      avatar: '👤',
-      role: 'Standard',
-      password: '',
-      pin: '',
-      homeDir: 'C:\\Users\\Guest95',
-      createdAt: '1995-08-24',
-    },
-  ],
+  activeLocalAccount: '',
+  localAccounts: [],
 };
 
 export interface PartitionTableState {
@@ -305,7 +286,19 @@ export interface SoftwarePackage {
   name: string;
   version: string;
   publisher: string;
-  category: 'browser' | 'core' | 'multimedia' | 'system';
+  category:
+    | 'browser'
+    | 'core'
+    | 'multimedia'
+    | 'system'
+    | 'games'
+    | 'calculators'
+    | 'creative'
+    | 'devtools'
+    | 'productivity'
+    | 'science'
+    | 'text'
+    | 'utilities';
   sizeMB: number;
   installDir: string;
   exeName: string;
@@ -763,18 +756,29 @@ export function loadSystemRegistry(): SystemRegistry {
         parsed.defaultBrowserEngine = 'chrome';
       }
       const merged: SystemRegistry = { ...DEFAULT_SYSTEM_REGISTRY, ...parsed };
-      if (!Array.isArray(merged.localAccounts) || merged.localAccounts.length === 0) {
-        merged.localAccounts = DEFAULT_SYSTEM_REGISTRY.localAccounts.map((a) => ({ ...a }));
-      }
-      if (!merged.localAccounts.some((a) => a.username === merged.activeLocalAccount)) {
-        merged.activeLocalAccount = merged.localAccounts[0].username;
+      // Purge legacy pre-seeded Michael / Guest95 accounts
+      merged.localAccounts = Array.isArray(merged.localAccounts)
+        ? merged.localAccounts.filter(
+            (a) =>
+              a &&
+              typeof a.username === 'string' &&
+              a.username.toLowerCase() !== 'michael' &&
+              a.username.toLowerCase() !== 'guest95',
+          )
+        : [];
+      if (
+        !merged.activeLocalAccount ||
+        merged.activeLocalAccount.toLowerCase() === 'michael' ||
+        merged.activeLocalAccount.toLowerCase() === 'guest95'
+      ) {
+        merged.activeLocalAccount = merged.localAccounts[0]?.username || '';
       }
       return merged;
     }
   } catch (e) {
     console.warn('Registry load fallback:', e);
   }
-  return { ...DEFAULT_SYSTEM_REGISTRY };
+  return { ...DEFAULT_SYSTEM_REGISTRY, localAccounts: [] };
 }
 
 export function saveSystemRegistry(reg: SystemRegistry): void {
@@ -785,33 +789,57 @@ export function saveSystemRegistry(reg: SystemRegistry): void {
   }
 }
 
+export function buildFullDefaultPackageCatalog(): SoftwarePackage[] {
+  return [
+    ...DEFAULT_PACKAGE_CATALOG.map((p) => ({ ...p })),
+    ...buildStore500SoftwarePackages(),
+  ];
+}
+
 export function loadPackageCatalog(): SoftwarePackage[] {
+  const fullCatalog = buildFullDefaultPackageCatalog();
   try {
     const raw = window.localStorage.getItem(PACKAGES_STORAGE_KEY);
     if (raw) {
-      const saved: SoftwarePackage[] = JSON.parse(raw);
-      return DEFAULT_PACKAGE_CATALOG.map((defPkg) => {
-        const match = saved.find((s) => s.pkgId === defPkg.pkgId);
-        return match
-          ? {
-              ...defPkg,
-              installed: Boolean(match.installed),
-              desktopShortcut: Boolean(match.desktopShortcut),
-              startMenuShortcut: Boolean(match.startMenuShortcut),
-              installDir: match.installDir || defPkg.installDir,
-            }
-          : { ...defPkg };
-      });
+      const saved: Array<Partial<SoftwarePackage>> = JSON.parse(raw);
+      if (Array.isArray(saved)) {
+        const savedMap = new Map<string, Partial<SoftwarePackage>>();
+        for (const s of saved) {
+          if (s && typeof s.pkgId === 'string') savedMap.set(s.pkgId, s);
+        }
+        return fullCatalog.map((defPkg) => {
+          const match = savedMap.get(defPkg.pkgId);
+          return match
+            ? {
+                ...defPkg,
+                installed: Boolean(match.installed),
+                desktopShortcut: match.desktopShortcut !== undefined ? Boolean(match.desktopShortcut) : defPkg.desktopShortcut,
+                startMenuShortcut: match.startMenuShortcut !== undefined ? Boolean(match.startMenuShortcut) : defPkg.startMenuShortcut,
+                installDir: match.installDir || defPkg.installDir,
+              }
+            : { ...defPkg };
+        });
+      }
     }
   } catch (e) {
     console.warn('Package catalog load fallback:', e);
   }
-  return DEFAULT_PACKAGE_CATALOG.map((p) => ({ ...p }));
+  return fullCatalog;
 }
 
 export function savePackageCatalog(pkgs: SoftwarePackage[]): void {
   try {
-    window.localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(pkgs));
+    // Store compact state diff so 514+ packages serialize fast and stay tiny in localStorage
+    const compact = pkgs
+      .filter((p) => p.installed || !p.pkgId.startsWith('store_'))
+      .map((p) => ({
+        pkgId: p.pkgId,
+        installed: p.installed,
+        desktopShortcut: p.desktopShortcut,
+        startMenuShortcut: p.startMenuShortcut,
+        installDir: p.installDir,
+      }));
+    window.localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(compact));
   } catch (e) {
     console.warn('Package catalog save error:', e);
   }

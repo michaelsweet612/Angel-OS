@@ -35,6 +35,7 @@ export interface MegaBridge {
   removeVfsFile: (name: string, parent: string) => void;
   getVfsFiles: () => Array<{ name: string; type: string; parent: string; content?: string; appTarget?: string; pkgId?: string; sizeMB?: number }>;
   refreshExplorerIfOpen: () => void;
+  onUserStateMutated?: () => void;
   sfx: {
     enabled: boolean;
     masterVolume: number;
@@ -205,6 +206,22 @@ try {
   unlockedTrophies = {};
 }
 
+export function getUnlockedTrophiesSnapshot(): string[] {
+  return Object.keys(unlockedTrophies);
+}
+
+export function hydrateUnlockedTrophies(ids: string[]): void {
+  unlockedTrophies = {};
+  const stamp = new Date().toLocaleDateString();
+  for (const id of ids || []) {
+    if (typeof id === 'string' && id) unlockedTrophies[id] = stamp;
+  }
+  try {
+    localStorage.setItem(TROPHY_LS_KEY, JSON.stringify(unlockedTrophies));
+  } catch {}
+  renderTrophiesUI();
+}
+
 export function unlockAchievement(id: string): void {
   if (unlockedTrophies[id]) return;
   const def = TROPHY_CATALOG.find((t) => t.id === id);
@@ -217,6 +234,7 @@ export function unlockAchievement(id: string): void {
   window.setTimeout(() => playTone(880, 0.16, 'triangle', 0.07), 90);
   pushBalloonToast(`Trophy Unlocked! (+${def.points} pts)`, `${def.icon} ${def.title}: ${def.desc}`, '🏆');
   renderTrophiesUI();
+  megaBridge?.onUserStateMutated?.();
 }
 
 function renderTrophiesUI(): void {
@@ -256,6 +274,7 @@ export function initTrophiesApp(windowElement: HTMLDivElement): void {
       localStorage.removeItem(TROPHY_LS_KEY);
     } catch {}
     renderTrophiesUI();
+    megaBridge?.onUserStateMutated?.();
     pushBalloonToast('Trophy Case Reset', `All ${TROPHY_CATALOG.length} Angel-OS achievements cleared.`, '🏆');
   });
 }
@@ -2229,10 +2248,23 @@ try {
   customStickies = [];
 }
 
+export function getCustomStickiesSnapshot(): StickyData[] {
+  return customStickies.map((s) => ({ ...s }));
+}
+
+export function hydrateCustomStickies(list: StickyData[]): void {
+  customStickies = Array.isArray(list) ? list.map((s) => ({ ...s })) : [];
+  try {
+    localStorage.setItem(STICKIES_LS_KEY, JSON.stringify(customStickies));
+  } catch {}
+  renderAllCustomStickies();
+}
+
 function saveStickies() {
   try {
     localStorage.setItem(STICKIES_LS_KEY, JSON.stringify(customStickies));
   } catch {}
+  megaBridge?.onUserStateMutated?.();
 }
 
 export function spawnCustomStickyNote(initialText = 'New 1995 Reminder:\nFeed Tamagotchi & back up floppies!'): void {

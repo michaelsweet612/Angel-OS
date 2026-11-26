@@ -1,0 +1,205 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==================== PRIMITIVES ====================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ==================== VALIDATION BLUEPRINTS ====================
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'displayName',
+          'email',
+          'photoURL',
+          'themePreset',
+          'oobeCompleted',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'email',
+          'photoURL',
+          'themePreset',
+          'oobeCompleted',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 64
+        && data.email is string
+        && data.email.size() <= 160
+        && data.photoURL is string
+        && data.photoURL.size() <= 512
+        && data.themePreset is string
+        && data.themePreset.size() >= 1
+        && data.themePreset.size() <= 32
+        && data.oobeCompleted is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStringList(arr, maxLen) {
+      return arr is list
+        && arr.size() <= maxLen
+        && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 128));
+    }
+
+    function isValidMapList(arr, maxLen) {
+      return arr is list
+        && arr.size() <= maxLen
+        && (arr.size() == 0 || arr[0] is map);
+    }
+
+    function isValidUserOsSave(data) {
+      return data.keys().hasAll([
+          'uid',
+          'schemaVersion',
+          'registry',
+          'installedPkgIds',
+          'vfsUserFiles',
+          'bookmarks',
+          'stickies',
+          'taskbarOrder',
+          'unlockedTrophies',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'schemaVersion',
+          'registry',
+          'installedPkgIds',
+          'vfsUserFiles',
+          'bookmarks',
+          'stickies',
+          'taskbarOrder',
+          'unlockedTrophies',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.schemaVersion is int
+        && data.schemaVersion >= 1
+        && data.schemaVersion <= 100
+        && data.registry is map
+        && data.registry.keys().size() <= 120
+        && isValidStringList(data.installedPkgIds, 600)
+        && isValidMapList(data.vfsUserFiles, 80)
+        && isValidMapList(data.bookmarks, 60)
+        && isValidMapList(data.stickies, 30)
+        && isValidStringList(data.taskbarOrder, 60)
+        && isValidStringList(data.unlockedTrophies, 100)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // ==================== /users/{userId} ====================
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'email',
+          'photoURL',
+          'themePreset',
+          'oobeCompleted',
+          'updatedAt'
+        ]);
+
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      // ==================== /users/{userId}/saves/{saveId} ====================
+      match /saves/{saveId} {
+        allow get: if isValidId(userId)
+          && isValidId(saveId)
+          && isOwner(userId)
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow list: if false;
+
+        allow create: if isValidId(userId)
+          && isValidId(saveId)
+          && isOwner(userId)
+          && isValidUserOsSave(incoming())
+          && incoming().uid == userId
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && existsAfter(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isValidId(userId)
+          && isValidId(saveId)
+          && isOwner(userId)
+          && isValidUserOsSave(incoming())
+          && incoming().uid == existing().uid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'schemaVersion',
+            'registry',
+            'installedPkgIds',
+            'vfsUserFiles',
+            'bookmarks',
+            'stickies',
+            'taskbarOrder',
+            'unlockedTrophies',
+            'updatedAt'
+          ])
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow delete: if isValidId(userId)
+          && isValidId(saveId)
+          && isOwner(userId);
+      }
+    }
+  }
+}
